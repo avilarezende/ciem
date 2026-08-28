@@ -1,0 +1,11 @@
+.env
+*.pyc
+__pycache__/
+.pytest_cache/
+.venv/
+venv/
+data/chroma/
+data/postgres/
+*.log
+.DS_Store
+node_modules/

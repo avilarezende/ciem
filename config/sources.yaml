@@ -1,0 +1,60 @@
+# =============================================================================
+# Fontes de dados para RAG e consultas operacionais
+# -----------------------------------------------------------------------------
+# Credenciais (URLs, usuários, senhas, API keys) ficam no arquivo .env.
+# Este arquivo define comportamento e parâmetros não sensíveis.
+# =============================================================================
+
+fontes:
+  popse_site:
+  # URL do site institucional — usado pelo coletor de contexto
+    url: https://www.pop-se.rnp.br
+    refresh_hours: 24
+    metodo: crawler
+
+  zabbix:
+    metodo: api
+    endpoints:
+      maintenance: "/api_jsonrpc.php"
+    # Como mapear hosts Zabbix → instituições: host_groups | host_tags
+    mapeamento_instituicao: "host_groups"
+
+  cacti:
+    metodo: crawler
+    paginas:
+      - "/host.php"
+      - "/graph_view.php"
+
+  grafana:
+    metodo: api
+    # Tipos de dados coletados: annotations, alerts
+    coletar:
+      - annotations
+      - alerts
+
+  mrtg:
+    metodo: crawler
+
+  topdesk:
+    metodo: api
+
+  email_microsoft:
+    metodo: graph_api
+    pastas:
+      - Inbox
+      - "Manutenções"
+    filtros_assunto:
+      - manutenção
+      - maintenance
+      - indisponibilidade
+      - janela
+
+# Parâmetros globais do pipeline RAG
+rag:
+  chunk_size: 800
+  chunk_overlap: 120
+  top_k: 6
+  colecoes:
+    - operacional    # status de links, alertas, hosts
+    - institucional  # contexto PoP-SE/RNP
+    - manutencoes    # janelas programadas, e-mails, Zabbix maintenance

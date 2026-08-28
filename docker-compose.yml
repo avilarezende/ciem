@@ -1,0 +1,191 @@
+name: conversador-popse
+
+x-engine-env: &engine-env
+  DATABASE_URL: ${DATABASE_URL}
+  LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+  OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
+  OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+  GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+  GEMINI_MODEL: ${GEMINI_MODEL:-gemini-1.5-flash}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+  OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+  AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY:-}
+  AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT:-}
+  AZURE_OPENAI_DEPLOYMENT: ${AZURE_OPENAI_DEPLOYMENT:-}
+  AZURE_OPENAI_API_VERSION: ${AZURE_OPENAI_API_VERSION:-2024-08-01-preview}
+  GROK_API_KEY: ${GROK_API_KEY:-}
+  GROK_MODEL: ${GROK_MODEL:-grok-2-latest}
+  GROK_BASE_URL: ${GROK_BASE_URL:-https://api.x.ai/v1}
+  CHROMA_PATH: /data/chroma
+  CONFIG_PATH: /app/config
+  POPSE_CONTEXT_URL: ${POPSE_CONTEXT_URL:-https://www.pop-se.rnp.br}
+
+services:
+  # --- Infraestrutura base ---
+  postgres:
+    image: postgres:16-alpine
+    profiles: [core]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-popse}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-altere_em_producao}
+      POSTGRES_DB: ${POSTGRES_DB:-conversador}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-popse}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [popse-net]
+
+  ollama:
+    image: ollama/ollama:latest
+    profiles: [core, llm]
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    networks: [popse-net]
+
+  # --- Motor de conversação (núcleo) ---
+  engine:
+    build:
+      context: .
+      dockerfile: services/engine/Dockerfile
+    profiles: [core]
+    env_file: .env
+    environment:
+      <<: *engine-env
+    volumes:
+      - ./config:/app/config:ro
+      - chroma_data:/data/chroma
+    ports:
+      - "${ENGINE_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [popse-net]
+
+  # --- Interface web (Apache) ---
+  web:
+    build:
+      context: services/web
+      dockerfile: Dockerfile
+    profiles: [core, web]
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    environment:
+      ENGINE_URL: http://engine:8000
+    depends_on:
+      engine:
+        condition: service_healthy
+    networks: [popse-net]
+
+  # --- Módulos de canal ---
+  module-telegram:
+    build:
+      context: .
+      dockerfile: services/modules/telegram/Dockerfile
+    profiles: [telegram]
+    env_file: .env
+    environment:
+      ENGINE_URL: http://engine:8000
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+    depends_on:
+      engine:
+        condition: service_healthy
+    networks: [popse-net]
+
+  module-discord:
+    build:
+      context: .
+      dockerfile: services/modules/discord/Dockerfile
+    profiles: [discord]
+    env_file: .env
+    environment:
+      ENGINE_URL: http://engine:8000
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
+    depends_on:
+      engine:
+        condition: service_healthy
+    networks: [popse-net]
+
+  module-whatsapp:
+    build:
+      context: .
+      dockerfile: services/modules/whatsapp/Dockerfile
+    profiles: [whatsapp]
+    env_file: .env
+    environment:
+      ENGINE_URL: http://engine:8000
+      WHATSAPP_API_URL: ${WHATSAPP_API_URL}
+      WHATSAPP_API_TOKEN: ${WHATSAPP_API_TOKEN}
+    depends_on:
+      engine:
+        condition: service_healthy
+    networks: [popse-net]
+
+  # --- Módulos de integração / RAG ---
+  module-email-microsoft:
+    build:
+      context: .
+      dockerfile: services/modules/email_microsoft/Dockerfile
+    profiles: [email]
+    env_file: .env
+    environment:
+      ENGINE_URL: http://engine:8000
+      MS_TENANT_ID: ${MS_TENANT_ID}
+      MS_CLIENT_ID: ${MS_CLIENT_ID}
+      MS_CLIENT_SECRET: ${MS_CLIENT_SECRET}
+      MS_MAILBOX: ${MS_MAILBOX}
+      CHROMA_PATH: /data/chroma
+    volumes:
+      - chroma_data:/data/chroma
+    depends_on:
+      engine:
+        condition: service_healthy
+    networks: [popse-net]
+
+  module-sources:
+    build:
+      context: .
+      dockerfile: services/modules/sources/Dockerfile
+    profiles: [sources]
+    env_file: .env
+    environment:
+      ENGINE_URL: http://engine:8000
+      CONFIG_PATH: /app/config
+      CHROMA_PATH: /data/chroma
+      ZABBIX_URL: ${ZABBIX_URL:-}
+      ZABBIX_USER: ${ZABBIX_USER:-}
+      ZABBIX_PASSWORD: ${ZABBIX_PASSWORD:-}
+      ZABBIX_MAINTENANCE_DAYS: ${ZABBIX_MAINTENANCE_DAYS:-30}
+      CACTI_URL: ${CACTI_URL:-}
+      CACTI_USER: ${CACTI_USER:-}
+      CACTI_PASSWORD: ${CACTI_PASSWORD:-}
+      GRAFANA_URL: ${GRAFANA_URL:-}
+      GRAFANA_API_KEY: ${GRAFANA_API_KEY:-}
+      GRAFANA_ANNOTATION_DAYS: ${GRAFANA_ANNOTATION_DAYS:-30}
+      SOURCES_SYNC_INTERVAL: ${SOURCES_SYNC_INTERVAL:-600}
+    volumes:
+      - ./config:/app/config:ro
+      - chroma_data:/data/chroma
+    depends_on:
+      engine:
+        condition: service_healthy
+    networks: [popse-net]
+
+volumes:
+  postgres_data:
+  ollama_data:
+  chroma_data:
+
+networks:
+  popse-net:
+    driver: bridge

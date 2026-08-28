@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conversador PoP-SE</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="brand">
+      <img src="/assets/logo-popse.png" alt="PoP-SE — Ponto de Presença da RNP em Sergipe" class="logo logo-popse" />
+      <img src="/assets/logo-rnp.png" alt="RNP" class="logo logo-rnp" />
+      <div>
+        <h1>Conversador PoP-SE</h1>
+        <p>Assistente de conectividade para instituições clientes da RNP em Sergipe</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="chat-container">
+    <div id="messages" class="messages" aria-live="polite"></div>
+    <form id="chat-form" class="chat-form">
+      <label for="message" class="sr-only">Sua mensagem</label>
+      <textarea id="message" rows="2" placeholder="Ex.: Bom dia, sou responsável técnico pelo IFS e gostaria de saber as manutenções dos próximos 30 dias." required></textarea>
+      <button type="submit">Enviar</button>
+    </form>
+  </main>
+
+  <footer class="footer">
+    <p>Ponto de Presença da RNP em Sergipe — <a href="https://www.pop-se.rnp.br" target="_blank" rel="noopener">pop-se.rnp.br</a></p>
+  </footer>
+
+  <script src="/js/chat.js"></script>
+</body>
+</html>
