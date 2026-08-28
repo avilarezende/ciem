@@ -1,0 +1,14 @@
+# Topics sugeridos para o repositório GitHub
+# Settings → General → Topics
+
+chatbot
+pop-se
+rnp
+docker
+fastapi
+rag
+zabbix
+grafana
+ollama
+ci-cd
+sergipe

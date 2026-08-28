@@ -1,0 +1,4 @@
+# Descrição do repositório (para GitHub)
+# Copie o texto abaixo para Settings → General → Description no GitHub
+
+Chatbot modular PoP-SE/RNP para clientes de conectividade em Sergipe. RAG com Zabbix/Cacti/Grafana, memória persistente, canais WhatsApp/Telegram/Discord, IA local (Ollama) ou remota (Gemini/OpenAI/Azure/Grok). Docker + CI/CD.
