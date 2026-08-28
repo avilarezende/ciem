@@ -1,5 +1,9 @@
 # Conversador PoP-SE
 
+## Repositório
+
+**https://github.com/avilarezende/conversador-pop-se**
+
 [![CI](https://github.com/avilarezende/conversador-pop-se/actions/workflows/ci.yml/badge.svg)](https://github.com/avilarezende/conversador-pop-se/actions/workflows/ci.yml)
 
 Assistente virtual modular do **Ponto de Presença da RNP em Sergipe (PoP-SE)** para clientes de conectividade — instituições de ensino, pesquisa e saúde.
