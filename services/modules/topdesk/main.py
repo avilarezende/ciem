@@ -8,8 +8,8 @@ import httpx
 
 from ciem_common import (
     ActiveAlarm,
-    CollectResponse,
     CollectorModule,
+    CollectResponse,
     HistoryEvent,
     create_collector_app,
     load_config,
@@ -47,7 +47,9 @@ class TopdeskCollector(CollectorModule):
         if status_filter:
             params["query"] = f"processingStatus.name=in=({status_filter})"
 
-        async with httpx.AsyncClient(timeout=timeout, verify=verify, auth=(username, password)) as client:
+        async with httpx.AsyncClient(
+            timeout=timeout, verify=verify, auth=(username, password)
+        ) as client:
             response = await client.get(f"{url}/incidents", params=params)
             response.raise_for_status()
             tickets = response.json()
@@ -58,7 +60,9 @@ class TopdeskCollector(CollectorModule):
             if isinstance(tickets, list):
                 for ticket in tickets[:ticket_limit]:
                     number = ticket.get("number") or ticket.get("id", "sem-numero")
-                    brief = ticket.get("briefDescription") or ticket.get("shortDescription", "Sem descrição")
+                    brief = ticket.get("briefDescription") or ticket.get(
+                        "shortDescription", "Sem descrição"
+                    )
                     status = (
                         ticket.get("processingStatus", {}).get("name")
                         if isinstance(ticket.get("processingStatus"), dict)
@@ -69,7 +73,11 @@ class TopdeskCollector(CollectorModule):
                         if isinstance(ticket.get("priority"), dict)
                         else str(ticket.get("priority", "normal"))
                     )
-                    creation = ticket.get("creationDate") or ticket.get("requestDate") or datetime.now(UTC).isoformat()
+                    creation = (
+                        ticket.get("creationDate")
+                        or ticket.get("requestDate")
+                        or datetime.now(UTC).isoformat()
+                    )
 
                     history_events.append(
                         HistoryEvent(
@@ -97,7 +105,9 @@ class TopdeskCollector(CollectorModule):
                             )
                         )
 
-        return CollectResponse.build(MODULE_NAME, "ok", active_alarms=active_alarms, history_events=history_events)
+        return CollectResponse.build(
+            MODULE_NAME, "ok", active_alarms=active_alarms, history_events=history_events
+        )
 
     def _mock_response(self) -> CollectResponse:
         now = datetime.now(UTC).isoformat()

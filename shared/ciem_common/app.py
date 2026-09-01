@@ -1,6 +1,5 @@
 """Factory FastAPI para expor endpoints /health e /collect."""
 
-
 from fastapi import FastAPI
 
 from ciem_common.collector import CollectorModule

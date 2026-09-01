@@ -8,8 +8,8 @@ import httpx
 
 from ciem_common import (
     ActiveAlarm,
-    CollectResponse,
     CollectorModule,
+    CollectResponse,
     HistoryEvent,
     create_collector_app,
     load_config,
@@ -115,7 +115,9 @@ class InventoryCollector(CollectorModule):
                         )
                     )
 
-        return CollectResponse.build(MODULE_NAME, "ok", active_alarms=active_alarms, history_events=history_events)
+        return CollectResponse.build(
+            MODULE_NAME, "ok", active_alarms=active_alarms, history_events=history_events
+        )
 
     def _mock_response(self) -> CollectResponse:
         now = datetime.now(UTC).isoformat()

@@ -17,6 +17,7 @@ MODULE_URLS: dict[str, str] = {
     "syslog": "http://module-syslog:8080",
 }
 
+
 async def collect_module_data(
     module_name: str,
     client: httpx.AsyncClient,

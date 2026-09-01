@@ -36,7 +36,7 @@ def test_load_targets_config() -> None:
 def test_generate_user_mapping_contains_connections() -> None:
     xml = generate_user_mapping()
     assert "<user-mapping>" in xml
-    assert 'protocol>ssh</protocol>' in xml
+    assert "protocol>ssh</protocol>" in xml
     assert "Roteador Core" in xml
     assert "Switch Distribuição 01" in xml
     assert 'authorize username="admin"' in xml

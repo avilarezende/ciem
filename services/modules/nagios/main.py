@@ -8,8 +8,8 @@ import httpx
 
 from ciem_common import (
     ActiveAlarm,
-    CollectResponse,
     CollectorModule,
+    CollectResponse,
     HistoryEvent,
     create_collector_app,
     load_config,
@@ -54,7 +54,11 @@ class NagiosCollector(CollectorModule):
         async with httpx.AsyncClient(timeout=timeout, verify=verify) as client:
             if flavor == "nagiosxi":
                 hosts_data = await self._get_json(client, "objects/hosts", api_key)
-                hosts = hosts_data.get("hosts", hosts_data) if isinstance(hosts_data, dict) else hosts_data
+                hosts = (
+                    hosts_data.get("hosts", hosts_data)
+                    if isinstance(hosts_data, dict)
+                    else hosts_data
+                )
                 if isinstance(hosts, list):
                     for host in hosts[:service_limit]:
                         host_name = host.get("host_name") or host.get("name", "desconhecido")
@@ -89,7 +93,9 @@ class NagiosCollector(CollectorModule):
                 if isinstance(services, list):
                     for service in services[:service_limit]:
                         host_name = service.get("host_name", "unknown")
-                        service_desc = service.get("service_description") or service.get("description", "serviço")
+                        service_desc = service.get("service_description") or service.get(
+                            "description", "serviço"
+                        )
                         state = str(service.get("current_state", service.get("state", "unknown")))
                         history_events.append(
                             HistoryEvent(
@@ -108,7 +114,9 @@ class NagiosCollector(CollectorModule):
                             active_alarms.append(
                                 ActiveAlarm(
                                     id=f"nagios-alarm-svc-{host_name}-{service_desc}",
-                                    severity="critical" if state in ("2", "CRITICAL") else "warning",
+                                    severity="critical"
+                                    if state in ("2", "CRITICAL")
+                                    else "warning",
                                     message=f"Serviço {service_desc} em {host_name} com alerta",
                                     source=MODULE_NAME,
                                     timestamp=datetime.now(UTC).isoformat(),
@@ -131,7 +139,9 @@ class NagiosCollector(CollectorModule):
                     )
                 )
 
-        return CollectResponse.build(MODULE_NAME, "ok", active_alarms=active_alarms, history_events=history_events)
+        return CollectResponse.build(
+            MODULE_NAME, "ok", active_alarms=active_alarms, history_events=history_events
+        )
 
     def _mock_response(self) -> CollectResponse:
         now = datetime.now(UTC).isoformat()

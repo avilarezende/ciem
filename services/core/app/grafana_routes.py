@@ -29,6 +29,7 @@ GRAFANA_TOKEN = os.environ.get("CIEM_GRAFANA_TOKEN", "ciem-grafana-internal")
 def _grafana_token() -> str:
     return os.environ.get("CIEM_GRAFANA_TOKEN", GRAFANA_TOKEN)
 
+
 ALARMS_GAUGE = Gauge(
     "ciem_active_alarms",
     "Alarmes ativos agregados dos módulos CIEM",

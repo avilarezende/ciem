@@ -8,8 +8,8 @@ import httpx
 
 from ciem_common import (
     ActiveAlarm,
-    CollectResponse,
     CollectorModule,
+    CollectResponse,
     HistoryEvent,
     create_collector_app,
     load_config,
@@ -34,7 +34,9 @@ class ZabbixCollector(CollectorModule):
         payload: dict[str, Any] = {"jsonrpc": "2.0", "method": method, "params": params, "id": 1}
         if auth:
             payload["auth"] = auth
-        response = await client.post(f"{self.config['url'].rstrip('/')}/api_jsonrpc.php", json=payload)
+        response = await client.post(
+            f"{self.config['url'].rstrip('/')}/api_jsonrpc.php", json=payload
+        )
         response.raise_for_status()
         data = response.json()
         if "error" in data:
@@ -57,14 +59,19 @@ class ZabbixCollector(CollectorModule):
         history_events: list[HistoryEvent] = []
 
         async with httpx.AsyncClient(timeout=timeout, verify=verify) as client:
-            auth = await self._rpc(client, "user.login", {"username": username, "password": password})
+            auth = await self._rpc(
+                client, "user.login", {"username": username, "password": password}
+            )
             if not isinstance(auth, str):
                 raise RuntimeError("Falha na autenticação Zabbix")
 
             hosts = await self._rpc(
                 client,
                 "host.get",
-                {"output": ["hostid", "host", "name", "status"], "selectTriggers": ["triggerid", "description", "priority"]},
+                {
+                    "output": ["hostid", "host", "name", "status"],
+                    "selectTriggers": ["triggerid", "description", "priority"],
+                },
                 auth=auth,
             )
             if isinstance(hosts, list):
@@ -99,7 +106,11 @@ class ZabbixCollector(CollectorModule):
             if isinstance(problems, list):
                 for problem in problems:
                     clock = int(problem.get("clock", 0))
-                    ts = datetime.fromtimestamp(clock, tz=UTC).isoformat() if clock else datetime.now(UTC).isoformat()
+                    ts = (
+                        datetime.fromtimestamp(clock, tz=UTC).isoformat()
+                        if clock
+                        else datetime.now(UTC).isoformat()
+                    )
                     active_alarms.append(
                         ActiveAlarm(
                             id=f"zabbix-problem-{problem.get('eventid')}",
@@ -107,7 +118,10 @@ class ZabbixCollector(CollectorModule):
                             message=problem.get("name", "Problema sem descrição"),
                             source=MODULE_NAME,
                             timestamp=ts,
-                            metadata={"eventid": problem.get("eventid"), "objectid": problem.get("objectid")},
+                            metadata={
+                                "eventid": problem.get("eventid"),
+                                "objectid": problem.get("objectid"),
+                            },
                         )
                     )
 
@@ -138,13 +152,18 @@ class ZabbixCollector(CollectorModule):
                             message=trigger.get("description", "Trigger ativo"),
                             source=MODULE_NAME,
                             timestamp=ts,
-                            metadata={"triggerid": trigger.get("triggerid"), "value": trigger.get("value")},
+                            metadata={
+                                "triggerid": trigger.get("triggerid"),
+                                "value": trigger.get("value"),
+                            },
                         )
                     )
 
             await self._rpc(client, "user.logout", [], auth=auth)
 
-        return CollectResponse.build(MODULE_NAME, "ok", active_alarms=active_alarms, history_events=history_events)
+        return CollectResponse.build(
+            MODULE_NAME, "ok", active_alarms=active_alarms, history_events=history_events
+        )
 
     def _mock_response(self) -> CollectResponse:
         now = datetime.now(UTC).isoformat()

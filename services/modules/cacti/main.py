@@ -9,8 +9,8 @@ import httpx
 
 from ciem_common import (
     ActiveAlarm,
-    CollectResponse,
     CollectorModule,
+    CollectResponse,
     HistoryEvent,
     create_collector_app,
     load_config,
@@ -102,7 +102,9 @@ class CactiCollector(CollectorModule):
         active_alarms: list[ActiveAlarm] = []
         history_events: list[HistoryEvent] = []
 
-        async with httpx.AsyncClient(timeout=timeout, verify=verify, follow_redirects=True) as client:
+        async with httpx.AsyncClient(
+            timeout=timeout, verify=verify, follow_redirects=True
+        ) as client:
             if not await self._login(client, url):
                 raise RuntimeError("Falha no login Cacti")
 
@@ -131,7 +133,9 @@ class CactiCollector(CollectorModule):
                         )
                     )
 
-        return CollectResponse.build(MODULE_NAME, "ok", active_alarms=active_alarms, history_events=history_events)
+        return CollectResponse.build(
+            MODULE_NAME, "ok", active_alarms=active_alarms, history_events=history_events
+        )
 
     def _mock_response(self) -> CollectResponse:
         now = datetime.now(UTC).isoformat()

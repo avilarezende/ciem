@@ -10,8 +10,8 @@ import httpx
 
 from ciem_common import (
     ActiveAlarm,
-    CollectResponse,
     CollectorModule,
+    CollectResponse,
     HistoryEvent,
     create_collector_app,
     load_config,
@@ -38,13 +38,26 @@ class SyslogCollector(CollectorModule):
 
     def _classify_severity(self, message: str) -> str:
         lowered = message.lower()
-        for level in ("emerg", "alert", "crit", "critical", "error", "warning", "notice", "info", "debug"):
+        for level in (
+            "emerg",
+            "alert",
+            "crit",
+            "critical",
+            "error",
+            "warning",
+            "notice",
+            "info",
+            "debug",
+        ):
             if level in lowered:
                 return level
         return "info"
 
     def _is_alarm(self, severity: str) -> bool:
-        alarm_levels = {s.lower() for s in self.config.get("alarm_severities", ["error", "critical", "alert", "emerg"])}
+        alarm_levels = {
+            s.lower()
+            for s in self.config.get("alarm_severities", ["error", "critical", "alert", "emerg"])
+        }
         return severity.lower() in alarm_levels
 
     async def _collect_from_api(self) -> CollectResponse:
@@ -81,7 +94,11 @@ class SyslogCollector(CollectorModule):
 
             for index, event in enumerate(events[:event_limit]):
                 if isinstance(event, str):
-                    parsed = self._parse_line(event) or {"message": event, "hostname": "unknown", "app": "syslog"}
+                    parsed = self._parse_line(event) or {
+                        "message": event,
+                        "hostname": "unknown",
+                        "app": "syslog",
+                    }
                     ts = datetime.now(UTC).isoformat()
                 elif isinstance(event, dict):
                     parsed = {
@@ -89,7 +106,11 @@ class SyslogCollector(CollectorModule):
                         "hostname": event.get("host") or event.get("hostname", "unknown"),
                         "app": event.get("app") or event.get("facility", "syslog"),
                     }
-                    ts = str(event.get("timestamp") or event.get("@timestamp") or datetime.now(UTC).isoformat())
+                    ts = str(
+                        event.get("timestamp")
+                        or event.get("@timestamp")
+                        or datetime.now(UTC).isoformat()
+                    )
                 else:
                     continue
 
@@ -123,7 +144,9 @@ class SyslogCollector(CollectorModule):
                         )
                     )
 
-        return CollectResponse.build(MODULE_NAME, "ok", active_alarms=active_alarms, history_events=history_events)
+        return CollectResponse.build(
+            MODULE_NAME, "ok", active_alarms=active_alarms, history_events=history_events
+        )
 
     async def _collect_from_file(self) -> CollectResponse:
         file_path = Path(self.config.get("file_path", "/var/log/syslog"))
@@ -173,7 +196,9 @@ class SyslogCollector(CollectorModule):
                     )
                 )
 
-        return CollectResponse.build(MODULE_NAME, "ok", active_alarms=active_alarms, history_events=history_events)
+        return CollectResponse.build(
+            MODULE_NAME, "ok", active_alarms=active_alarms, history_events=history_events
+        )
 
     def _mock_response(self) -> CollectResponse:
         now = datetime.now(UTC).isoformat()
