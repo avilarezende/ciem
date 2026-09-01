@@ -14,7 +14,7 @@ jobs:
   lint-and-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v5
         with:
@@ -53,7 +53,7 @@ jobs:
           - name: module-nagios
             dockerfile: services/modules/nagios/Dockerfile
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Build imagem Docker — ${{ matrix.name }}
         run: docker build -f ${{ matrix.dockerfile }} -t ciem-${{ matrix.name }}:ci .
@@ -62,7 +62,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint-and-test
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Validar docker-compose.yml
         run: docker compose -f deploy/docker/docker-compose.yml config --quiet
