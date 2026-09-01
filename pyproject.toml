@@ -1,13 +1,13 @@
 [project]
-name = "conversador-popse"
-version = "0.2.0"
-description = "Chatbot modular PoP-SE/RNP com RAG e múltiplos canais"
+name = "ciem"
+version = "0.1.0"
+description = "Cloud Infrastructure & Environment Management API"
 requires-python = ">=3.12"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-pythonpath = ["services/engine", "shared"]
+pythonpath = ["src"]
 
 [tool.ruff]
 line-length = 100

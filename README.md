@@ -1,144 +1,75 @@
-# Conversador PoP-SE
+# CIEM
 
-## Repositório
+**Cloud Infrastructure & Environment Management**
 
-**https://github.com/avilarezende/conversador-pop-se**
+[![CI](https://github.com/rodrigo-rezende/ciem/actions/workflows/ci.yml/badge.svg)](https://github.com/rodrigo-rezende/ciem/actions/workflows/ci.yml)
+[![CD](https://github.com/rodrigo-rezende/ciem/actions/workflows/cd.yml/badge.svg)](https://github.com/rodrigo-rezende/ciem/actions/workflows/cd.yml)
 
-[![CI](https://github.com/avilarezende/conversador-pop-se/actions/workflows/ci.yml/badge.svg)](https://github.com/avilarezende/conversador-pop-se/actions/workflows/ci.yml)
+API leve em Python para gerenciar ambientes de nuvem, validar configurações e expor métricas de saúde de infraestrutura. Projetado para integração com **Cursor Cloud Agents**, **GitHub** e pipelines de entrega contínua.
 
-Assistente virtual modular do **Ponto de Presença da RNP em Sergipe (PoP-SE)** para clientes de conectividade — instituições de ensino, pesquisa e saúde.
+## Recursos
 
-O bot consulta fontes operacionais (Zabbix, Cacti, Grafana, e-mail Microsoft) e contexto institucional via RAG, mantém memória persistente dos usuários e responde de forma **polida, educada e solícita** sobre status de links, manutenções programadas e situação com operadoras.
+- API REST com FastAPI
+- Validação de ambientes e snapshots
+- Health checks e métricas Prometheus
+- Containerização com Docker
+- CI/CD com GitHub Actions (lint, testes, build, publicação no GHCR)
+- Suporte a Cursor Cloud Agent (`environment.json`)
 
-**Principais recursos:** chat web com identidade PoP-SE/RNP · canais opcionais (WhatsApp, Telegram, Discord) · IA local (Ollama) ou remota (Gemini, OpenAI, Azure, Grok) · Docker modular · CI/CD com GitHub Actions.
+## Início rápido
 
----
+### Pré-requisitos
 
-## Guia rápido: subir o chatbot
+- Python 3.12+
+- Docker e Docker Compose (opcional)
 
-### 1. Pré-requisitos
-
-- [Docker](https://docs.docker.com/get-docker/) e Docker Compose v2
-- Git
-
-### 2. Clonar e configurar
+### Desenvolvimento local
 
 ```bash
-git clone https://github.com/avilarezende/conversador-pop-se.git
-cd conversador-pop-se
+git clone https://github.com/rodrigo-rezende/ciem.git
+cd ciem
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-dev.txt
 cp .env.example .env
+uvicorn ciem.main:app --reload --app-dir src
 ```
 
-### 3. Preencher o `.env`
+Acesse: **http://localhost:8000/docs**
 
-| Variável | Obrigatório | O que colocar |
-|----------|-------------|---------------|
-| `POSTGRES_PASSWORD` | Sim | Senha forte para o banco |
-| `LLM_PROVIDER` | Sim | `ollama` (gratuito local) ou `gemini` / `openai` / `azure` / `grok` |
-| `GEMINI_API_KEY` | Se usar Gemini | Chave em [Google AI Studio](https://aistudio.google.com/apikey) |
-| `OPENAI_API_KEY` | Se usar OpenAI | Chave em [platform.openai.com](https://platform.openai.com/api-keys) |
-| `ZABBIX_URL`, `ZABBIX_USER`, `ZABBIX_PASSWORD` | Para monitoração | Credenciais do Zabbix do PoP-SE |
-| `CACTI_*`, `GRAFANA_*` | Opcional | Credenciais das ferramentas de monitoração |
-
-> Guia completo: [docs/CONFIGURATION.md](docs/CONFIGURATION.md)
-
-### 4. Preencher `config/clients.yaml`
-
-Cadastre as instituições clientes e os links monitorados:
-
-```yaml
-instituicoes:
-  - sigla: IFS
-    nome: "Instituto Federal de Sergipe"
-    aliases: ["IFS", "IF Sergipe"]
-    links_monitorados:
-      - id: ifs-principal
-        zabbix_host: "ifs-link-principal"   # nome do host no Zabbix
-```
-
-### 5. Ativar módulos em `config/modules.yaml`
-
-```yaml
-fontes_rag:
-  zabbix:
-    enabled: true    # mude para true quando ZABBIX_* estiver no .env
-  popse_site:
-    enabled: true    # contexto do site pop-se.rnp.br
-```
-
-### 6. Subir os containers
+### Docker
 
 ```bash
-# Núcleo: web + engine + postgres + ollama
-docker compose --profile core up -d --build
-
-# Baixar modelo de IA (primeira vez, ~2 GB)
-docker compose exec ollama ollama pull llama3.2:3b
-
-# Coletores de monitoração (opcional)
-docker compose --profile sources up -d --build
-```
-
-Acesse o chat: **http://localhost:8080**
-
-### 7. Verificar saúde
-
-```bash
+docker compose up -d --build
 curl http://localhost:8000/health
-# {"status":"ok","service":"conversador-engine","llm_provider":"ollama"}
 ```
-
----
-
-## Funcionalidades
-
-- Chat web com logos oficiais PoP-SE/RNP
-- Memória persistente: nome, instituição, preferências, contatos
-- RAG: Zabbix, Cacti, Grafana, e-mail Microsoft, site PoP-SE
-- Canais modulares: WhatsApp, Telegram, Discord
-- IA: Ollama (local) ou Gemini / OpenAI / Azure / Grok (remoto)
-- CI/CD: lint, testes, build Docker, imagens no GHCR
-
-## Perfis Docker
-
-```bash
-docker compose --profile core up -d          # núcleo
-docker compose --profile sources up -d       # coletores Zabbix/Cacti/Grafana
-docker compose --profile email up -d         # e-mail Microsoft 365
-docker compose --profile telegram up -d      # bot Telegram
-docker compose --profile discord up -d       # bot Discord
-docker compose --profile whatsapp up -d      # WhatsApp webhook
-```
-
-## Exemplo de conversa
-
-> **Usuário:** Bom dia, sou Rodrigo. Sou responsável técnico pelo IFS e gostaria de saber as manutenções dos próximos 30 dias.
-
-> **Conversador:** Bom dia, senhor Rodrigo. Confirmo o vínculo com o IFS — Instituto Federal de Sergipe. Consultei as fontes disponíveis e...
 
 ## Estrutura
 
 ```
-config/           # clientes, módulos, fontes (YAML comentados)
-services/
-  engine/         # FastAPI — chat, RAG, memória, LLM
-  web/            # Apache + interface de chat
-  modules/        # canais e integrações
-docs/             # arquitetura, configuração, CI/CD
+src/ciem/          # Código-fonte da API
+tests/             # Testes automatizados
+.github/workflows/ # CI/CD
+docs/              # Documentação
 ```
 
-## Documentação
+## CI/CD
 
-| Documento | Conteúdo |
-|-----------|----------|
-| [CONFIGURATION.md](docs/CONFIGURATION.md) | Todas as variáveis e arquivos YAML |
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Arquitetura de containers |
-| [MODULES.md](docs/MODULES.md) | Canais e fontes RAG |
-| [CI_CD.md](docs/CI_CD.md) | Pipelines GitHub Actions |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Como contribuir |
+| Workflow | Gatilho | Função |
+|----------|---------|--------|
+| **CI** | push/PR em `main` ou `develop` | Ruff, Pytest, build Docker |
+| **CD** | push em `main`, tags `v*` | Publica imagem no GHCR |
 
-## Contato PoP-SE
+Detalhes: [docs/CI_CD.md](docs/CI_CD.md)
 
-- Site: https://www.pop-se.rnp.br
-- E-mail: info@pop-se.rnp.br
-- Telefone: +55 79 3194-6355
+## Cursor Cloud Agent
+
+Este repositório inclui configuração para Cloud Agents. Após clonar:
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+## Licença
+
+MIT
