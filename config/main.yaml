@@ -1,0 +1,74 @@
+# =============================================================================
+# CIEM — Configuração Principal
+# Centro Integrado de Estatística e Manutenção
+# =============================================================================
+# Este arquivo controla parâmetros globais da plataforma.
+# Alterações exigem reinício do serviço core (ciem-core).
+# Documentação completa: docs/CONFIGURATION.md
+# =============================================================================
+
+# Nome exibido no portal, relatórios e cabeçalho do Grafana
+platform_name: "CIEM"
+
+# Ambiente: production | staging | development
+environment: development
+
+# Nível de log: DEBUG | INFO | WARNING | ERROR
+log_level: INFO
+
+# Intervalo (segundos) entre coletas automáticas dos módulos habilitados
+collection_interval_seconds: 300
+
+# Caminho do arquivo de auditoria de sessões (formato JSON Lines)
+audit_log_path: ./data/audit/sessions.jsonl
+
+# ---------------------------------------------------------------------------
+# Proxy reverso (instância isolada — ver services/proxy/)
+# ---------------------------------------------------------------------------
+proxy:
+  # Domínio público do portal (usado para certificado wildcard SSL)
+  public_domain: ciem.exemplo.local
+  # Habilitar redirecionamento HTTP → HTTPS
+  force_https: true
+  # Caminho do certificado wildcard (montado via volume Docker/K8s)
+  ssl_cert_path: /etc/ciem/certs/wildcard.crt
+  ssl_key_path: /etc/ciem/certs/wildcard.key
+
+# ---------------------------------------------------------------------------
+# Grafana (instância isolada — painel de visualização)
+# ---------------------------------------------------------------------------
+grafana:
+  # URL interna do Grafana (comunicação entre containers)
+  internal_url: http://grafana:3000
+  # Pasta de dashboards provisionados automaticamente
+  dashboards_path: /etc/grafana/dashboards
+  # Destaque de alarmes ativos no dashboard principal
+  highlight_active_alarms: true
+
+# ---------------------------------------------------------------------------
+# Guacamole (instância isolada — sessões SSH/RDP/VNC)
+# ---------------------------------------------------------------------------
+guacamole:
+  # URL interna do Guacamole
+  internal_url: http://guacamole:8080
+  # Gravar comandos executados nas sessões SSH
+  record_commands: true
+  # Gravar vídeo das sessões RDP (requer mais armazenamento)
+  record_rdp_video: false
+  # Tempo máximo de sessão em minutos (0 = ilimitado)
+  max_session_minutes: 480
+
+# ---------------------------------------------------------------------------
+# Rede de gerência restrita (ZTNA)
+# ---------------------------------------------------------------------------
+management_network:
+  # Sub-rede permitida para conexões de manutenção
+  allowed_subnets:
+    - 10.0.0.0/8
+    - 172.16.0.0/12
+    - 192.168.0.0/16
+  # Protocolos habilitados para sessões remotas
+  allowed_protocols:
+    - ssh
+    - rdp
+    - vnc

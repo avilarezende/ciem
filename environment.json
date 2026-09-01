@@ -1,4 +1,4 @@
 {
   "install": "pip install -r requirements-dev.txt",
-  "start": "uvicorn ciem.main:app --host 0.0.0.0 --port 8000 --app-dir src"
+  "start": "export CONFIG_PATH=./config PYTHONPATH=shared:services/core && uvicorn app.main:app --host 0.0.0.0 --port 8000 --app-dir services/core"
 }

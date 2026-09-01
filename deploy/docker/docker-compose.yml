@@ -1,0 +1,206 @@
+# =============================================================================
+# CIEM — Docker Compose
+# Centro Integrado de Estatística e Manutenção
+# =============================================================================
+# Cada serviço roda em container ISOLADO para contenção e segurança.
+#
+# Perfis disponíveis:
+#   core      — CIEM core + portal + proxy (mínimo)
+#   modules   — todos os módulos coletores
+#   grafana   — painel de visualização
+#   guacamole — sessões SSH/RDP/VNC
+#   full      — tudo habilitado
+#
+# Uso:
+#   docker compose --profile core up -d
+#   docker compose --profile core --profile modules --profile grafana up -d
+#   docker compose --profile full up -d
+#
+# Documentação: docs/DEPLOYMENT.md
+# =============================================================================
+
+name: ciem
+
+x-module-env: &module-env
+  CONFIG_PATH: /app/config
+
+services:
+  # ---------------------------------------------------------------------------
+  # PROXY — instância isolada (SSL wildcard, roteamento)
+  # ---------------------------------------------------------------------------
+  ciem-proxy:
+    build:
+      context: .
+      dockerfile: services/proxy/Dockerfile
+    profiles: [core, full]
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./certs:/etc/ciem/certs:ro
+    depends_on:
+      ciem-core:
+        condition: service_healthy
+      ciem-portal:
+        condition: service_started
+    networks: [ciem-front, ciem-back]
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # CORE — API central CIEM
+  # ---------------------------------------------------------------------------
+  ciem-core:
+    build:
+      context: .
+      dockerfile: services/core/Dockerfile
+    profiles: [core, full]
+    environment:
+      CONFIG_PATH: /app/config
+      CIEM_SECRET_KEY: ${CIEM_SECRET_KEY:-change-me}
+    volumes:
+      - ./config:/app/config:ro
+      - ciem-audit:/app/data/audit
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks: [ciem-back]
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # PORTAL — interface web de configuração e dashboard
+  # ---------------------------------------------------------------------------
+  ciem-portal:
+    build:
+      context: .
+      dockerfile: services/portal/Dockerfile
+    profiles: [core, full]
+    networks: [ciem-front, ciem-back]
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # GRAFANA — painel de visualização (instância isolada)
+  # ---------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:11.4.0
+    profiles: [grafana, full]
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s/grafana/"
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/etc/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    networks: [ciem-back]
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # GUACAMOLE — sessões SSH/RDP/VNC (instância isolada)
+  # ---------------------------------------------------------------------------
+  guacamole:
+    image: guacamole/guacamole:1.5.5
+    profiles: [guacamole, full]
+    environment:
+      GUACD_HOSTNAME: guacd
+    depends_on: [guacd]
+    networks: [ciem-back]
+    restart: unless-stopped
+
+  guacd:
+    image: guacamole/guacd:1.5.5
+    profiles: [guacamole, full]
+    networks: [ciem-back]
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # MÓDULOS COLETORES — cada um em container isolado
+  # ---------------------------------------------------------------------------
+  module-zabbix:
+    build:
+      context: .
+      dockerfile: services/modules/zabbix/Dockerfile
+    profiles: [modules, module-zabbix, full]
+    environment:
+      <<: *module-env
+      ZABBIX_URL: ${ZABBIX_URL:-}
+      ZABBIX_USERNAME: ${ZABBIX_USERNAME:-}
+      ZABBIX_PASSWORD: ${ZABBIX_PASSWORD:-}
+    volumes:
+      - ./config:/app/config:ro
+    networks: [ciem-back]
+    restart: unless-stopped
+
+  module-cacti:
+    build:
+      context: .
+      dockerfile: services/modules/cacti/Dockerfile
+    profiles: [modules, module-cacti, full]
+    environment:
+      <<: *module-env
+    volumes:
+      - ./config:/app/config:ro
+    networks: [ciem-back]
+    restart: unless-stopped
+
+  module-nagios:
+    build:
+      context: .
+      dockerfile: services/modules/nagios/Dockerfile
+    profiles: [modules, module-nagios, full]
+    environment:
+      <<: *module-env
+    volumes:
+      - ./config:/app/config:ro
+    networks: [ciem-back]
+    restart: unless-stopped
+
+  module-topdesk:
+    build:
+      context: .
+      dockerfile: services/modules/topdesk/Dockerfile
+    profiles: [modules, module-topdesk, full]
+    environment:
+      <<: *module-env
+    volumes:
+      - ./config:/app/config:ro
+    networks: [ciem-back]
+    restart: unless-stopped
+
+  module-inventory:
+    build:
+      context: .
+      dockerfile: services/modules/inventory/Dockerfile
+    profiles: [modules, module-inventory, full]
+    environment:
+      <<: *module-env
+    volumes:
+      - ./config:/app/config:ro
+    networks: [ciem-back]
+    restart: unless-stopped
+
+  module-syslog:
+    build:
+      context: .
+      dockerfile: services/modules/syslog/Dockerfile
+    profiles: [modules, module-syslog, full]
+    environment:
+      <<: *module-env
+    volumes:
+      - ./config:/app/config:ro
+    networks: [ciem-back]
+    restart: unless-stopped
+
+networks:
+  ciem-front:
+    driver: bridge
+  ciem-back:
+    driver: bridge
+    internal: true
+
+volumes:
+  ciem-audit:
+  grafana-data:

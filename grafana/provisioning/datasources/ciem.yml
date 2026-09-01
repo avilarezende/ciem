@@ -1,0 +1,9 @@
+apiVersion: 1
+
+datasources:
+  - name: CIEM-Core
+    type: prometheus
+    access: proxy
+    url: http://ciem-core:8000
+    isDefault: true
+    editable: false

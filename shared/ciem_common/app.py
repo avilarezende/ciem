@@ -1,6 +1,5 @@
 """Factory FastAPI para expor endpoints /health e /collect."""
 
-from typing import Any
 
 from fastapi import FastAPI
 

@@ -1,0 +1,52 @@
+# =============================================================================
+# CIEM — Autenticação e Autorização
+# =============================================================================
+# Papéis disponíveis:
+#   observer — visualiza dashboards, alarmes e histórico (somente leitura)
+#   admin    — configura módulos, usuários, proxy e sessões de manutenção
+#
+# Gere hashes de senha com:
+#   python -c "from ciem_common.auth import hash_password; print(hash_password('sua_senha'))"
+#
+# Documentação: docs/AUTH.md
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Usuários locais (sempre disponíveis, independente do LDAP)
+# ---------------------------------------------------------------------------
+local_users:
+  - username: admin
+    # Senha padrão: admin123 — ALTERE IMEDIATAMENTE em produção!
+    password_hash: "3f543d2874b37afc8c9fe320f42d007d$5969a05d3d97bffe372fddcff4858b3d3f1e1df560271698725432cba913abb3"
+    role: admin
+    enabled: true
+
+  - username: observador
+    # Senha padrão: observer123 — ALTERE em produção!
+    password_hash: "2edb4297ff3021e8afbdfc777d398d0b$7c94998eaefd5a7018d544d07841eb93413cc731f46820e91ffe50cb012ac276"
+    role: observer
+    enabled: true
+
+# ---------------------------------------------------------------------------
+# LDAP / Active Directory (opcional)
+# ---------------------------------------------------------------------------
+ldap:
+  enabled: false
+  # URL do servidor LDAP (ldaps:// recomendado em produção)
+  server_url: "ldaps://ldap.exemplo.local:636"
+  # Base DN para busca de usuários
+  base_dn: "ou=usuarios,dc=exemplo,dc=local"
+  # Filtro de busca (%s = username informado no login)
+  user_filter: "(uid=%s)"
+  # DN do usuário de bind (deixe vazio para bind anônimo)
+  bind_dn: "cn=ciem-service,ou=servicos,dc=exemplo,dc=local"
+  bind_password: ""       # ou LDAP_BIND_PASSWORD no .env
+  # Atributo que contém o nome de exibição
+  display_name_attribute: "cn"
+  # Mapeamento de grupos LDAP → papéis CIEM
+  group_role_mapping:
+    "cn=ciem-admins,ou=grupos,dc=exemplo,dc=local": admin
+    "cn=ciem-observers,ou=grupos,dc=exemplo,dc=local": observer
+  # Papel padrão quando o usuário não pertence a nenhum grupo mapeado
+  default_role: observer
+  verify_ssl: true

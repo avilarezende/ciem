@@ -1,0 +1,99 @@
+# =============================================================================
+# CIEM — Módulos Coletores
+# =============================================================================
+# Cada módulo roda em container/pod ISOLADO para contenção e segurança.
+# enabled: true  → módulo ativo e coletando dados
+# enabled: false → módulo desligado (sem dependência com outros módulos)
+#
+# As opções abaixo são repassadas ao container do módulo.
+# Credenciais sensíveis podem ser definidas via variáveis de ambiente (.env).
+# Documentação: docs/MODULES.md
+# =============================================================================
+
+modules:
+  # ---------------------------------------------------------------------------
+  # Zabbix — monitoramento de hosts, triggers e problemas
+  # ---------------------------------------------------------------------------
+  zabbix:
+    enabled: false
+    description: "Coleta hosts, triggers e problemas ativos do Zabbix"
+    options:
+      url: "https://zabbix.exemplo.local"
+      username: ""          # ou ZABBIX_USERNAME no .env
+      password: ""          # ou ZABBIX_PASSWORD no .env
+      verify_ssl: true
+      problem_limit: 50
+
+  # ---------------------------------------------------------------------------
+  # Cacti — gráficos e dispositivos de rede
+  # ---------------------------------------------------------------------------
+  cacti:
+    enabled: false
+    description: "Coleta dispositivos e gráficos do Cacti"
+    options:
+      url: "https://cacti.exemplo.local"
+      username: ""
+      password: ""
+      verify_ssl: true
+
+  # ---------------------------------------------------------------------------
+  # Nagios / Nagios XI — status de hosts e serviços
+  # ---------------------------------------------------------------------------
+  nagios:
+    enabled: false
+    description: "Coleta status de hosts e serviços do Nagios/Nagios XI"
+    options:
+      url: "https://nagios.exemplo.local"
+      api_key: ""           # ou NAGIOS_API_KEY no .env
+      verify_ssl: true
+
+  # ---------------------------------------------------------------------------
+  # TOPdesk — chamados e tickets de suporte
+  # ---------------------------------------------------------------------------
+  topdesk:
+    enabled: false
+    description: "Coleta chamados abertos e histórico do TOPdesk"
+    options:
+      url: "https://topdesk.exemplo.local"
+      username: ""
+      password: ""
+      application_password: ""  # senha de aplicação TOPdesk
+
+  # ---------------------------------------------------------------------------
+  # Inventory — inventário de ativos (API REST genérica)
+  # ---------------------------------------------------------------------------
+  inventory:
+    enabled: false
+    description: "Coleta inventário de ativos via API REST"
+    options:
+      url: "https://inventory.exemplo.local/api/v1/assets"
+      api_key: ""
+      verify_ssl: true
+
+  # ---------------------------------------------------------------------------
+  # Syslog — eventos de syslog centralizado
+  # ---------------------------------------------------------------------------
+  syslog:
+    enabled: false
+    description: "Coleta e analisa eventos de syslog"
+    options:
+      # Opção 1: API REST de servidor syslog (Graylog, ELK, etc.)
+      url: ""
+      api_key: ""
+      # Opção 2: arquivo local de syslog (montado via volume)
+      file_path: ""
+      severity_filter: ["warning", "error", "critical"]
+
+  # ---------------------------------------------------------------------------
+  # E-mail de suporte (opcional — coleta via IMAP/Microsoft Graph)
+  # ---------------------------------------------------------------------------
+  email_support:
+    enabled: false
+    description: "Coleta e-mails de suporte para correlação com alarmes"
+    options:
+      provider: "imap"      # imap | microsoft_graph
+      host: "mail.exemplo.local"
+      username: ""
+      password: ""
+      folder: "INBOX"
+      max_messages: 100

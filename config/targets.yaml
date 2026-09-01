@@ -1,0 +1,67 @@
+# =============================================================================
+# CIEM — Alvos de Manutenção (Servidores, Roteadores, Switches)
+# =============================================================================
+# Define os equipamentos acessíveis via sessões Guacamole (SSH/RDP/VNC).
+# Cada alvo é acessível apenas por usuários com papel admin.
+# Todas as sessões são registradas em audit_log_path (main.yaml).
+#
+# Documentação: docs/MAINTENANCE.md
+# =============================================================================
+
+targets:
+  # Exemplo: servidor Linux via SSH
+  - id: srv-web-01
+    name: "Servidor Web 01"
+    hostname: "10.10.1.10"
+    port: 22
+    protocol: ssh          # ssh | rdp | vnc
+    description: "Servidor web principal — Apache/Nginx"
+    tags: [servidor, web, producao]
+    enabled: true
+
+  # Exemplo: roteador via SSH
+  - id: rtr-core-01
+    name: "Roteador Core"
+    hostname: "10.10.0.1"
+    port: 22
+    protocol: ssh
+    description: "Roteador core da rede de gerência"
+    tags: [roteador, core, rede]
+    enabled: true
+
+  # Exemplo: switch via SSH
+  - id: sw-dist-01
+    name: "Switch Distribuição 01"
+    hostname: "10.10.0.10"
+    port: 22
+    protocol: ssh
+    description: "Switch de distribuição — VLANs 10-50"
+    tags: [switch, distribuicao]
+    enabled: true
+
+  # Exemplo: servidor Windows via RDP
+  - id: srv-win-ad
+    name: "Controlador de Domínio"
+    hostname: "10.10.2.5"
+    port: 3389
+    protocol: rdp
+    description: "Active Directory — acesso restrito"
+    tags: [servidor, windows, ad]
+    enabled: false         # desabilitado até configuração de credenciais
+
+# Credenciais de acesso aos alvos (por target_id)
+# Em produção, use um vault externo ou variáveis de ambiente
+credentials:
+  srv-web-01:
+    username: "sysadmin"
+    # Senha ou chave SSH — prefira chave SSH montada via volume
+    password: ""
+    ssh_key_path: "/etc/ciem/keys/srv-web-01.pem"
+
+  rtr-core-01:
+    username: "admin"
+    password: ""
+
+  sw-dist-01:
+    username: "admin"
+    password: ""

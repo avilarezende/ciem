@@ -26,10 +26,12 @@ from ciem_common.config_loader import (
     load_modules_config,
 )
 from ciem_common.interfaces import (
+    CollectorModule as ZtnaCollectorModule,
+)
+from ciem_common.interfaces import (
     CollectorResult,
     SessionRecord,
     UserRole,
-    CollectorModule as ZtnaCollectorModule,
 )
 from ciem_common.models import ActiveAlarm, CollectResponse, HistoryEvent
 

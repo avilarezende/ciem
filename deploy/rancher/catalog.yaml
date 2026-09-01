@@ -1,0 +1,42 @@
+# Rancher — catálogo de aplicação CIEM
+# Importe este arquivo em Rancher → Apps & Marketplace → Repos
+#
+# Uso:
+#   1. Adicione o repositório Git: https://github.com/rodrigo-rezende/ciem
+#   2. Selecione o chart em deploy/kubernetes/
+#   3. Configure valores em config/ via ConfigMap
+#
+# Documentação: docs/DEPLOYMENT.md
+
+apiVersion: catalog.cattle.io/v1
+kind: App
+metadata:
+  name: ciem
+  namespace: ciem
+spec:
+  chart:
+    metadata:
+      name: ciem
+      version: 0.2.0
+  helmVersion: v3
+  info:
+    description: |
+      CIEM — Centro Integrado de Estatística e Manutenção.
+      Plataforma ZTNA para manutenção administrativa de redes.
+    readme: |
+      # CIEM no Rancher
+
+      ## Pré-requisitos
+      - Cluster Kubernetes 1.25+
+      - Ingress controller (nginx)
+      - Certificado wildcard TLS
+
+      ## Instalação
+      1. Crie o namespace `ciem`
+      2. Aplique `deploy/kubernetes/ciem.yaml`
+      3. Configure ConfigMaps com seus YAMLs de `config/`
+      4. Habilite módulos individualmente via `modules.yaml`
+
+      ## Módulos isolados
+      Cada módulo (Zabbix, Cacti, Nagios, etc.) roda em pod separado.
+      Ative apenas os módulos necessários para seu ambiente.
