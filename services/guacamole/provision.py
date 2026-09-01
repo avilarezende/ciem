@@ -109,7 +109,13 @@ def generate_guacamole_properties() -> str:
         [
             "guacd-hostname: guacd",
             "guacd-port: 4822",
-            "auth-provider: net.sourceforge.guacamole.net.auth.file.FileAuthenticationProvider",
+            # SSO: autentica via header X-CIEM-User (definido pelo proxy após validação CIEM)
+            (
+                "auth-provider: "
+                "net.sourceforge.guacamole.net.auth.header.HttpHeaderAuthenticationProvider"
+            ),
+            "http-auth-header.header: X-CIEM-User",
+            # Conexões definidas em user-mapping.xml (extensão auth-file complementar)
             "user-mapping: /etc/guacamole/user-mapping.xml",
             "enable-websocket: true",
             "api-session-timeout: 60",

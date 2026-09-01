@@ -1,0 +1,316 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": false,
+  "graphTooltip": 1,
+  "links": [
+    {
+      "title": "\u2190 Vis\u00e3o Geral NOC",
+      "url": "/grafana/d/ciem-overview",
+      "type": "link"
+    },
+    {
+      "title": "Todos os M\u00f3dulos",
+      "url": "/grafana/d/ciem-modules",
+      "type": "link"
+    }
+  ],
+  "panels": [
+    {
+      "type": "text",
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "mode": "markdown",
+        "content": "# CIEM \u2014 Invent\u00e1rio\nAtivos de rede via API REST"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Alarmes Ativos (Invent\u00e1rio)",
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 0,
+        "y": 2
+      },
+      "id": 2,
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "ciem-api"
+      },
+      "options": {
+        "colorMode": "background",
+        "reduceOptions": {
+          "calcs": [
+            "count"
+          ]
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "url": "/grafana/modules/inventory/alarms",
+          "url_options": {
+            "method": "GET"
+          },
+          "root_selector": "",
+          "columns": []
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Status do M\u00f3dulo",
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 8,
+        "y": 2
+      },
+      "id": 3,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ciem-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "OFFLINE"
+                },
+                "1": {
+                  "text": "ONLINE"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "ciem_module_up{module=\"inventory\"} or vector(0)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Eventos no Hist\u00f3rico",
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 2
+      },
+      "id": 4,
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "ciem-api"
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "count"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "url": "/grafana/modules/inventory/history?limit=200",
+          "url_options": {
+            "method": "GET"
+          },
+          "columns": []
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "\u26a0 Alarmes Ativos \u2014 Invent\u00e1rio",
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "id": 5,
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "ciem-api"
+      },
+      "fieldConfig": {
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "severity"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "critical": {
+                        "color": "red",
+                        "text": "CR\u00cdTICO"
+                      }
+                    }
+                  },
+                  {
+                    "type": "value",
+                    "options": {
+                      "warning": {
+                        "color": "yellow",
+                        "text": "AVISO"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "url": "/grafana/modules/inventory/alarms",
+          "url_options": {
+            "method": "GET"
+          },
+          "columns": [
+            {
+              "selector": "severity",
+              "text": "Severidade",
+              "type": "string"
+            },
+            {
+              "selector": "message",
+              "text": "Alarme",
+              "type": "string"
+            },
+            {
+              "selector": "id",
+              "text": "ID",
+              "type": "string"
+            },
+            {
+              "selector": "timestamp",
+              "text": "Hor\u00e1rio",
+              "type": "timestamp"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Hist\u00f3rico \u2014 Invent\u00e1rio",
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "id": 6,
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "ciem-api"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "url": "/grafana/modules/inventory/history?limit=100",
+          "url_options": {
+            "method": "GET"
+          },
+          "columns": [
+            {
+              "selector": "timestamp",
+              "text": "Data/Hora",
+              "type": "timestamp"
+            },
+            {
+              "selector": "event_type",
+              "text": "Tipo",
+              "type": "string"
+            },
+            {
+              "selector": "message",
+              "text": "Evento",
+              "type": "string"
+            },
+            {
+              "selector": "id",
+              "text": "ID",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": [
+    "ciem",
+    "modulo",
+    "inventory"
+  ],
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "title": "CIEM \u2014 Invent\u00e1rio",
+  "uid": "ciem-mod-inventory",
+  "version": 1
+}

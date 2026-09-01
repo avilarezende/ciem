@@ -1,4 +1,52 @@
 
+## SSO com o Portal CIEM
+
+O Guacamole **não exige login separado** quando acessado pelo portal CIEM.
+
+### Fluxo SSO
+
+```
+Admin no Portal → POST /api/sso/guacamole → Token SSO
+       ↓
+GET /api/sso/guacamole/login?token=... → Cookie ciem_sso
+       ↓
+Proxy nginx (auth_request) → Header X-CIEM-User → Guacamole
+```
+
+1. Admin clica **Conectar** em um alvo no portal
+2. CIEM gera token SSO assinado (5 min)
+3. Nova aba abre `/api/sso/guacamole/login?token=...`
+4. Cookie `ciem_sso` é definido e usuário é redirecionado à conexão
+5. Proxy valida cookie via `/sso/validate` e passa `X-CIEM-User` ao Guacamole
+6. Guacamole autentica via **auth-header** e carrega conexões do `user-mapping.xml`
+
+### API SSO
+
+```bash
+# Gerar sessão SSO para alvo específico
+curl -X POST https://ciem.local/api/sso/guacamole \
+  -H "Authorization: Bearer ciem-admin" \
+  -H "Content-Type: application/json" \
+  -d '{"target_id": "rtr-core-01"}'
+
+# Abrir Guacamole com todos os alvos
+curl -X POST https://ciem.local/api/sso/guacamole \
+  -H "Authorization: Bearer ciem-admin" \
+  -d '{}'
+```
+
+### Configuração
+
+| Variável | Padrão | Função |
+|----------|--------|--------|
+| `CIEM_SECRET_KEY` | change-me | Assina tokens SSO |
+| `CIEM_SSO_TTL` | 300 | Validade do token (segundos) |
+
+### Extensões Guacamole
+
+- `guacamole-auth-header` — autentica via `X-CIEM-User`
+- `guacamole-auth-file` — conexões em `user-mapping.xml`
+
 ## Provisionamento automático
 
 O Guacamole é provisionado automaticamente a partir de `config/targets.yaml` ao iniciar o container.

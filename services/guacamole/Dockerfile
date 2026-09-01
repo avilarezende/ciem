@@ -2,13 +2,17 @@ FROM guacamole/guacamole:1.5.5
 
 USER root
 
-# Extensão de autenticação por arquivo (user-mapping.xml)
+# Extensões: arquivo (conexões) + header (SSO via X-CIEM-User)
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates python3 \
     && curl -fsSL \
       "https://archive.apache.org/dist/guacamole/1.5.5/binary/guacamole-auth-file-1.5.5.tar.gz" \
       | tar -xz -C /tmp \
+    && curl -fsSL \
+      "https://archive.apache.org/dist/guacamole/1.5.5/binary/guacamole-auth-header-1.5.5.tar.gz" \
+      | tar -xz -C /tmp \
     && cp /tmp/guacamole-auth-file-1.5.5/guacamole-auth-file-1.5.5.jar /etc/guacamole/extensions/ \
-    && rm -rf /tmp/guacamole-auth-file-1.5.5 \
+    && cp /tmp/guacamole-auth-header-1.5.5/guacamole-auth-header-1.5.5.jar /etc/guacamole/extensions/ \
+    && rm -rf /tmp/guacamole-auth-file-* /tmp/guacamole-auth-header-* \
     && apt-get purge -y curl \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*

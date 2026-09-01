@@ -8,29 +8,29 @@ import httpx
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, generate_latest
 from pydantic import BaseModel, Field
 
 from app.aggregators import MODULE_URLS, aggregate_alarms, aggregate_history, aggregate_modules
 from app.config import settings
+from app.deps import require_admin, require_user
 from app.grafana_routes import refresh_prometheus_metrics
 from app.grafana_routes import router as grafana_router
 from app.sessions_store import pop_session, start_session_record
+from app.sso_routes import router as sso_router
 from ciem_common.audit import log_session, read_sessions
 from ciem_common.auth import User, authenticate
 from ciem_common.config_loader import (
     clear_config_cache,
     is_module_enabled,
-    load_auth_config,
     load_main_config,
     load_modules_config,
 )
-from ciem_common.interfaces import SessionRecord, UserRole
+from ciem_common.interfaces import SessionRecord
+from ciem_common.sso import guacamole_client_id
+from ciem_common.targets_loader import load_targets_config
 
 REQUEST_COUNT = Counter("ciem_requests_total", "Requisições HTTP", ["method", "endpoint"])
-
-security = HTTPBearer(auto_error=False)
 
 
 class LoginRequest(BaseModel):
@@ -55,30 +55,6 @@ class SessionEndRequest(BaseModel):
     commands: list[str] = Field(default_factory=list)
 
 
-def _require_user(credentials: HTTPAuthorizationCredentials | None = Depends(security)) -> User:
-    if not credentials or not credentials.credentials.startswith("ciem-"):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Não autenticado")
-    username = credentials.credentials.removeprefix("ciem-")
-    auth_cfg = load_auth_config()
-    for entry in auth_cfg.local_users:
-        if entry.username == username and entry.enabled:
-            return User(
-                username=entry.username,
-                role=UserRole.ADMIN if entry.role == "admin" else UserRole.OBSERVER,
-                auth_source="local",
-            )
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido")
-
-
-def _require_admin(user: User = Depends(_require_user)) -> User:
-    if user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Acesso restrito a administradores",
-        )
-    return user
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     yield
@@ -101,6 +77,7 @@ app.add_middleware(
 )
 
 app.include_router(grafana_router)
+app.include_router(sso_router)
 
 
 @app.middleware("http")
@@ -143,7 +120,7 @@ async def login(body: LoginRequest) -> LoginResponse:
 
 
 @app.get("/config/modules")
-async def get_modules_config(user: User = Depends(_require_user)) -> dict[str, Any]:
+async def get_modules_config(user: User = Depends(require_user)) -> dict[str, Any]:
     modules_cfg = load_modules_config()
     return {
         name: {"enabled": entry.enabled, "description": entry.description, "options": entry.options}
@@ -152,18 +129,36 @@ async def get_modules_config(user: User = Depends(_require_user)) -> dict[str, A
 
 
 @app.get("/config/main")
-async def get_main_config(user: User = Depends(_require_admin)) -> dict[str, Any]:
+async def get_main_config(user: User = Depends(require_admin)) -> dict[str, Any]:
     return load_main_config().model_dump()
 
 
+@app.get("/targets")
+async def list_targets(user: User = Depends(require_admin)) -> list[dict[str, Any]]:
+    cfg = load_targets_config()
+    return [
+        {
+            "id": t.id,
+            "name": t.name,
+            "hostname": t.hostname,
+            "port": t.port,
+            "protocol": t.protocol,
+            "enabled": t.enabled,
+            "description": t.description,
+            "tags": t.tags,
+        }
+        for t in cfg.targets
+    ]
+
+
 @app.get("/modules/status")
-async def modules_status(user: User = Depends(_require_user)) -> list[dict[str, Any]]:
+async def modules_status(user: User = Depends(require_user)) -> list[dict[str, Any]]:
     async with httpx.AsyncClient(timeout=10.0) as client:
         return await aggregate_modules(client)
 
 
 @app.post("/modules/{module_name}/collect")
-async def trigger_collect(module_name: str, user: User = Depends(_require_user)) -> dict[str, Any]:
+async def trigger_collect(module_name: str, user: User = Depends(require_user)) -> dict[str, Any]:
     if not is_module_enabled(module_name):
         raise HTTPException(status_code=404, detail=f"Módulo '{module_name}' desabilitado")
     url = MODULE_URLS.get(module_name)
@@ -179,15 +174,13 @@ async def trigger_collect(module_name: str, user: User = Depends(_require_user))
 
 
 @app.get("/alarms/active")
-async def active_alarms(user: User = Depends(_require_user)) -> list[dict[str, Any]]:
-    """Agrega alarmes ativos de todos os módulos habilitados."""
+async def active_alarms(user: User = Depends(require_user)) -> list[dict[str, Any]]:
     async with httpx.AsyncClient(timeout=60.0) as client:
         return await aggregate_alarms(client)
 
 
 @app.get("/history")
-async def history(user: User = Depends(_require_user), limit: int = 100) -> list[dict[str, Any]]:
-    """Agrega histórico de eventos de todos os módulos habilitados."""
+async def history(user: User = Depends(require_user), limit: int = 100) -> list[dict[str, Any]]:
     async with httpx.AsyncClient(timeout=60.0) as client:
         events = await aggregate_history(client)
     return events[:limit]
@@ -196,35 +189,46 @@ async def history(user: User = Depends(_require_user), limit: int = 100) -> list
 @app.post("/sessions/start")
 async def start_session(
     body: SessionStartRequest,
-    user: User = Depends(_require_admin),
+    user: User = Depends(require_admin),
 ) -> dict[str, Any]:
+    cfg = load_targets_config()
+    target = next((t for t in cfg.targets if t.id == body.target_id), None)
+    if not target or not target.enabled:
+        raise HTTPException(status_code=404, detail=f"Alvo '{body.target_id}' não encontrado")
+
     session_id = f"sess-{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}-{user.username}"
     record = SessionRecord(
         session_id=session_id,
         user=user.username,
-        target_host=body.target_id,
+        target_host=target.hostname,
         protocol=body.protocol,
         started_at=datetime.now(UTC),
     )
     start_session_record(session_id, record)
-    guac_url = f"/guacamole/#/client/{session_id}"
-    return {"session_id": session_id, "status": "started", "guacamole_url": guac_url}
+    client_id = guacamole_client_id(target.name)
+    return {
+        "session_id": session_id,
+        "status": "started",
+        "target_name": target.name,
+        "guacamole_url": f"/guacamole/#/client/{client_id}",
+    }
 
 
 @app.post("/sessions/end")
 async def end_session(
     body: SessionEndRequest,
-    user: User = Depends(_require_admin),
+    user: User = Depends(require_admin),
 ) -> dict[str, str]:
     session = pop_session(body.session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Sessão não encontrada")
     record: SessionRecord = session["record"]
     ended_at = datetime.now(UTC)
-    if isinstance(record.started_at, datetime):
-        started = record.started_at
-    else:
-        started = datetime.fromisoformat(str(record.started_at))
+    started = (
+        record.started_at
+        if isinstance(record.started_at, datetime)
+        else datetime.fromisoformat(str(record.started_at))
+    )
     duration = (ended_at - started).total_seconds()
     record.ended_at = ended_at
     record.commands = body.commands or session.get("commands", [])
@@ -238,7 +242,7 @@ async def end_session(
 
 
 @app.get("/sessions/audit")
-async def audit_log(user: User = Depends(_require_admin), limit: int = 50) -> list[dict[str, Any]]:
+async def audit_log(user: User = Depends(require_admin), limit: int = 50) -> list[dict[str, Any]]:
     return read_sessions(limit=limit)
 
 

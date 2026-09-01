@@ -2,6 +2,36 @@
 
 O CIEM provisiona automaticamente **5 dashboards** otimizados para administradores de sistema.
 
+## Dashboards por módulo
+
+Cada sistema de monitoramento tem um dashboard dedicado:
+
+| Módulo | Dashboard UID | URL |
+|--------|---------------|-----|
+| Zabbix | `ciem-mod-zabbix` | `/grafana/d/ciem-mod-zabbix` |
+| Cacti | `ciem-mod-cacti` | `/grafana/d/ciem-mod-cacti` |
+| Nagios | `ciem-mod-nagios` | `/grafana/d/ciem-mod-nagios` |
+| TOPdesk | `ciem-mod-topdesk` | `/grafana/d/ciem-mod-topdesk` |
+| Inventário | `ciem-mod-inventory` | `/grafana/d/ciem-mod-inventory` |
+| Syslog | `ciem-mod-syslog` | `/grafana/d/ciem-mod-syslog` |
+
+Cada dashboard exibe alarmes ativos e histórico **apenas daquele módulo**.
+
+### Regenerar dashboards
+
+```bash
+python3 scripts/generate-grafana-dashboards.py
+```
+
+### Endpoints por módulo
+
+| Endpoint | Dados |
+|----------|-------|
+| `GET /grafana/modules/{nome}/data` | Coleta completa do módulo |
+| `GET /grafana/modules/{nome}/alarms` | Alarmes ativos do módulo |
+| `GET /grafana/modules/{nome}/history` | Histórico do módulo |
+| `GET /grafana/modules-list` | Lista de módulos e UIDs dos dashboards |
+
 ## Dashboards disponíveis
 
 | Dashboard | UID | Função |

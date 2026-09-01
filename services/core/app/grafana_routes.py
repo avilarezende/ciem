@@ -13,7 +13,14 @@ from ciem_common.audit import read_sessions
 from ciem_common.config_loader import load_main_config
 from ciem_common.targets_loader import load_targets_config
 
-from .aggregators import aggregate_alarms, aggregate_history, aggregate_modules
+from .aggregators import (
+    MODULE_LABELS,
+    MODULE_URLS,
+    aggregate_alarms,
+    aggregate_history,
+    aggregate_modules,
+    collect_module_data,
+)
 from .sessions_store import active_session_count
 
 GRAFANA_TOKEN = os.environ.get("CIEM_GRAFANA_TOKEN", "ciem-grafana-internal")
@@ -142,4 +149,60 @@ async def grafana_targets(
             "description": t.description,
         }
         for t in cfg.targets
+    ]
+
+
+def _check_module(module_name: str) -> None:
+    if module_name not in MODULE_URLS:
+        raise HTTPException(status_code=404, detail=f"Módulo '{module_name}' não encontrado")
+
+
+@router.get("/modules/{module_name}/data")
+async def grafana_module_data(
+    module_name: str,
+    x_grafana_token: str | None = Header(default=None),
+) -> dict[str, Any]:
+    _verify_grafana_token(x_grafana_token)
+    _check_module(module_name)
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        return await collect_module_data(module_name, client)
+
+
+@router.get("/modules/{module_name}/alarms")
+async def grafana_module_alarms(
+    module_name: str,
+    x_grafana_token: str | None = Header(default=None),
+) -> list[dict[str, Any]]:
+    _verify_grafana_token(x_grafana_token)
+    _check_module(module_name)
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        data = await collect_module_data(module_name, client)
+    return data.get("active_alarms", [])
+
+
+@router.get("/modules/{module_name}/history")
+async def grafana_module_history(
+    module_name: str,
+    limit: int = 100,
+    x_grafana_token: str | None = Header(default=None),
+) -> list[dict[str, Any]]:
+    _verify_grafana_token(x_grafana_token)
+    _check_module(module_name)
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        data = await collect_module_data(module_name, client)
+    return data.get("history_events", [])[:limit]
+
+
+@router.get("/modules-list")
+async def grafana_modules_list(
+    x_grafana_token: str | None = Header(default=None),
+) -> list[dict[str, str]]:
+    _verify_grafana_token(x_grafana_token)
+    return [
+        {
+            "module": name,
+            "label": MODULE_LABELS.get(name, name),
+            "dashboard_uid": f"ciem-mod-{name}",
+        }
+        for name in MODULE_URLS
     ]

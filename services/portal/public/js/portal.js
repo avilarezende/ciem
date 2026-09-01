@@ -111,6 +111,54 @@ async function loadConfig() {
   `).join('');
 }
 
+async function loadTargets() {
+  const resp = await api('/targets');
+  const targets = await resp.json();
+  $('#targets-list').innerHTML = targets.length
+    ? targets.map(t => `
+      <div class="data-item">
+        <div>
+          <strong>${t.name}</strong>
+          <div class="target-meta">${t.protocol.toUpperCase()} — ${t.hostname}:${t.port} · ${t.description || ''}</div>
+        </div>
+        <button class="btn-connect" ${t.enabled ? '' : 'disabled'}
+          onclick="connectTarget('${t.id}')">
+          ${t.enabled ? 'Conectar' : 'Desabilitado'}
+        </button>
+      </div>`).join('')
+    : '<p class="hint">Nenhum alvo configurado em config/targets.yaml</p>';
+}
+
+async function loadAudit() {
+  const resp = await api('/sessions/audit');
+  const sessions = await resp.json();
+  $('#audit-list').innerHTML = sessions.length
+    ? sessions.map(s => `
+      <div class="data-item">
+        <div>
+          <strong>${s.user}</strong> → ${s.target_host}
+          <div class="target-meta">${s.protocol} · ${s.started_at || ''} · ${s.duration_seconds ? s.duration_seconds + 's' : 'em andamento'}</div>
+        </div>
+      </div>`).join('')
+    : '<p class="hint">Nenhuma sessão registrada ainda.</p>';
+}
+
+async function connectTarget(targetId) {
+  const resp = await api('/sso/guacamole', {
+    method: 'POST',
+    body: JSON.stringify({ target_id: targetId }),
+  });
+  const data = await resp.json();
+  window.open(`/api${data.login_url}`, '_blank', 'noopener');
+}
+window.connectTarget = connectTarget;
+
+async function openGuacamoleFull() {
+  const resp = await api('/sso/guacamole', { method: 'POST', body: '{}' });
+  const data = await resp.json();
+  window.open(`/api${data.login_url}`, '_blank', 'noopener');
+}
+
 function initPortal() {
   showScreen('portal-screen');
   document.body.classList.toggle('is-admin', currentUser?.role === 'admin');
@@ -119,7 +167,11 @@ function initPortal() {
   loadModules();
   loadAlarms();
   loadHistory();
-  if (currentUser?.role === 'admin') loadConfig();
+  if (currentUser?.role === 'admin') {
+    loadConfig();
+    loadTargets();
+    loadAudit();
+  }
 }
 
 // Event listeners
@@ -138,8 +190,16 @@ $('#login-form')?.addEventListener('submit', async (e) => {
 $('#logout-btn')?.addEventListener('click', logout);
 
 $$('.nav-btn[data-panel]').forEach(btn => {
-  btn.addEventListener('click', () => showPanel(btn.dataset.panel));
+  btn.addEventListener('click', () => {
+    showPanel(btn.dataset.panel);
+    if (btn.dataset.panel === 'sessions' && currentUser?.role === 'admin') {
+      loadTargets();
+      loadAudit();
+    }
+  });
 });
+
+$('#btn-guacamole-full')?.addEventListener('click', openGuacamoleFull);
 
 document.addEventListener('click', (e) => {
   if (e.target.dataset?.goto) showPanel(e.target.dataset.goto);

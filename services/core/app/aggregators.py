@@ -17,6 +17,56 @@ MODULE_URLS: dict[str, str] = {
     "syslog": "http://module-syslog:8080",
 }
 
+async def collect_module_data(
+    module_name: str,
+    client: httpx.AsyncClient,
+) -> dict[str, Any]:
+    """Coleta dados de um módulo específico."""
+    if module_name not in MODULE_URLS:
+        raise ValueError(f"Módulo desconhecido: {module_name}")
+    enabled = is_module_enabled(module_name)
+    result: dict[str, Any] = {
+        "module": module_name,
+        "enabled": enabled,
+        "status": "disabled",
+        "active_alarms": [],
+        "history_events": [],
+    }
+    if not enabled:
+        return result
+
+    url = MODULE_URLS[module_name]
+    try:
+        health = await client.get(f"{url}/health")
+        result["health"] = health.json() if health.status_code == 200 else {"status": "error"}
+    except httpx.HTTPError:
+        result["health"] = {"status": "unreachable"}
+        result["status"] = "error"
+        return result
+
+    try:
+        resp = await client.post(f"{url}/collect")
+        if resp.status_code == 200:
+            data = resp.json()
+            result["status"] = data.get("status", "ok")
+            result["active_alarms"] = data.get("active_alarms", [])
+            result["history_events"] = data.get("history_events", [])
+        else:
+            result["status"] = "error"
+    except httpx.HTTPError:
+        result["status"] = "error"
+    return result
+
+
+MODULE_LABELS: dict[str, str] = {
+    "zabbix": "Zabbix",
+    "cacti": "Cacti",
+    "nagios": "Nagios / Nagios XI",
+    "topdesk": "TOPdesk",
+    "inventory": "Inventário",
+    "syslog": "Syslog",
+}
+
 SEVERITY_ORDER = {"critical": 0, "high": 1, "warning": 2, "info": 3}
 
 

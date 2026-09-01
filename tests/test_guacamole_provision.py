@@ -49,7 +49,8 @@ def test_generate_user_mapping_disabled_target_excluded() -> None:
 
 def test_generate_guacamole_properties() -> None:
     props = generate_guacamole_properties()
-    assert "FileAuthenticationProvider" in props
+    assert "HttpHeaderAuthenticationProvider" in props
+    assert "X-CIEM-User" in props
     assert "user-mapping.xml" in props
 
 
