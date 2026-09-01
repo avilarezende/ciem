@@ -1,0 +1,69 @@
+{
+  "annotations": { "list": [] },
+  "editable": false,
+  "panels": [
+    {
+      "type": "text",
+      "gridPos": { "h": 2, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "mode": "markdown",
+        "content": "# Módulos Coletores\nStatus de saúde de cada módulo isolado (Zabbix, Cacti, Nagios, TOPdesk, Inventory, Syslog)."
+      }
+    },
+    {
+      "type": "table",
+      "title": "Status dos Módulos",
+      "gridPos": { "h": 10, "w": 14, "x": 0, "y": 2 },
+      "id": 2,
+      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "ciem-api" },
+      "fieldConfig": {
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "enabled" },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "value", "options": { "true": { "color": "green", "text": "HABILITADO" } } },
+                  { "type": "value", "options": { "false": { "color": "gray", "text": "DESABILITADO" } } }
+                ]
+              },
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "url": "/grafana/modules",
+          "columns": [
+            { "selector": "module", "text": "Módulo", "type": "string" },
+            { "selector": "enabled", "text": "Status Config", "type": "boolean" },
+            { "selector": "health.status", "text": "Saúde", "type": "string" },
+            { "selector": "url", "text": "URL Interna", "type": "string" }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "piechart",
+      "title": "Módulos Online vs Offline",
+      "gridPos": { "h": 10, "w": 10, "x": 14, "y": 2 },
+      "id": 3,
+      "datasource": { "type": "prometheus", "uid": "ciem-prometheus" },
+      "options": { "legend": { "displayMode": "table", "placement": "right" } },
+      "targets": [{ "expr": "ciem_module_up", "legendFormat": "{{module}}", "refId": "A" }]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["ciem", "modulos"],
+  "time": { "from": "now-1h", "to": "now" },
+  "title": "CIEM — Módulos Coletores",
+  "uid": "ciem-modules",
+  "version": 1
+}

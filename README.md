@@ -115,6 +115,8 @@ docs/                    # Documentação completa
 | [MODULES.md](docs/MODULES.md) | Módulos coletores (Zabbix, Cacti, etc.) |
 | [AUTH.md](docs/AUTH.md) | Autenticação local e LDAP |
 | [MAINTENANCE.md](docs/MAINTENANCE.md) | Sessões SSH/RDP via Guacamole |
+| [GRAFANA.md](docs/GRAFANA.md) | Dashboards e métricas Grafana |
+| [GUACAMOLE.md](docs/GUACAMOLE.md) | Provisionamento automático de conexões |
 | [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Docker, Kubernetes e Rancher |
 | [CI_CD.md](docs/CI_CD.md) | Pipelines GitHub Actions |
 

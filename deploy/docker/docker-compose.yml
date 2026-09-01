@@ -57,6 +57,7 @@ services:
     environment:
       CONFIG_PATH: /app/config
       CIEM_SECRET_KEY: ${CIEM_SECRET_KEY:-change-me}
+      CIEM_GRAFANA_TOKEN: ${CIEM_GRAFANA_TOKEN:-ciem-grafana-internal}
     volumes:
       - ./config:/app/config:ro
       - ciem-audit:/app/data/audit
@@ -91,21 +92,34 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
       GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s/grafana/"
       GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+      GF_INSTALL_PLUGINS: yesoreyeram-infinity-datasource
+      CIEM_GRAFANA_TOKEN: ${CIEM_GRAFANA_TOKEN:-ciem-grafana-internal}
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/etc/grafana/dashboards:ro
       - grafana-data:/var/lib/grafana
+    depends_on:
+      ciem-core:
+        condition: service_healthy
     networks: [ciem-back]
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
-  # GUACAMOLE — sessões SSH/RDP/VNC (instância isolada)
+  # GUACAMOLE — sessões SSH/RDP/VNC (instância isolada, provisionada via targets.yaml)
   # ---------------------------------------------------------------------------
   guacamole:
-    image: guacamole/guacamole:1.5.5
+    build:
+      context: .
+      dockerfile: services/guacamole/Dockerfile
     profiles: [guacamole, full]
     environment:
       GUACD_HOSTNAME: guacd
+      CONFIG_PATH: /config
+      GUACAMOLE_INCLUDE_OBSERVERS: ${GUACAMOLE_INCLUDE_OBSERVERS:-false}
+    volumes:
+      - ./config:/config:ro
+      - ./keys:/etc/ciem/keys:ro
+      - guacamole-recordings:/recordings
     depends_on: [guacd]
     networks: [ciem-back]
     restart: unless-stopped
@@ -113,6 +127,8 @@ services:
   guacd:
     image: guacamole/guacd:1.5.5
     profiles: [guacamole, full]
+    volumes:
+      - guacamole-recordings:/recordings
     networks: [ciem-back]
     restart: unless-stopped
 
@@ -204,3 +220,4 @@ networks:
 volumes:
   ciem-audit:
   grafana-data:
+  guacamole-recordings:

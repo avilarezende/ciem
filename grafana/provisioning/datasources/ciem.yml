@@ -1,9 +1,25 @@
 apiVersion: 1
 
 datasources:
-  - name: CIEM-Core
+  - name: CIEM-Prometheus
     type: prometheus
+    uid: ciem-prometheus
     access: proxy
     url: http://ciem-core:8000
     isDefault: true
     editable: false
+    jsonData:
+      httpMethod: GET
+      exemplarTraceIdDestinations: []
+
+  - name: CIEM-API
+    type: yesoreyeram-infinity-datasource
+    uid: ciem-api
+    access: proxy
+    url: http://ciem-core:8000
+    editable: false
+    jsonData:
+      auth_method: headers
+      httpHeaderName1: X-Grafana-Token
+    secureJsonData:
+      httpHeaderValue1: ciem-grafana-internal

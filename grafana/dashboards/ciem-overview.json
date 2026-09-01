@@ -1,0 +1,213 @@
+{
+  "annotations": { "list": [] },
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "title": "Alarmes Ativos",
+      "url": "/grafana/d/ciem-alarms",
+      "type": "link",
+      "icon": "bolt"
+    },
+    {
+      "title": "Histórico",
+      "url": "/grafana/d/ciem-history",
+      "type": "link",
+      "icon": "history"
+    }
+  ],
+  "panels": [
+    {
+      "type": "text",
+      "title": "",
+      "gridPos": { "h": 2, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "mode": "markdown",
+        "content": "# CIEM — Centro Integrado de Estatística e Manutenção\n**Visão NOC** — alarmes em destaque, status dos módulos e sessões ativas."
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Alarmes Críticos",
+      "description": "Problemas críticos ativos agora",
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 2 },
+      "id": 2,
+      "datasource": { "type": "prometheus", "uid": "ciem-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "expr": "sum(ciem_active_alarms{severity=\"critical\"}) or vector(0)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Alarmes Alto",
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 2 },
+      "id": 3,
+      "datasource": { "type": "prometheus", "uid": "ciem-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1 }
+            ]
+          }
+        }
+      },
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "expr": "sum(ciem_active_alarms{severity=\"high\"}) or vector(0)", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Avisos",
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 2 },
+      "id": 4,
+      "datasource": { "type": "prometheus", "uid": "ciem-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 }
+            ]
+          }
+        }
+      },
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "expr": "sum(ciem_active_alarms{severity=\"warning\"}) or vector(0)", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Sessões Ativas",
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 2 },
+      "id": 5,
+      "datasource": { "type": "prometheus", "uid": "ciem-prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" } }
+      },
+      "options": { "colorMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "expr": "ciem_active_sessions or vector(0)", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Alarmes por Severidade (tendência)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 7 },
+      "id": 6,
+      "datasource": { "type": "prometheus", "uid": "ciem-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "fillOpacity": 20, "lineWidth": 2 },
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "critical" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "warning" }, "properties": [{ "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } }] }
+        ]
+      },
+      "targets": [
+        { "expr": "ciem_active_alarms", "legendFormat": "{{severity}}", "refId": "A" }
+      ]
+    },
+    {
+      "type": "bargauge",
+      "title": "Status dos Módulos Coletores",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 7 },
+      "id": 7,
+      "datasource": { "type": "prometheus", "uid": "ciem-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0, "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          },
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "OFF" }, "1": { "text": "OK" } } }
+          ]
+        }
+      },
+      "options": { "orientation": "horizontal", "displayMode": "lcd" },
+      "targets": [{ "expr": "ciem_module_up", "legendFormat": "{{module}}", "refId": "A" }]
+    },
+    {
+      "type": "table",
+      "title": "⚠ Alarmes Ativos — Ação Imediata",
+      "description": "Problemas em andamento nos sistemas monitorados",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 15 },
+      "id": 8,
+      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "ciem-api" },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto" } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "severity" },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "color-background", "mode": "basic" }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "value", "options": { "critical": { "color": "red", "text": "CRÍTICO" } } },
+                  { "type": "value", "options": { "high": { "color": "orange", "text": "ALTO" } } },
+                  { "type": "value", "options": { "warning": { "color": "yellow", "text": "AVISO" } } }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": { "showHeader": true, "sortBy": [{ "displayName": "severity" }] },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "url": "/grafana/alarms",
+          "url_options": { "method": "GET" },
+          "root_selector": "",
+          "columns": [
+            { "selector": "severity", "text": "Severidade", "type": "string" },
+            { "selector": "message", "text": "Descrição", "type": "string" },
+            { "selector": "source_module", "text": "Módulo", "type": "string" },
+            { "selector": "timestamp", "text": "Detectado em", "type": "timestamp" }
+          ]
+        }
+      ]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["ciem", "noc", "overview"],
+  "time": { "from": "now-6h", "to": "now" },
+  "title": "CIEM — Visão Geral NOC",
+  "uid": "ciem-overview",
+  "version": 1
+}

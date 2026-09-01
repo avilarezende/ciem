@@ -34,6 +34,13 @@ from ciem_common.interfaces import (
     UserRole,
 )
 from ciem_common.models import ActiveAlarm, CollectResponse, HistoryEvent
+from ciem_common.targets_loader import (
+    MaintenanceTarget,
+    TargetCredential,
+    TargetsConfig,
+    clear_targets_cache,
+    load_targets_config,
+)
 
 __all__ = [
     "ActiveAlarm",
@@ -45,9 +52,12 @@ __all__ = [
     "LdapConfig",
     "LocalUserEntry",
     "MainConfig",
+    "MaintenanceTarget",
     "ModuleEntry",
     "ModulesConfig",
     "SessionRecord",
+    "TargetCredential",
+    "TargetsConfig",
     "User",
     "UserRole",
     "ZtnaCollectorModule",
@@ -55,6 +65,7 @@ __all__ = [
     "authenticate_ldap",
     "authenticate_local",
     "clear_config_cache",
+    "clear_targets_cache",
     "create_collector_app",
     "hash_password",
     "is_module_enabled",
@@ -62,6 +73,7 @@ __all__ = [
     "load_config",
     "load_main_config",
     "load_modules_config",
+    "load_targets_config",
     "log_session",
     "read_sessions",
     "verify_password",

@@ -1,0 +1,99 @@
+{
+  "annotations": { "list": [] },
+  "editable": false,
+  "panels": [
+    {
+      "type": "text",
+      "gridPos": { "h": 2, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "mode": "markdown",
+        "content": "# Auditoria de Sessões de Manutenção\nRegistro de quem acessou, quando, por quanto tempo e quais comandos foram executados."
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Sessões em Andamento",
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 2 },
+      "id": 2,
+      "datasource": { "type": "prometheus", "uid": "ciem-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "color": "blue", "value": null }] }
+        }
+      },
+      "targets": [{ "expr": "ciem_active_sessions or vector(0)", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Alvos de Manutenção Habilitados",
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 2 },
+      "id": 3,
+      "datasource": { "type": "prometheus", "uid": "ciem-prometheus" },
+      "targets": [{ "expr": "ciem_maintenance_targets{status=\"enabled\"}", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Alvos Desabilitados",
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 2 },
+      "id": 4,
+      "datasource": { "type": "prometheus", "uid": "ciem-prometheus" },
+      "targets": [{ "expr": "ciem_maintenance_targets{status=\"disabled\"}", "refId": "A" }]
+    },
+    {
+      "type": "table",
+      "title": "Alvos Configurados (targets.yaml)",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 6 },
+      "id": 5,
+      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "ciem-api" },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "url": "/grafana/targets",
+          "columns": [
+            { "selector": "name", "text": "Nome", "type": "string" },
+            { "selector": "hostname", "text": "Host/IP", "type": "string" },
+            { "selector": "protocol", "text": "Protocolo", "type": "string" },
+            { "selector": "port", "text": "Porta", "type": "number" },
+            { "selector": "enabled", "text": "Ativo", "type": "boolean" },
+            { "selector": "tags", "text": "Tags", "type": "string" }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Histórico de Sessões (Auditoria)",
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 14 },
+      "id": 6,
+      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "ciem-api" },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "url": "/grafana/sessions?limit=100",
+          "columns": [
+            { "selector": "user", "text": "Usuário", "type": "string" },
+            { "selector": "target_host", "text": "Alvo", "type": "string" },
+            { "selector": "protocol", "text": "Protocolo", "type": "string" },
+            { "selector": "started_at", "text": "Início", "type": "timestamp" },
+            { "selector": "ended_at", "text": "Fim", "type": "timestamp" },
+            { "selector": "duration_seconds", "text": "Duração (s)", "type": "number" },
+            { "selector": "session_id", "text": "ID Sessão", "type": "string" }
+          ]
+        }
+      ]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["ciem", "sessoes", "auditoria"],
+  "time": { "from": "now-7d", "to": "now" },
+  "title": "CIEM — Sessões e Auditoria",
+  "uid": "ciem-sessions",
+  "version": 1
+}

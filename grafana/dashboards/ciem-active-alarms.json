@@ -1,0 +1,90 @@
+{
+  "annotations": { "list": [] },
+  "editable": false,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "type": "text",
+      "gridPos": { "h": 2, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "mode": "markdown",
+        "content": "# Alarmes Ativos\nProblemas **em andamento** que requerem atenção do administrador de sistema."
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Total de Alarmes Ativos",
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 2 },
+      "id": 2,
+      "datasource": { "type": "prometheus", "uid": "ciem-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 5 }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "options": { "colorMode": "background", "textMode": "value_and_name", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        { "expr": "sum(ciem_active_alarms) or vector(0)", "refId": "A" }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Lista de Alarmes Ativos",
+      "gridPos": { "h": 16, "w": 24, "x": 0, "y": 6 },
+      "id": 3,
+      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "ciem-api" },
+      "fieldConfig": {
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "severity" },
+            "properties": [
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } },
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "value", "options": { "critical": { "color": "dark-red", "text": "● CRÍTICO" } } },
+                  { "type": "value", "options": { "high": { "color": "dark-orange", "text": "● ALTO" } } },
+                  { "type": "value", "options": { "warning": { "color": "dark-yellow", "text": "● AVISO" } } },
+                  { "type": "value", "options": { "info": { "color": "blue", "text": "● INFO" } } }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": { "showHeader": true, "sortBy": [{ "displayName": "severity", "desc": false }] },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "url": "/grafana/alarms",
+          "url_options": { "method": "GET" },
+          "columns": [
+            { "selector": "severity", "text": "Severidade", "type": "string" },
+            { "selector": "message", "text": "Alarme", "type": "string" },
+            { "selector": "source_module", "text": "Origem", "type": "string" },
+            { "selector": "id", "text": "ID", "type": "string" },
+            { "selector": "timestamp", "text": "Horário", "type": "timestamp" }
+          ]
+        }
+      ]
+    }
+  ],
+  "refresh": "15s",
+  "schemaVersion": 39,
+  "tags": ["ciem", "alarmes"],
+  "time": { "from": "now-1h", "to": "now" },
+  "title": "CIEM — Alarmes Ativos",
+  "uid": "ciem-alarms",
+  "version": 1
+}

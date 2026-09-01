@@ -1,0 +1,56 @@
+{
+  "annotations": { "list": [] },
+  "editable": false,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "type": "text",
+      "gridPos": { "h": 2, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "mode": "markdown",
+        "content": "# Histórico de Eventos\nRegistro de tudo que **já aconteceu** — separado dos alarmes ativos."
+      }
+    },
+    {
+      "type": "table",
+      "title": "Eventos Históricos",
+      "gridPos": { "h": 20, "w": 24, "x": 0, "y": 2 },
+      "id": 2,
+      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "ciem-api" },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "left" } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "source_module" },
+            "properties": [{ "id": "custom.width", "value": 120 }]
+          }
+        ]
+      },
+      "options": { "showHeader": true, "sortBy": [{ "displayName": "timestamp", "desc": true }] },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "url": "/grafana/history?limit=200",
+          "url_options": { "method": "GET" },
+          "columns": [
+            { "selector": "timestamp", "text": "Data/Hora", "type": "timestamp" },
+            { "selector": "source_module", "text": "Módulo", "type": "string" },
+            { "selector": "event_type", "text": "Tipo", "type": "string" },
+            { "selector": "message", "text": "Evento", "type": "string" },
+            { "selector": "id", "text": "ID", "type": "string" }
+          ]
+        }
+      ]
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "tags": ["ciem", "historico"],
+  "time": { "from": "now-24h", "to": "now" },
+  "title": "CIEM — Histórico de Eventos",
+  "uid": "ciem-history",
+  "version": 1
+}

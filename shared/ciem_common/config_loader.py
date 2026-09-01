@@ -187,3 +187,6 @@ def clear_config_cache() -> None:
     load_main_config.cache_clear()
     load_modules_config.cache_clear()
     load_auth_config.cache_clear()
+    from ciem_common.targets_loader import clear_targets_cache
+
+    clear_targets_cache()
