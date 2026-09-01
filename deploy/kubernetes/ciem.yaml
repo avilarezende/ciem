@@ -40,7 +40,7 @@ spec:
     spec:
       containers:
         - name: core
-          image: ghcr.io/rodrigo-rezende/ciem:main
+          image: ghcr.io/avilarezende/ciem:main
           ports:
             - containerPort: 8000
           env:
@@ -106,7 +106,7 @@ spec:
     spec:
       containers:
         - name: zabbix
-          image: ghcr.io/rodrigo-rezende/ciem-module-zabbix:main
+          image: ghcr.io/avilarezende/ciem-module-zabbix:main
           ports:
             - containerPort: 8101
           env:

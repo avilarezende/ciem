@@ -2,7 +2,7 @@
 # Importe este arquivo em Rancher → Apps & Marketplace → Repos
 #
 # Uso:
-#   1. Adicione o repositório Git: https://github.com/rodrigo-rezende/ciem
+#   1. Adicione o repositório Git: https://github.com/avilarezende/ciem
 #   2. Selecione o chart em deploy/kubernetes/
 #   3. Configure valores em config/ via ConfigMap
 #

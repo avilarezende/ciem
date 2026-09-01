@@ -95,7 +95,7 @@ kubectl apply -f deploy/kubernetes/module-cacti.yaml
 ## Rancher
 
 1. Acesse Rancher → **Apps & Marketplace**
-2. Adicione repositório Git: `https://github.com/rodrigo-rezende/ciem`
+2. Adicione repositório Git: `https://github.com/avilarezende/ciem`
 3. Selecione o chart em `deploy/kubernetes/`
 4. Configure valores:
    - `config.main.platform_name`: CIEM

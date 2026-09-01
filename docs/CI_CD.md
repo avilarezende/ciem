@@ -11,15 +11,15 @@
 ## Imagens publicadas (GHCR)
 
 ```
-ghcr.io/rodrigo-rezende/ciem-core:<tag>
-ghcr.io/rodrigo-rezende/ciem-portal:<tag>
-ghcr.io/rodrigo-rezende/ciem-proxy:<tag>
-ghcr.io/rodrigo-rezende/ciem-module-zabbix:<tag>
-ghcr.io/rodrigo-rezende/ciem-module-cacti:<tag>
-ghcr.io/rodrigo-rezende/ciem-module-nagios:<tag>
-ghcr.io/rodrigo-rezende/ciem-module-topdesk:<tag>
-ghcr.io/rodrigo-rezende/ciem-module-inventory:<tag>
-ghcr.io/rodrigo-rezende/ciem-module-syslog:<tag>
+ghcr.io/avilarezende/ciem-core:<tag>
+ghcr.io/avilarezende/ciem-portal:<tag>
+ghcr.io/avilarezende/ciem-proxy:<tag>
+ghcr.io/avilarezende/ciem-module-zabbix:<tag>
+ghcr.io/avilarezende/ciem-module-cacti:<tag>
+ghcr.io/avilarezende/ciem-module-nagios:<tag>
+ghcr.io/avilarezende/ciem-module-topdesk:<tag>
+ghcr.io/avilarezende/ciem-module-inventory:<tag>
+ghcr.io/avilarezende/ciem-module-syslog:<tag>
 ```
 
 ## Rodar localmente (equivalente ao CI)

@@ -1,6 +1,6 @@
 # CIEM — Centro Integrado de Estatística e Manutenção
 
-[![CI](https://github.com/rodrigo-rezende/ciem/actions/workflows/ci.yml/badge.svg)](https://github.com/rodrigo-rezende/ciem/actions/workflows/ci.yml)
+[![CI](https://github.com/avilarezende/ciem/actions/workflows/ci.yml/badge.svg)](https://github.com/avilarezende/ciem/actions/workflows/ci.yml)
 
 Plataforma **ZTNA** (Zero Trust Network Access) para manutenção administrativa de redes — servidores, roteadores e switches. O CIEM agrega informações de sistemas de monitoramento, chamados e e-mail de suporte, apresentando tudo em um portal unificado com Grafana e sessões remotas auditadas via Guacamole.
 
@@ -27,7 +27,7 @@ Plataforma **ZTNA** (Zero Trust Network Access) para manutenção administrativa
 ### 1. Clonar e configurar
 
 ```bash
-git clone https://github.com/rodrigo-rezende/ciem.git
+git clone https://github.com/avilarezende/ciem.git
 cd ciem
 cp .env.example .env
 ```

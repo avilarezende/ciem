@@ -2,7 +2,7 @@
 # Sincroniza o projeto CIEM com Origin (Cursor) e GitHub.
 set -euo pipefail
 
-REPO="rodrigo-rezende/ciem"
+REPO="avilarezende/ciem"
 ORIGIN_URL="https://origin.cursor.com/git/${REPO}.git"
 GITHUB_URL="https://github.com/${REPO}.git"
 
