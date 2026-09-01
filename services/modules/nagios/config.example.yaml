@@ -1,0 +1,25 @@
+# Configuração do coletor Nagios / Nagios XI
+# Copie este arquivo para config.yaml e ajuste os valores conforme seu ambiente.
+
+# URL base da API Nagios XI (sem barra final)
+# Exemplo: https://nagios.empresa.local/nagiosxi
+url: "https://nagios.example.com/nagiosxi"
+
+# Chave de API gerada no painel Nagios XI (System Settings > API Keys)
+# Alternativa: use variável de ambiente NAGIOS_API_KEY
+api_key: "changeme"
+
+# Tipo de instalação: "nagiosxi" para Nagios XI ou "nagios" para Nagios Core com API
+flavor: "nagiosxi"
+
+# Ignorar validação TLS (apenas para laboratório)
+verify_ssl: true
+
+# Timeout em segundos para requisições HTTP
+timeout: 60
+
+# Número máximo de serviços/host checks retornados
+service_limit: 100
+
+# Quando true, retorna dados simulados se a API estiver indisponível
+use_mock_on_failure: true

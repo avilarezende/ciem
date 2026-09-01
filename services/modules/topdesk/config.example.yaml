@@ -1,0 +1,27 @@
+# Configuração do coletor TOPdesk
+# Copie este arquivo para config.yaml e ajuste os valores conforme seu ambiente.
+
+# URL base da instância TOPdesk (sem barra final)
+# Exemplo: https://empresa.topdesk.net/tas/api
+url: "https://example.topdesk.net/tas/api"
+
+# Usuário de integração com permissão de leitura de incidentes
+username: "api_integration"
+
+# Senha ou token de aplicação (prefira variável de ambiente TOPDESK_PASSWORD)
+password: "changeme"
+
+# Ignorar validação TLS (apenas para laboratório)
+verify_ssl: true
+
+# Timeout em segundos para requisições HTTP
+timeout: 60
+
+# Filtro de status dos chamados (ex.: "firstLine,secondLine" ou vazio para todos)
+status_filter: "firstLine,secondLine"
+
+# Número máximo de chamados retornados por coleta
+ticket_limit: 50
+
+# Quando true, retorna dados simulados se a API estiver indisponível
+use_mock_on_failure: true

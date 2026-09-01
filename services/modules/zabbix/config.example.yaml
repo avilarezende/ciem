@@ -1,0 +1,24 @@
+# Configuração do coletor Zabbix
+# Copie este arquivo para config.yaml e ajuste os valores conforme seu ambiente.
+
+# URL base da instância Zabbix (sem barra final)
+# Exemplo: https://zabbix.empresa.local
+url: "https://zabbix.example.com"
+
+# Usuário com permissão de leitura na API JSON-RPC
+username: "api_user"
+
+# Senha do usuário da API (prefira variável de ambiente ZABBIX_PASSWORD em produção)
+password: "changeme"
+
+# Ignorar validação TLS (apenas para ambientes de laboratório com certificado autoassinado)
+verify_ssl: true
+
+# Timeout em segundos para chamadas HTTP à API
+timeout: 60
+
+# Número máximo de problemas ativos retornados por coleta
+problem_limit: 50
+
+# Quando true, retorna dados simulados se a API estiver indisponível
+use_mock_on_failure: true

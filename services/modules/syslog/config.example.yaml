@@ -1,0 +1,52 @@
+# Configuração do coletor Syslog
+# Copie este arquivo para config.yaml e ajuste os valores conforme seu ambiente.
+
+# Modo de coleta: "api" para servidor com API REST ou "file" para leitura de arquivo local
+mode: "api"
+
+# --- Modo API ---
+# URL base do servidor de logs/syslog com API REST (sem barra final)
+# Exemplo: https://logs.empresa.local/api
+api_url: "https://syslog.example.com/api"
+
+# Endpoint relativo para busca de eventos (anexado à api_url)
+# Exemplo: /events ou /search
+events_endpoint: "/events"
+
+# Token Bearer para autenticação na API (use variável de ambiente SYSLOG_TOKEN)
+token: "changeme"
+
+# Consulta/filtro enviado à API (formato depende do backend)
+# Exemplo: severity>=warning AND last 1h
+query: "severity>=warning"
+
+# --- Modo arquivo ---
+# Caminho do arquivo syslog local dentro do container
+# Exemplo: /var/log/syslog ou /var/log/messages
+file_path: "/var/log/syslog"
+
+# Número máximo de linhas lidas do arquivo (das mais recentes)
+file_tail_lines: 200
+
+# Padrão regex para extrair campos do syslog (RFC5424 simplificado)
+# Grupos: timestamp, hostname, app, message
+syslog_pattern: '^(?P<timestamp>\\S+\\s+\\d+\\s+\\S+)\\s+(?P<hostname>\\S+)\\s+(?P<app>\\S+):\\s+(?P<message>.+)$'
+
+# Severidades consideradas alarme ativo (case insensitive)
+alarm_severities:
+  - "error"
+  - "critical"
+  - "alert"
+  - "emerg"
+
+# Ignorar validação TLS (apenas para laboratório)
+verify_ssl: true
+
+# Timeout em segundos para requisições HTTP
+timeout: 60
+
+# Número máximo de eventos retornados por coleta
+event_limit: 100
+
+# Quando true, retorna dados simulados se a fonte estiver indisponível
+use_mock_on_failure: true

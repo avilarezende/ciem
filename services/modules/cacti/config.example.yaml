@@ -1,0 +1,27 @@
+# Configuração do coletor Cacti
+# Copie este arquivo para config.yaml e ajuste os valores conforme seu ambiente.
+
+# URL base da interface web do Cacti (sem barra final)
+# Exemplo: https://cacti.empresa.local
+url: "https://cacti.example.com"
+
+# Usuário com permissão de leitura de hosts e gráficos
+username: "cacti_reader"
+
+# Senha do usuário (prefira variável de ambiente CACTI_PASSWORD em produção)
+password: "changeme"
+
+# Ignorar validação TLS (apenas para laboratório)
+verify_ssl: true
+
+# Timeout em segundos para requisições HTTP
+timeout: 60
+
+# Número máximo de hosts retornados por coleta
+host_limit: 80
+
+# Número máximo de gráficos retornados por coleta
+graph_limit: 30
+
+# Quando true, retorna dados simulados se o Cacti estiver indisponível
+use_mock_on_failure: true

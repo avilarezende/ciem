@@ -1,0 +1,47 @@
+# Configuração do coletor de inventário (API REST genérica)
+# Copie este arquivo para config.yaml e ajuste os valores conforme seu ambiente.
+
+# URL base da API de inventário (sem barra final)
+# Exemplo: https://inventory.empresa.local/api/v1
+url: "https://inventory.example.com/api/v1"
+
+# Endpoint relativo para listagem de ativos (anexado à url)
+# Exemplo: /assets ou /devices
+assets_endpoint: "/assets"
+
+# Tipo de autenticação: "none", "basic", "bearer" ou "api_key"
+auth_type: "bearer"
+
+# Token Bearer ou chave de API (use variáveis de ambiente em produção)
+# Para basic auth, use username/password abaixo
+token: "changeme"
+
+# Credenciais para autenticação basic (ignoradas se auth_type não for "basic")
+username: "inventory_reader"
+password: "changeme"
+
+# Nome do header quando auth_type é "api_key" (padrão: X-API-Key)
+api_key_header: "X-API-Key"
+
+# Caminho JSON para extrair a lista de itens da resposta (ex.: "data.items")
+# Deixe vazio se a resposta já for uma lista JSON
+items_path: "data"
+
+# Mapeamento de campos do JSON de origem para o coletor
+field_mapping:
+  id: "id"
+  name: "name"
+  status: "status"
+  location: "location"
+
+# Ignorar validação TLS (apenas para laboratório)
+verify_ssl: true
+
+# Timeout em segundos para requisições HTTP
+timeout: 60
+
+# Número máximo de itens retornados por coleta
+item_limit: 100
+
+# Quando true, retorna dados simulados se a API estiver indisponível
+use_mock_on_failure: true
