@@ -1,6 +1,6 @@
 # Grafana — Dashboards CIEM
 
-O CIEM provisiona automaticamente **5 dashboards** otimizados para administradores de sistema.
+O CIEM provisiona automaticamente **12 dashboards** (5 da plataforma + 6 por módulo + visão de módulos).
 
 ## Dashboards por módulo
 

@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guacd
+  namespace: ciem
+  labels:
+    app: guacd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: guacd
+  template:
+    metadata:
+      labels:
+        app: guacd
+    spec:
+      containers:
+        - name: guacd
+          image: guacamole/guacd:1.5.5
+          ports:
+            - containerPort: 4822
+          volumeMounts:
+            - name: recordings
+              mountPath: /recordings
+      volumes:
+        - name: recordings
+          persistentVolumeClaim:
+            claimName: guacamole-recordings-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: guacd
+  namespace: ciem
+spec:
+  selector:
+    app: guacd
+  ports:
+    - port: 4822
+      targetPort: 4822
+---
+# Imagem custom (services/guacamole/Dockerfile) — build e push antes do deploy:
+#   docker build -f services/guacamole/Dockerfile -t seu-registry/ciem-guacamole:tag .
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guacamole
+  namespace: ciem
+  labels:
+    app: guacamole
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: guacamole
+  template:
+    metadata:
+      labels:
+        app: guacamole
+    spec:
+      containers:
+        - name: guacamole
+          image: ciem-guacamole:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: GUACD_HOSTNAME
+              value: guacd
+            - name: CONFIG_PATH
+              value: /config
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+            - name: recordings
+              mountPath: /recordings
+      volumes:
+        - name: config
+          configMap:
+            name: ciem-config
+        - name: recordings
+          persistentVolumeClaim:
+            claimName: guacamole-recordings-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: guacamole
+  namespace: ciem
+spec:
+  selector:
+    app: guacamole
+  ports:
+    - port: 8080
+      targetPort: 8080

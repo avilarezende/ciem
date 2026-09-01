@@ -1,0 +1,84 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-provisioning
+  namespace: ciem
+  labels:
+    app: grafana
+data:
+  # Montar dashboards do repositório via initContainer ou build de imagem custom.
+  # Em produção, prefira imagem que embute grafana/provisioning e grafana/dashboards.
+  README: |
+    Provisione grafana/provisioning e grafana/dashboards do repositório CIEM.
+    Ver docs/GRAFANA.md
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: ciem
+  labels:
+    app: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:11.4.0
+          ports:
+            - containerPort: 3000
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-admin
+                  key: admin-user
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-admin
+                  key: admin-password
+            - name: GF_SERVER_ROOT_URL
+              value: "%(protocol)s://%(domain)s/grafana/"
+            - name: GF_SERVER_SERVE_FROM_SUB_PATH
+              value: "true"
+            - name: GF_INSTALL_PLUGINS
+              value: yesoreyeram-infinity-datasource
+            - name: CIEM_GRAFANA_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: ciem-secrets
+                  key: CIEM_GRAFANA_TOKEN
+          volumeMounts:
+            - name: grafana-data
+              mountPath: /var/lib/grafana
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+            limits:
+              memory: 512Mi
+              cpu: 500m
+      volumes:
+        - name: grafana-data
+          persistentVolumeClaim:
+            claimName: grafana-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: ciem
+spec:
+  selector:
+    app: grafana
+  ports:
+    - port: 3000
+      targetPort: 3000

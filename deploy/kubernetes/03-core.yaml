@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ciem-core
+  namespace: ciem
+  labels:
+    app: ciem-core
+    app.kubernetes.io/part-of: ciem-ztna
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ciem-core
+  template:
+    metadata:
+      labels:
+        app: ciem-core
+    spec:
+      containers:
+        - name: core
+          image: ghcr.io/avilarezende/ciem-core:main
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            - name: CONFIG_PATH
+              value: /app/config
+            - name: CIEM_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ciem-secrets
+                  key: CIEM_SECRET_KEY
+            - name: CIEM_GRAFANA_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: ciem-secrets
+                  key: CIEM_GRAFANA_TOKEN
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+            - name: audit
+              mountPath: /data/audit
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 100m
+            limits:
+              memory: 512Mi
+              cpu: 500m
+      volumes:
+        - name: config
+          configMap:
+            name: ciem-config
+        - name: audit
+          persistentVolumeClaim:
+            claimName: ciem-audit-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ciem-core
+  namespace: ciem
+  labels:
+    app: ciem-core
+spec:
+  selector:
+    app: ciem-core
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000

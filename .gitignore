@@ -1,4 +1,5 @@
 .env
+deploy/kubernetes/02-secrets.yaml
 *.pyc
 __pycache__/
 .pytest_cache/

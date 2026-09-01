@@ -1,0 +1,51 @@
+# ConfigMap com stubs — substitua pelos arquivos reais de config/ antes de produção.
+# Ver docs/KUBERNETES.md para kubectl create configmap --from-file
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ciem-config
+  namespace: ciem
+  labels:
+    app.kubernetes.io/part-of: ciem-ztna
+data:
+  main.yaml: |
+    platform_name: CIEM
+    environment: production
+    log_level: INFO
+    collection_interval_seconds: 300
+    audit_log_path: /data/audit/sessions.jsonl
+    proxy:
+      public_domain: ciem.exemplo.local
+      force_https: true
+    grafana:
+      internal_url: http://grafana:3000
+    guacamole:
+      internal_url: http://guacamole:8080
+      record_commands: true
+      max_session_minutes: 480
+  modules.yaml: |
+    zabbix:
+      enabled: true
+      options:
+        url: "https://zabbix.exemplo.local"
+    cacti:
+      enabled: false
+    nagios:
+      enabled: false
+    topdesk:
+      enabled: false
+    inventory:
+      enabled: false
+    syslog:
+      enabled: false
+  auth.yaml: |
+    local_users:
+      - username: admin
+        password_hash: "SUBSTITUA_PELO_HASH_PBKDF2"
+        role: admin
+      - username: observador
+        password_hash: "SUBSTITUA_PELO_HASH_PBKDF2"
+        role: observer
+  targets.yaml: |
+    targets: []
+    credentials: []

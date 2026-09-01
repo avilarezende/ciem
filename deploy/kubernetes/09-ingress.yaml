@@ -1,0 +1,49 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ciem-ingress
+  namespace: ciem
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    # SSO Guacamole — validação via ciem-core (ajuste conforme seu proxy)
+    nginx.ingress.kubernetes.io/auth-url: "http://ciem-core.ciem.svc.cluster.local:8000/sso/validate"
+    nginx.ingress.kubernetes.io/auth-signin: "https://ciem.exemplo.local/"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - ciem.exemplo.local
+      secretName: ciem-wildcard-tls
+  rules:
+    - host: ciem.exemplo.local
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: ciem-core
+                port:
+                  number: 8000
+          - path: /grafana
+            pathType: Prefix
+            backend:
+              service:
+                name: grafana
+                port:
+                  number: 3000
+          - path: /guacamole
+            pathType: Prefix
+            backend:
+              service:
+                name: guacamole
+                port:
+                  number: 8080
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ciem-portal
+                port:
+                  number: 80

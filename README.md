@@ -2,156 +2,99 @@
 
 [![CI](https://github.com/avilarezende/ciem/actions/workflows/ci.yml/badge.svg)](https://github.com/avilarezende/ciem/actions/workflows/ci.yml)
 
-Plataforma **ZTNA** (Zero Trust Network Access) para manutenção administrativa de redes — servidores, roteadores e switches. O CIEM agrega informações de sistemas de monitoramento, chamados e e-mail de suporte, apresentando tudo em um portal unificado com Grafana e sessões remotas auditadas via Guacamole.
+Plataforma **ZTNA** para manutenção de redes: agrega Zabbix, Cacti, Nagios, TOPdesk, inventário e syslog em um portal unificado, com Grafana e sessões remotas auditadas via Guacamole.
 
-![Dashboard CIEM](docs/assets/ciem-portal-dashboard.png)
+![Dashboard CIEM](docs/assets/ciem-portal-dashboard.jpg)
 
-## Principais recursos
+## Comece aqui
 
-- **ZTNA** — acesso seguro à rede de gerência com SSL (certificado wildcard)
-- **Módulos isolados** — Zabbix, Cacti, Nagios, TOPdesk, Inventory, Syslog (cada um em container/pod separado)
-- **Grafana** — alarmes ativos em destaque + histórico separado
-- **Guacamole** — sessões SSH/RDP/VNC registradas (quem, quando, comandos, duração)
-- **Autenticação** — usuários locais (observer/admin) ou LDAP
-- **Deploy flexível** — Docker Compose, Kubernetes ou Rancher
+| Eu quero… | Documento |
+|-----------|-----------|
+| **Subir pela primeira vez** | [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) |
+| **Usar o portal no dia a dia** | [docs/USAGE.md](docs/USAGE.md) |
+| **Deploy em Kubernetes** | [docs/KUBERNETES.md](docs/KUBERNETES.md) → [`deploy/kubernetes/`](deploy/kubernetes/README.md) |
+| **Entender dashboards Grafana** | [docs/DASHBOARDS.md](docs/DASHBOARDS.md) |
+| **Ver fluxos (coleta, SSO, auditoria)** | [docs/PROCESSES.md](docs/PROCESSES.md) |
+| **Desenvolver o portal (mockups)** | [docs/PORTAL.md](docs/PORTAL.md) |
+| **Índice completo** | [docs/README.md](docs/README.md) |
 
-![Arquitetura](docs/assets/ciem-architecture-diagram.png)
-
-## Início rápido
-
-### Pré-requisitos
-
-- Docker Compose v2 (ou Kubernetes 1.25+)
-- Certificado wildcard SSL (para produção)
-
-### 1. Clonar e configurar
+## Início rápido (Docker)
 
 ```bash
 git clone https://github.com/avilarezende/ciem.git
 cd ciem
 cp .env.example .env
-```
+# Edite config/modules.yaml, config/auth.yaml, config/targets.yaml
 
-### 2. Editar configuração
-
-```bash
-# Habilitar módulos desejados
-nano config/modules.yaml
-
-# Configurar autenticação
-nano config/auth.yaml
-
-# Definir alvos de manutenção (SSH/RDP)
-nano config/targets.yaml
-```
-
-### 3. Subir a plataforma
-
-```bash
-# Mínimo: core + portal + proxy
-docker compose -f deploy/docker/docker-compose.yml --profile core up -d --build
-
-# Com módulos e Grafana
 docker compose -f deploy/docker/docker-compose.yml --profile core --profile modules --profile grafana up -d --build
-
-# Tudo habilitado
-docker compose -f deploy/docker/docker-compose.yml --profile full up -d --build
 ```
 
-### 4. Acessar
+| Serviço | URL | Dev |
+|---------|-----|-----|
+| Portal | `https://localhost/` | `admin` / `admin123` |
+| Grafana | `https://localhost/grafana/` | `admin` / `admin` |
+| API | `https://localhost/api/health` | — |
 
-| Serviço | URL | Credenciais padrão |
-|---------|-----|-------------------|
-| Portal CIEM | https://localhost/ | admin / admin123 |
-| Grafana | https://localhost/grafana/ | admin / admin |
-| API Core | https://localhost/api/health | — |
+## Início rápido (Kubernetes)
 
-> **Altere as senhas padrão imediatamente em produção!**
+```bash
+kubectl apply -f deploy/kubernetes/00-namespace.yaml
+# Configure ConfigMap e Secrets — ver docs/KUBERNETES.md
+kubectl apply -f deploy/kubernetes/
+```
+
+YAML numerados (`00`–`09`): namespace, config, secrets, core, portal, módulos, Grafana, Guacamole, storage, ingress.
+
+## Mockups do portal (times e versionamento)
+
+Referência visual em `docs/assets/` para alinhar produto, UX e desenvolvimento:
+
+| Imagem | Tela |
+|--------|------|
+| [login](docs/assets/ciem-portal-login.jpg) | Autenticação |
+| [dashboard](docs/assets/ciem-portal-dashboard.jpg) | Visão geral NOC |
+| [alarmes](docs/assets/ciem-portal-alarms.jpg) | Alarmes ativos |
+| [sessões](docs/assets/ciem-portal-sessions.jpg) | Guacamole + auditoria |
+| [arquitetura](docs/assets/ciem-architecture-diagram.jpg) | Fluxo ZTNA |
 
 ## Arquitetura
 
-```
-┌─────────────┐     ┌──────────────┐     ┌─────────────────────────────┐
-│   Proxy     │────▶│  CIEM Core   │────▶│  Módulos (isolados)         │
-│  (SSL/TLS)  │     │  (API ZTNA)  │     │  Zabbix │ Cacti │ Nagios   │
-└──────┬──────┘     └──────────────┘     │  TOPdesk│ Invent│ Syslog   │
-       │                                  └─────────────────────────────┘
-       ├────▶ Portal (configuração)
-       ├────▶ Grafana (visualização)
-       └────▶ Guacamole (sessões SSH/RDP)
-```
+![Arquitetura](docs/assets/ciem-architecture-diagram.jpg)
 
-Cada componente roda em **container/pod isolado** para contenção e segurança.
-
-## Estrutura do projeto
-
-```
-config/                  # Configuração YAML (comentada em português)
-  main.yaml              # Configuração global
-  modules.yaml           # Módulos coletores (ativar/desativar)
-  auth.yaml              # Usuários locais e LDAP
-  targets.yaml           # Alvos de manutenção (SSH/RDP)
-services/
-  core/                  # API central CIEM
-  portal/                # Interface web
-  proxy/                 # Proxy reverso SSL
-  modules/               # Coletores isolados
-    zabbix/ cacti/ nagios/ topdesk/ inventory/ syslog/
-shared/ciem_common/      # Biblioteca compartilhada
-deploy/
-  docker/                # Docker Compose com perfis
-  kubernetes/            # Manifests K8s
-  rancher/               # Catálogo Rancher
-grafana/                 # Dashboards provisionados
-docs/                    # Documentação completa
-```
+Cada componente (core, portal, módulos, Grafana, Guacamole) roda em **container/pod isolado**. Detalhes: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Documentação
 
-| Documento | Conteúdo |
-|-----------|----------|
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Arquitetura, módulos e comunicação |
-| [CONFIGURATION.md](docs/CONFIGURATION.md) | Guia completo de configuração |
-| [MODULES.md](docs/MODULES.md) | Módulos coletores (Zabbix, Cacti, etc.) |
-| [AUTH.md](docs/AUTH.md) | Autenticação local e LDAP |
-| [MAINTENANCE.md](docs/MAINTENANCE.md) | Sessões SSH/RDP via Guacamole |
-| [GRAFANA.md](docs/GRAFANA.md) | Dashboards e métricas Grafana |
-| [GUACAMOLE.md](docs/GUACAMOLE.md) | Provisionamento automático de conexões |
-| [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Docker, Kubernetes e Rancher |
-| [CI_CD.md](docs/CI_CD.md) | Pipelines GitHub Actions |
+| Área | Documentos |
+|------|----------------|
+| **Configuração** | [CONFIGURATION.md](docs/CONFIGURATION.md), [AUTH.md](docs/AUTH.md) |
+| **Deploy** | [DEPLOYMENT.md](docs/DEPLOYMENT.md), [KUBERNETES.md](docs/KUBERNETES.md), [CI_CD.md](docs/CI_CD.md) |
+| **Operação** | [USAGE.md](docs/USAGE.md), [PROCESSES.md](docs/PROCESSES.md), [MAINTENANCE.md](docs/MAINTENANCE.md) |
+| **Visualização** | [DASHBOARDS.md](docs/DASHBOARDS.md), [GRAFANA.md](docs/GRAFANA.md) |
+| **Desenvolvimento** | [PORTAL.md](docs/PORTAL.md), [MODULES.md](docs/MODULES.md) |
 
 ## Módulos coletores
 
-Cada módulo é **independente** — ative apenas os que precisa em `config/modules.yaml`:
+Ative em `config/modules.yaml`:
 
-| Módulo | Fonte | Dados coletados |
-|--------|-------|-----------------|
-| **zabbix** | Zabbix API | Hosts, triggers, problemas ativos |
-| **cacti** | Cacti web | Dispositivos, gráficos |
-| **nagios** | Nagios XI API | Status de hosts e serviços |
-| **topdesk** | TOPdesk API | Chamados abertos e histórico |
-| **inventory** | API REST genérica | Inventário de ativos |
-| **syslog** | Syslog/REST | Eventos de syslog |
-
-## Autenticação
-
-| Papel | Permissões |
-|-------|-----------|
-| **observer** | Visualiza dashboards, alarmes e histórico |
-| **admin** | Configura módulos, inicia sessões de manutenção, gerencia usuários |
-
-Suporte a **LDAP/Active Directory** — veja [docs/AUTH.md](docs/AUTH.md).
+| Módulo | Fonte |
+|--------|-------|
+| zabbix | Zabbix API |
+| cacti | Cacti web |
+| nagios | Nagios XI |
+| topdesk | TOPdesk API |
+| inventory | API REST |
+| syslog | Arquivo / API |
 
 ## Desenvolvimento
 
 ```bash
 pip install -r requirements-dev.txt
-export PYTHONPATH=shared:services/core
-export CONFIG_PATH=./config
-ruff check shared services/core tests
+export PYTHONPATH=shared:services/core CONFIG_PATH=./config
+ruff check shared services/core services/modules tests
 pytest tests -v
 ```
 
 ## Licença
 
-MIT — veja [LICENSE](LICENSE).
+MIT — [LICENSE](LICENSE).

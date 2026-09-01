@@ -1,0 +1,304 @@
+# Coletores isolados — porta interna 8080 (igual ao Docker Compose)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: module-zabbix
+  namespace: ciem
+  labels:
+    app: module-zabbix
+    ciem.module: zabbix
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: module-zabbix
+  template:
+    metadata:
+      labels:
+        app: module-zabbix
+        ciem.module: zabbix
+    spec:
+      containers:
+        - name: zabbix
+          image: ghcr.io/avilarezende/ciem-module-zabbix:main
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: CONFIG_PATH
+              value: /app/config
+            - name: ZABBIX_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: ciem-secrets
+                  key: ZABBIX_USERNAME
+                  optional: true
+            - name: ZABBIX_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ciem-secrets
+                  key: ZABBIX_PASSWORD
+                  optional: true
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+          resources:
+            requests:
+              memory: 64Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 200m
+      volumes:
+        - name: config
+          configMap:
+            name: ciem-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: module-zabbix
+  namespace: ciem
+spec:
+  selector:
+    app: module-zabbix
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: module-cacti
+  namespace: ciem
+  labels:
+    app: module-cacti
+    ciem.module: cacti
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: module-cacti
+  template:
+    metadata:
+      labels:
+        app: module-cacti
+    spec:
+      containers:
+        - name: cacti
+          image: ghcr.io/avilarezende/ciem-module-cacti:main
+          ports:
+            - containerPort: 8080
+          env:
+            - name: CONFIG_PATH
+              value: /app/config
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: ciem-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: module-cacti
+  namespace: ciem
+spec:
+  selector:
+    app: module-cacti
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: module-nagios
+  namespace: ciem
+  labels:
+    app: module-nagios
+    ciem.module: nagios
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: module-nagios
+  template:
+    metadata:
+      labels:
+        app: module-nagios
+    spec:
+      containers:
+        - name: nagios
+          image: ghcr.io/avilarezende/ciem-module-nagios:main
+          ports:
+            - containerPort: 8080
+          env:
+            - name: CONFIG_PATH
+              value: /app/config
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: ciem-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: module-nagios
+  namespace: ciem
+spec:
+  selector:
+    app: module-nagios
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: module-topdesk
+  namespace: ciem
+  labels:
+    app: module-topdesk
+    ciem.module: topdesk
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: module-topdesk
+  template:
+    metadata:
+      labels:
+        app: module-topdesk
+    spec:
+      containers:
+        - name: topdesk
+          image: ghcr.io/avilarezende/ciem-module-topdesk:main
+          ports:
+            - containerPort: 8080
+          env:
+            - name: CONFIG_PATH
+              value: /app/config
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: ciem-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: module-topdesk
+  namespace: ciem
+spec:
+  selector:
+    app: module-topdesk
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: module-inventory
+  namespace: ciem
+  labels:
+    app: module-inventory
+    ciem.module: inventory
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: module-inventory
+  template:
+    metadata:
+      labels:
+        app: module-inventory
+    spec:
+      containers:
+        - name: inventory
+          image: ghcr.io/avilarezende/ciem-module-inventory:main
+          ports:
+            - containerPort: 8080
+          env:
+            - name: CONFIG_PATH
+              value: /app/config
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: ciem-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: module-inventory
+  namespace: ciem
+spec:
+  selector:
+    app: module-inventory
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: module-syslog
+  namespace: ciem
+  labels:
+    app: module-syslog
+    ciem.module: syslog
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: module-syslog
+  template:
+    metadata:
+      labels:
+        app: module-syslog
+    spec:
+      containers:
+        - name: syslog
+          image: ghcr.io/avilarezende/ciem-module-syslog:main
+          ports:
+            - containerPort: 8080
+          env:
+            - name: CONFIG_PATH
+              value: /app/config
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: ciem-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: module-syslog
+  namespace: ciem
+spec:
+  selector:
+    app: module-syslog
+  ports:
+    - port: 8080
+      targetPort: 8080

@@ -53,6 +53,8 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 
 ## Kubernetes
 
+Manifests numerados em [`deploy/kubernetes/`](../deploy/kubernetes/README.md). **Guia completo:** [KUBERNETES.md](KUBERNETES.md).
+
 ### Pré-requisitos
 
 - Cluster Kubernetes 1.25+
@@ -62,34 +64,36 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 ### Instalação
 
 ```bash
-# Criar namespace e recursos
-kubectl apply -f deploy/kubernetes/ciem.yaml
+kubectl apply -f deploy/kubernetes/00-namespace.yaml
 
-# Criar ConfigMap com sua configuração
-kubectl create configmap ciem-config \
+kubectl create configmap ciem-config -n ciem \
   --from-file=config/main.yaml \
   --from-file=config/modules.yaml \
   --from-file=config/auth.yaml \
-  -n ciem
+  --from-file=config/targets.yaml
 
-# Criar secret TLS
-kubectl create secret tls ciem-wildcard-tls \
-  --cert=certs/wildcard.crt \
-  --key=certs/wildcard.key \
-  -n ciem
+cp deploy/kubernetes/02-secrets.example.yaml deploy/kubernetes/02-secrets.yaml
+# Edite secrets e aplique (não commite 02-secrets.yaml)
+kubectl apply -f deploy/kubernetes/02-secrets.yaml
 
-# Verificar
+kubectl apply -f deploy/kubernetes/03-core.yaml \
+  -f deploy/kubernetes/04-portal.yaml \
+  -f deploy/kubernetes/05-modules.yaml \
+  -f deploy/kubernetes/06-grafana.yaml \
+  -f deploy/kubernetes/07-guacamole.yaml \
+  -f deploy/kubernetes/08-storage.yaml \
+  -f deploy/kubernetes/09-ingress.yaml
+
 kubectl get pods -n ciem
 kubectl logs -f deployment/ciem-core -n ciem
 ```
 
 ### Escalar módulos individualmente
 
-Cada módulo é um Deployment separado. Para adicionar Cacti:
+Cada módulo é um Deployment em `05-modules.yaml`. Para desabilitar um módulo, defina `enabled: false` em `modules.yaml` e escale para zero:
 
 ```bash
-# Copie o bloco module-zabbix em ciem.yaml, altere para cacti
-kubectl apply -f deploy/kubernetes/module-cacti.yaml
+kubectl scale deployment/module-cacti -n ciem --replicas=0
 ```
 
 ## Rancher
@@ -148,11 +152,11 @@ Arquivos importantes para backup:
 # Logs do core
 docker compose -f deploy/docker/docker-compose.yml logs ciem-core
 
-# Testar módulo isolado
-curl http://module-zabbix:8101/health
-curl -X POST http://module-zabbix:8101/collect
+# Testar módulo isolado (porta interna 8080)
+curl http://module-zabbix:8080/health
+curl -X POST http://module-zabbix:8080/collect
 
 # Verificar rede interna
 docker compose -f deploy/docker/docker-compose.yml exec ciem-core \
-  python -c "import httpx; print(httpx.get('http://module-zabbix:8101/health').json())"
+  python -c "import httpx; print(httpx.get('http://module-zabbix:8080/health').json())"
 ```
