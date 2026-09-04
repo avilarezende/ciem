@@ -99,46 +99,82 @@ async function loadHistory() {
 
 async function loadConfig() {
   const resp = await api('/config/modules');
+  if (!resp.ok) {
+    $('#config-modules').innerHTML = '<p class="hint config-feedback-err">Falha ao carregar módulos.</p>';
+    return;
+  }
   const modules = await resp.json();
-  $('#config-modules').innerHTML = Object.entries(modules).map(([name, cfg]) => `
+  const container = $('#config-modules');
+  container.innerHTML = Object.entries(modules).map(([name, cfg]) => `
     <div class="config-row">
       <div>
         <strong>${name}</strong>
         <div class="hint">${cfg.description || ''}</div>
       </div>
-      <div class="toggle ${cfg.enabled ? 'on' : ''}"
-           role="switch"
-           aria-checked="${cfg.enabled}"
-           data-module="${name}"
-           title="Clique para ${cfg.enabled ? 'desativar' : 'ativar'}"></div>
+      <button type="button"
+              class="toggle ${cfg.enabled ? 'on' : ''}"
+              role="switch"
+              aria-checked="${cfg.enabled}"
+              data-module="${name}"
+              title="Clique para ${cfg.enabled ? 'desativar' : 'ativar'}">
+        <span class="toggle-knob" aria-hidden="true"></span>
+      </button>
     </div>
   `).join('');
+
+  container.querySelectorAll('.toggle[data-module]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (currentUser?.role !== 'admin') {
+        showConfigFeedback('Apenas administradores podem alterar módulos.', true);
+        return;
+      }
+      const name = btn.dataset.module;
+      const next = !btn.classList.contains('on');
+      toggleModule(name, next, btn);
+    });
+  });
+}
+
+function showConfigFeedback(message, isError = false) {
+  const feedback = $('#config-feedback');
+  if (!feedback) return;
+  feedback.textContent = message;
+  feedback.className = isError ? 'hint config-feedback-err' : 'hint config-feedback-ok';
+  feedback.classList.remove('hidden');
 }
 
 async function toggleModule(name, enabled, toggleEl) {
-  const feedback = $('#config-feedback');
+  if (toggleEl.classList.contains('busy')) return;
   toggleEl.classList.add('busy');
+  // Atualização otimista — o usuário vê o switch mudar imediatamente
+  toggleEl.classList.toggle('on', enabled);
+  toggleEl.setAttribute('aria-checked', String(enabled));
+  toggleEl.title = `Clique para ${enabled ? 'desativar' : 'ativar'}`;
+
   try {
-    const resp = await api(`/config/modules/${name}`, {
+    const resp = await api(`/config/modules/${encodeURIComponent(name)}`, {
       method: 'PUT',
       body: JSON.stringify({ enabled }),
     });
     if (!resp.ok) {
       const err = await resp.json().catch(() => ({}));
-      throw new Error(err.detail || 'Falha ao atualizar módulo');
+      const detail = typeof err.detail === 'string' ? err.detail : 'Falha ao atualizar módulo';
+      throw new Error(detail);
     }
     const data = await resp.json();
     toggleEl.classList.toggle('on', data.enabled);
     toggleEl.setAttribute('aria-checked', String(data.enabled));
     toggleEl.title = `Clique para ${data.enabled ? 'desativar' : 'ativar'}`;
-    feedback.textContent = `Módulo ${name} ${data.enabled ? 'ativado' : 'desativado'}.`;
-    feedback.className = 'hint config-feedback-ok';
-    feedback.classList.remove('hidden');
+    showConfigFeedback(`Módulo ${name} ${data.enabled ? 'ativado' : 'desativado'}.`);
     loadModules();
   } catch (err) {
-    feedback.textContent = err.message || 'Erro ao salvar configuração.';
-    feedback.className = 'hint config-feedback-err';
-    feedback.classList.remove('hidden');
+    // Reverte UI se a API falhar
+    toggleEl.classList.toggle('on', !enabled);
+    toggleEl.setAttribute('aria-checked', String(!enabled));
+    toggleEl.title = `Clique para ${!enabled ? 'desativar' : 'ativar'}`;
+    showConfigFeedback(err.message || 'Erro ao salvar configuração.', true);
   } finally {
     toggleEl.classList.remove('busy');
   }
@@ -332,13 +368,6 @@ $('#btn-guacamole-full')?.addEventListener('click', openGuacamoleFull);
 
 document.addEventListener('click', (e) => {
   if (e.target.dataset?.goto) showPanel(e.target.dataset.goto);
-
-  const toggle = e.target.closest?.('.toggle[data-module]');
-  if (toggle && currentUser?.role === 'admin') {
-    const name = toggle.dataset.module;
-    const next = !toggle.classList.contains('on');
-    toggleModule(name, next, toggle);
-  }
 
   const gtab = e.target.closest?.('.g-tab');
   if (gtab) {
