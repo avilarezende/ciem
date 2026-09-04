@@ -102,27 +102,33 @@ def authenticate_ldap(
     """Stub de autenticação LDAP — integração real será implementada em versão futura.
 
     Quando ``ldap.enabled`` for ``true`` na configuração, este método deverá:
-    1. Conectar ao ``server_uri`` configurado.
-    2. Executar bind com ``bind_dn``/``bind_password`` (se definidos).
-    3. Buscar o usuário com ``user_search_filter`` substituindo ``{username}``.
-    4. Validar credenciais e mapear grupos via ``group_role_mapping``.
+    1. Conectar ao ``server_url`` (ou host:port) configurado.
+    2. Validar certificado CA em ``ca_cert_path`` se ``verify_ssl``.
+    3. Executar bind com ``bind_dn``/``bind_password`` (se definidos).
+    4. Buscar o usuário com ``user_filter`` (``%s`` = username) e ``uid_attribute``.
+    5. Validar credenciais e mapear grupos via ``group_role_mapping``.
 
-    Atualmente retorna ``None`` e registra que LDAP não está implementado.
+    Usuários locais (incluindo o ``admin`` padrão) continuam autenticando
+    independentemente do LDAP — a autenticação local é sempre tentada primeiro.
+
+    Atualmente retorna ``None`` quando LDAP está habilitado mas ainda não
+    implementado (não levanta exceção no fluxo de login).
     """
     auth_cfg = config or load_auth_config()
     if not auth_cfg.ldap.enabled:
         return None
 
-    # Stub: LDAP ainda não implementado — evita falha silenciosa em produção.
-    raise NotImplementedError(
-        "Autenticação LDAP ainda não implementada. "
-        f"Servidor configurado: {auth_cfg.ldap.server_uri}. "
-        "Use autenticação local ou desabilite ldap.enabled em auth.yaml."
-    )
+    # Stub: LDAP configurável no portal; bind real em versão futura.
+    _ = (username, password, auth_cfg.ldap.resolved_server_url())
+    return None
 
 
 def authenticate(username: str, password: str, config: AuthConfig | None = None) -> User | None:
-    """Tenta autenticação local e, se habilitado, LDAP (quando disponível)."""
+    """Tenta autenticação local primeiro; se falhar e LDAP estiver habilitado, tenta LDAP.
+
+    Usuários locais sempre têm prioridade. O admin padrão em ``auth.yaml``
+    funciona mesmo com LDAP ativo.
+    """
     user = authenticate_local(username, password, config=config)
     if user is not None:
         return user
@@ -131,7 +137,4 @@ def authenticate(username: str, password: str, config: AuthConfig | None = None)
     if not auth_cfg.ldap.enabled:
         return None
 
-    try:
-        return authenticate_ldap(username, password, config=config)
-    except NotImplementedError:
-        return None
+    return authenticate_ldap(username, password, config=config)

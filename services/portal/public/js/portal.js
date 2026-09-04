@@ -98,6 +98,10 @@ async function loadHistory() {
 }
 
 async function loadConfig() {
+  await Promise.all([loadAuthConfig(), loadModulesConfig()]);
+}
+
+async function loadModulesConfig() {
   const resp = await api('/config/modules');
   if (!resp.ok) {
     $('#config-modules').innerHTML = '<p class="hint config-feedback-err">Falha ao carregar módulos.</p>';
@@ -127,6 +131,130 @@ async function loadConfig() {
       saveModuleOptions(form);
     });
   });
+}
+
+const LDAP_FIELDS = [
+  { key: 'enabled', label: 'Habilitar LDAP', type: 'boolean' },
+  { key: 'host', label: 'Servidor (host)', type: 'text', placeholder: 'ldap.exemplo.local' },
+  { key: 'port', label: 'Porta', type: 'number', placeholder: '636' },
+  { key: 'use_ssl', label: 'Usar LDAPS (SSL/TLS)', type: 'boolean' },
+  { key: 'server_url', label: 'URL completa (opcional)', type: 'url', placeholder: 'ldaps://ldap.exemplo.local:636' },
+  { key: 'domain', label: 'Domain', type: 'text', placeholder: 'exemplo.local' },
+  { key: 'base_dn', label: 'Base DN', type: 'text', placeholder: 'ou=usuarios,dc=exemplo,dc=local' },
+  { key: 'uid_attribute', label: 'Atributo UID / login', type: 'text', placeholder: 'uid ou sAMAccountName' },
+  { key: 'user_filter', label: 'Filtro de busca (%s = usuário)', type: 'text', placeholder: '(uid=%s)' },
+  { key: 'bind_dn', label: 'Bind DN (conta de serviço)', type: 'text' },
+  { key: 'bind_password', label: 'Senha do bind', type: 'password' },
+  { key: 'ca_cert_path', label: 'Certificado CA / cadeia', type: 'text', placeholder: '/etc/ciem/certs/ldap-ca.crt' },
+  { key: 'client_cert_path', label: 'Certificado cliente (opcional)', type: 'text' },
+  { key: 'display_name_attribute', label: 'Atributo nome de exibição', type: 'text', placeholder: 'cn' },
+  { key: 'default_role', label: 'Papel padrão LDAP', type: 'text', placeholder: 'observer' },
+  { key: 'verify_ssl', label: 'Verificar certificado SSL', type: 'boolean' },
+];
+
+async function loadAuthConfig() {
+  const resp = await api('/config/auth');
+  if (!resp.ok) {
+    showConfigFeedback('Falha ao carregar autenticação.', true);
+    return;
+  }
+  const data = await resp.json();
+  renderLocalUsers(data.local_users || []);
+  renderLdapForm(data.ldap || {});
+}
+
+function renderLocalUsers(users) {
+  const list = $('#local-users-list');
+  if (!list) return;
+  list.innerHTML = users.length
+    ? users.map((u) => `
+      <div class="data-item">
+        <div>
+          <strong>${escapeAttr(u.username)}</strong>
+          ${u.is_default_admin ? '<span class="badge-admin">admin padrão</span>' : ''}
+          <div class="target-meta">${u.role} · ${u.enabled ? 'ativo' : 'desabilitado'}</div>
+        </div>
+        <div class="user-actions">
+          <button type="button" data-action="password" data-user="${escapeAttr(u.username)}">Alterar senha</button>
+          <button type="button" data-action="toggle" data-user="${escapeAttr(u.username)}" data-enabled="${u.enabled}">
+            ${u.enabled ? 'Desabilitar' : 'Habilitar'}
+          </button>
+          <button type="button" class="danger-btn" data-action="delete" data-user="${escapeAttr(u.username)}">Excluir</button>
+        </div>
+      </div>`).join('')
+    : '<p class="hint">Nenhum usuário local cadastrado.</p>';
+
+  list.querySelectorAll('button[data-action]').forEach((btn) => {
+    btn.addEventListener('click', () => handleUserAction(btn));
+  });
+}
+
+async function handleUserAction(btn) {
+  const username = btn.dataset.user;
+  const action = btn.dataset.action;
+  try {
+    if (action === 'password') {
+      const password = prompt(`Nova senha para ${username}:`);
+      if (!password) return;
+      const resp = await api(`/config/auth/users/${encodeURIComponent(username)}`, {
+        method: 'PUT',
+        body: JSON.stringify({ password }),
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(typeof err.detail === 'string' ? err.detail : 'Falha ao alterar senha');
+      }
+      showConfigFeedback(`Senha do usuário ${username} alterada.`);
+    } else if (action === 'toggle') {
+      const enabled = btn.dataset.enabled !== 'true';
+      const resp = await api(`/config/auth/users/${encodeURIComponent(username)}`, {
+        method: 'PUT',
+        body: JSON.stringify({ enabled }),
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(typeof err.detail === 'string' ? err.detail : 'Falha ao atualizar usuário');
+      }
+      showConfigFeedback(`Usuário ${username} ${enabled ? 'habilitado' : 'desabilitado'}.`);
+      loadAuthConfig();
+    } else if (action === 'delete') {
+      if (!confirm(`Excluir usuário local "${username}"?`)) return;
+      const resp = await api(`/config/auth/users/${encodeURIComponent(username)}`, { method: 'DELETE' });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(typeof err.detail === 'string' ? err.detail : 'Falha ao excluir');
+      }
+      showConfigFeedback(`Usuário ${username} excluído.`);
+      loadAuthConfig();
+    }
+  } catch (err) {
+    showConfigFeedback(err.message || 'Erro na operação de usuário.', true);
+  }
+}
+
+function renderLdapForm(ldap) {
+  const grid = $('#ldap-fields');
+  if (!grid) return;
+  grid.innerHTML = LDAP_FIELDS.map((field) => renderField(field, ldap)).join('');
+}
+
+async function saveLdapForm(form) {
+  const payload = {};
+  form.querySelectorAll('input[name]').forEach((input) => {
+    if (input.type === 'checkbox') payload[input.name] = input.checked;
+    else if (input.type === 'number') payload[input.name] = input.value === '' ? null : Number(input.value);
+    else payload[input.name] = input.value;
+  });
+  const resp = await api('/config/auth/ldap', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(typeof err.detail === 'string' ? err.detail : 'Falha ao salvar LDAP');
+  }
+  showConfigFeedback('Configuração LDAP salva em auth.yaml.');
+  loadAuthConfig();
 }
 
 /** Campos de personalização por módulo (labels em português). */
@@ -520,6 +648,41 @@ $$('.nav-btn[data-panel]').forEach(btn => {
 });
 
 $('#btn-guacamole-full')?.addEventListener('click', openGuacamoleFull);
+
+$('#form-ldap')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try {
+    await saveLdapForm(e.target);
+  } catch (err) {
+    showConfigFeedback(err.message || 'Erro ao salvar LDAP.', true);
+  }
+});
+
+$('#form-create-user')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const payload = {
+    username: form.username.value.trim(),
+    password: form.password.value,
+    role: form.role.value,
+    enabled: true,
+  };
+  try {
+    const resp = await api('/config/auth/users', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(typeof err.detail === 'string' ? err.detail : 'Falha ao criar usuário');
+    }
+    form.reset();
+    showConfigFeedback(`Usuário ${payload.username} criado.`);
+    loadAuthConfig();
+  } catch (err) {
+    showConfigFeedback(err.message || 'Erro ao criar usuário.', true);
+  }
+});
 
 document.addEventListener('click', (e) => {
   if (e.target.dataset?.goto) showPanel(e.target.dataset.goto);

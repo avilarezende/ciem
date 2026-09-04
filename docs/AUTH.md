@@ -1,17 +1,71 @@
 # Autenticação e Autorização
 
-O CIEM suporta dois métodos de autenticação: **usuários locais** e **LDAP/Active Directory**.
+O CIEM combina **usuários locais** (sempre disponíveis) e **LDAP/Active Directory** (opcional).
+
+## Princípios
+
+1. **Usuários locais têm prioridade** — o login tenta `local_users` antes do LDAP.
+2. **LDAP é opcional** — se não configurar (ou deixar `enabled: false`), o sistema usa só usuários locais.
+3. **Admin padrão independente do LDAP** — o usuário `admin` em `config/auth.yaml` existe e autentica mesmo com LDAP ativo.
 
 ## Papéis (roles)
 
 | Papel | Código | Permissões |
 |-------|--------|-----------|
 | **Observador** | `observer` | Visualiza dashboards, alarmes ativos, histórico de eventos |
-| **Administrador** | `admin` | Tudo do observador + configura módulos, inicia sessões de manutenção, gerencia usuários, acessa auditoria |
+| **Administrador** | `admin` | Tudo do observador + configura módulos, LDAP, usuários, sessões e auditoria |
+
+## Usuário admin padrão
+
+| Campo | Valor padrão |
+|-------|----------------|
+| Usuário | `admin` |
+| Senha | `admin123` |
+| Papel | `admin` |
+
+> **Altere a senha imediatamente em produção.**
+
+### Alterar a senha do admin
+
+**Pelo portal (recomendado):**
+
+1. Login como `admin`
+2. **Configuração** → seção **Usuários locais**
+3. Em `admin` → **Alterar senha**
+4. Informe a nova senha
+
+**Pelo arquivo / CLI:**
+
+```bash
+export PYTHONPATH=shared
+python -c "from ciem_common.auth import hash_password; print(hash_password('nova_senha_segura'))"
+```
+
+Cole o hash em `config/auth.yaml`:
+
+```yaml
+local_users:
+  - username: admin
+    password_hash: "SAL_HEX$DIGEST_HEX"
+    role: admin
+    enabled: true
+```
+
+Reinicie o `ciem-core` (ou o pod) após editar o YAML manualmente.
+
+### Excluir o usuário admin
+
+- Só é permitido se existir **outro** administrador local ativo.
+- Crie um segundo admin no portal → depois exclua ou desabilite o `admin` antigo.
+- A API/portal bloqueia a exclusão do **último** admin com mensagem de erro.
+
+### Desabilitar sem excluir
+
+Use **Desabilitar** no portal (ou `enabled: false` no YAML). Também é bloqueado se for o último admin ativo.
 
 ## Usuários locais
 
-Definidos em `config/auth.yaml`:
+Definidos em `config/auth.yaml` e gerenciáveis em **Configuração** no portal:
 
 ```yaml
 local_users:
@@ -26,15 +80,6 @@ local_users:
     enabled: true
 ```
 
-### Gerar hash de senha
-
-```bash
-export PYTHONPATH=shared
-python -c "from ciem_common.auth import hash_password; print(hash_password('minha_senha'))"
-```
-
-Cole o resultado no campo `password_hash`.
-
 ### Credenciais padrão (desenvolvimento)
 
 | Usuário | Senha | Papel |
@@ -42,18 +87,76 @@ Cole o resultado no campo `password_hash`.
 | admin | admin123 | admin |
 | observador | observer123 | observer |
 
-> Altere imediatamente em produção!
+### Operações no portal
+
+| Ação | Onde |
+|------|------|
+| Criar usuário | Formulário **Novo usuário local** |
+| Alterar senha | Botão **Alterar senha** |
+| Habilitar/desabilitar | Botão **Desabilitar** / **Habilitar** |
+| Excluir | Botão **Excluir** (não remove o último admin) |
+
+### API
+
+```bash
+# Listar auth (admin)
+curl -H "Authorization: Bearer ciem-admin" https://ciem.exemplo.local/api/config/auth
+
+# Criar usuário
+curl -X POST -H "Authorization: Bearer ciem-admin" -H "Content-Type: application/json" \
+  -d '{"username":"ops","password":"segredo","role":"observer"}' \
+  https://ciem.exemplo.local/api/config/auth/users
+
+# Alterar senha
+curl -X PUT -H "Authorization: Bearer ciem-admin" -H "Content-Type: application/json" \
+  -d '{"password":"nova_senha"}' \
+  https://ciem.exemplo.local/api/config/auth/users/admin
+
+# Excluir
+curl -X DELETE -H "Authorization: Bearer ciem-admin" \
+  https://ciem.exemplo.local/api/config/auth/users/observador
+```
 
 ## LDAP / Active Directory
 
+Configure no portal (**Configuração → LDAP**) ou em `config/auth.yaml`.
+
+### Campos principais
+
+| Campo | Descrição |
+|-------|-----------|
+| `enabled` | Liga/desliga autenticação LDAP |
+| `host` / `port` | Servidor e porta |
+| `use_ssl` | LDAPS (TLS) |
+| `server_url` | URL completa (opcional; senão montada de host/port) |
+| `domain` | Domínio AD/LDAP |
+| `base_dn` | Base DN de busca |
+| `uid_attribute` | Atributo de login (`uid`, `sAMAccountName`, …) |
+| `user_filter` | Filtro (`%s` = username), ex.: `(uid=%s)` |
+| `bind_dn` / `bind_password` | Conta de serviço |
+| `ca_cert_path` | Certificado CA / cadeia |
+| `client_cert_path` | Certificado cliente (opcional) |
+| `verify_ssl` | Validar certificado do servidor |
+| `group_role_mapping` | Grupo LDAP → papel CIEM |
+| `default_role` | Papel se não houver grupo mapeado |
+
+### Exemplo YAML
+
 ```yaml
 ldap:
-  enabled: true
+  enabled: false
+  host: "ldap.exemplo.local"
+  port: 636
+  use_ssl: true
   server_url: "ldaps://ldap.exemplo.local:636"
+  domain: "exemplo.local"
   base_dn: "ou=usuarios,dc=exemplo,dc=local"
+  uid_attribute: "uid"
   user_filter: "(uid=%s)"
   bind_dn: "cn=ciem-service,ou=servicos,dc=exemplo,dc=local"
-  bind_password: ""              # ou LDAP_BIND_PASSWORD no .env
+  bind_password: ""
+  ca_cert_path: "/etc/ciem/certs/ldap-ca.crt"
+  client_cert_path: ""
   display_name_attribute: "cn"
   group_role_mapping:
     "cn=ciem-admins,ou=grupos,dc=exemplo,dc=local": admin
@@ -62,23 +165,26 @@ ldap:
   verify_ssl: true
 ```
 
-### Fluxo LDAP
+### Fluxo de login
 
-1. Usuário informa login/senha no portal
-2. CIEM tenta autenticação local primeiro
-3. Se falhar e LDAP habilitado, consulta o servidor LDAP
-4. Mapeia grupos LDAP → papéis CIEM via `group_role_mapping`
-5. Retorna token de sessão
+```
+1. Usuário informa login/senha
+2. CIEM autentica em local_users (admin, observador, etc.)
+3. Se falhar e ldap.enabled=true → tenta LDAP
+4. Sucesso → token de sessão
+```
 
-### Variáveis de ambiente LDAP
+Se LDAP **não** estiver configurado ou estiver desabilitado, apenas usuários locais autenticam.
+
+### Variáveis de ambiente
 
 ```bash
 LDAP_BIND_PASSWORD=senha-do-servico
 ```
 
-## API de autenticação
+> A integração de bind LDAP em runtime pode ser completada em versões futuras; os apontamentos já são persistidos e editáveis pelo portal.
 
-### Login
+## API de login
 
 ```bash
 curl -X POST https://ciem.exemplo.local/api/auth/login \
@@ -86,7 +192,6 @@ curl -X POST https://ciem.exemplo.local/api/auth/login \
   -d '{"username": "admin", "password": "admin123"}'
 ```
 
-Resposta:
 ```json
 {
   "token": "ciem-admin",
@@ -96,29 +201,23 @@ Resposta:
 }
 ```
 
-### Usar token
-
-```bash
-curl https://ciem.exemplo.local/api/alarms/active \
-  -H "Authorization: Bearer ciem-admin"
-```
-
 ## Segurança
 
-- Senhas locais armazenadas como hash PBKDF2-SHA256 (260.000 iterações)
-- Comunicação via HTTPS (certificado wildcard no proxy)
-- Tokens simples para desenvolvimento — em produção, considere JWT com expiração
-- LDAP via `ldaps://` recomendado
-- Sessões de manutenção auditadas independentemente da autenticação
+- Senhas locais: PBKDF2-SHA256 (260.000 iterações)
+- HTTPS no proxy (certificado wildcard)
+- Último admin local protegido contra exclusão/desabilitação
+- Preferir `ldaps://` e `ca_cert_path` em produção
 
 ## Proteção de endpoints
 
 | Endpoint | Papel mínimo |
 |----------|-------------|
 | `GET /health` | Público |
+| `POST /auth/login` | Público |
 | `GET /alarms/active` | observer |
-| `GET /history` | observer |
 | `GET /config/modules` | observer |
-| `GET /config/main` | admin |
+| `PUT /config/modules/{nome}` | admin |
+| `GET /config/auth` | admin |
+| `PUT /config/auth/ldap` | admin |
+| `POST/PUT/DELETE /config/auth/users...` | admin |
 | `POST /sessions/start` | admin |
-| `GET /sessions/audit` | admin |

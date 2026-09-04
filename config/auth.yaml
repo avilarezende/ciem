@@ -1,13 +1,16 @@
 # =============================================================================
 # CIEM — Autenticação e Autorização
 # =============================================================================
-# Papéis disponíveis:
-#   observer — visualiza dashboards, alarmes e histórico (somente leitura)
-#   admin    — configura módulos, usuários, proxy e sessões de manutenção
+# Papéis: observer (leitura) | admin (configuração + manutenção)
 #
-# Gere hashes de senha com:
-#   python -c "from ciem_common.auth import hash_password; print(hash_password('sua_senha'))"
+# Usuários locais funcionam INDEPENDENTEMENTE do LDAP.
+# O usuário "admin" é o administrador padrão — altere a senha em produção.
 #
+# Alterar senha (CLI):
+#   export PYTHONPATH=shared
+#   python -c "from ciem_common.auth import hash_password; print(hash_password('nova_senha'))"
+#
+# Ou use o portal: Configuração → Usuários locais → Alterar senha
 # Documentação: docs/AUTH.md
 # =============================================================================
 
@@ -29,24 +32,26 @@ local_users:
 
 # ---------------------------------------------------------------------------
 # LDAP / Active Directory (opcional)
+# Deixe enabled: false para usar apenas usuários locais.
 # ---------------------------------------------------------------------------
 ldap:
   enabled: false
-  # URL do servidor LDAP (ldaps:// recomendado em produção)
+  host: "ldap.exemplo.local"
+  port: 636
+  use_ssl: true
+  # URL completa (opcional; se vazia, montada de host/port/use_ssl)
   server_url: "ldaps://ldap.exemplo.local:636"
-  # Base DN para busca de usuários
+  domain: "exemplo.local"
   base_dn: "ou=usuarios,dc=exemplo,dc=local"
-  # Filtro de busca (%s = username informado no login)
-  user_filter: "(uid=%s)"
-  # DN do usuário de bind (deixe vazio para bind anônimo)
+  uid_attribute: "uid"            # uid | sAMAccountName | cn
+  user_filter: "(uid=%s)"         # %s = username do login
   bind_dn: "cn=ciem-service,ou=servicos,dc=exemplo,dc=local"
-  bind_password: ""       # ou LDAP_BIND_PASSWORD no .env
-  # Atributo que contém o nome de exibição
+  bind_password: ""               # ou LDAP_BIND_PASSWORD no .env
+  ca_cert_path: ""                # certificado CA / cadeia PEM
+  client_cert_path: ""            # certificado cliente (opcional)
   display_name_attribute: "cn"
-  # Mapeamento de grupos LDAP → papéis CIEM
   group_role_mapping:
     "cn=ciem-admins,ou=grupos,dc=exemplo,dc=local": admin
     "cn=ciem-observers,ou=grupos,dc=exemplo,dc=local": observer
-  # Papel padrão quando o usuário não pertence a nenhum grupo mapeado
   default_role: observer
   verify_ssl: true

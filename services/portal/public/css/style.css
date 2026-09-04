@@ -151,7 +151,26 @@ body {
   padding-top: 1.4rem;
 }
 .opt-bool input { width: auto; accent-color: var(--accent); }
-.btn-save-module { margin-top: 0.2rem; }
+.opt-field select {
+  width: 100%; padding: 0.55rem 0.7rem; border: 1px solid var(--border);
+  border-radius: 6px; background: var(--bg-primary); color: var(--text); font-size: 0.9rem;
+}
+.auth-form {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 1rem 1.1rem 1.2rem; margin-bottom: 1.5rem;
+}
+.auth-form h4 { margin: 0 0 0.8rem; color: var(--accent); font-size: 0.95rem; }
+.user-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.user-actions button {
+  padding: 0.35rem 0.7rem; border: 1px solid var(--border); border-radius: 4px;
+  background: var(--bg-primary); color: var(--text); cursor: pointer; font-size: 0.8rem;
+}
+.user-actions button:hover { border-color: var(--accent); color: var(--accent); }
+.user-actions .danger-btn:hover { border-color: var(--danger); color: var(--danger); }
+.badge-admin {
+  display: inline-block; margin-left: 0.4rem; padding: 0.1rem 0.45rem;
+  font-size: 0.7rem; border-radius: 3px; background: rgba(0,188,212,0.2); color: var(--accent);
+}
 .toggle {
   width: 48px; height: 28px; background: var(--border); border-radius: 14px;
   position: relative; cursor: pointer; flex-shrink: 0; border: none; padding: 0;

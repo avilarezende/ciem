@@ -123,23 +123,83 @@ class LocalUserEntry(BaseModel):
 class LdapConfig(BaseModel):
     """Configuração do backend LDAP (``config/auth.yaml`` -> ``ldap``).
 
-    Attributes:
-        enabled: Ativa tentativa de autenticação via LDAP após falha local.
-        server_uri: URI do servidor (ex.: ``ldap://dc01.empresa.local:389``).
-        base_dn: DN base para busca de usuários (ex.: ``dc=empresa,dc=local``).
-        bind_dn: DN da conta de serviço para bind inicial (opcional).
-        bind_password: Senha da conta de serviço (opcional; preferir variável de ambiente).
-        user_search_filter: Filtro LDAP com placeholder ``{username}``.
-        group_role_mapping: Mapa grupo LDAP -> papel CIEM (``observer``/``admin``).
+    Usuários locais em ``local_users`` continuam válidos mesmo com LDAP ativo.
+    O usuário ``admin`` padrão é independente do LDAP.
     """
 
-    enabled: bool = Field(default=False)
-    server_uri: str = Field(default="ldap://localhost:389")
-    base_dn: str = Field(default="dc=example,dc=com")
+    enabled: bool = Field(default=False, description="Ativa autenticação LDAP após falha local")
+    host: str = Field(default="ldap.exemplo.local", description="Hostname ou IP do servidor LDAP")
+    port: int = Field(default=636, ge=1, le=65535, description="Porta LDAP/LDAPS")
+    use_ssl: bool = Field(default=True, description="Usar LDAPS (TLS)")
+    server_url: str = Field(
+        default="",
+        description="URL completa (opcional; se vazio, montada a partir de host/port/use_ssl)",
+    )
+    domain: str = Field(default="exemplo.local", description="Domínio AD/LDAP")
+    base_dn: str = Field(default="ou=usuarios,dc=exemplo,dc=local")
+    uid_attribute: str = Field(default="uid", description="Atributo de login (uid, sAMAccountName, etc.)")
+    user_filter: str = Field(default="(uid=%s)", description="Filtro de busca; %s = username")
     bind_dn: str = Field(default="")
     bind_password: str = Field(default="")
-    user_search_filter: str = Field(default="(uid={username})")
+    ca_cert_path: str = Field(default="", description="Caminho do certificado CA / cadeia")
+    client_cert_path: str = Field(default="", description="Certificado cliente (opcional)")
+    display_name_attribute: str = Field(default="cn")
     group_role_mapping: dict[str, str] = Field(default_factory=dict)
+    default_role: str = Field(default="observer")
+    verify_ssl: bool = Field(default=True)
+
+    @classmethod
+    def from_raw(cls, raw: dict[str, Any]) -> LdapConfig:
+        """Aceita nomes legados (server_uri, user_search_filter) e campos novos."""
+        data = dict(raw) if isinstance(raw, dict) else {}
+        if "server_url" not in data and "server_uri" in data:
+            data["server_url"] = data.pop("server_uri")
+        if "user_filter" not in data and "user_search_filter" in data:
+            filt = str(data.pop("user_search_filter"))
+            data["user_filter"] = filt.replace("{username}", "%s")
+        # Inferir host/port a partir da URL se não informados
+        url = str(data.get("server_url") or "")
+        if url and "host" not in raw:
+            parsed = url.replace("ldaps://", "").replace("ldap://", "")
+            host_port = parsed.split("/")[0]
+            if ":" in host_port:
+                host, port_s = host_port.rsplit(":", 1)
+                data.setdefault("host", host)
+                if port_s.isdigit():
+                    data.setdefault("port", int(port_s))
+            else:
+                data.setdefault("host", host_port)
+            data.setdefault("use_ssl", url.startswith("ldaps://"))
+        return cls.model_validate(data)
+
+    def resolved_server_url(self) -> str:
+        """URL efetiva do servidor LDAP."""
+        if self.server_url.strip():
+            return self.server_url.strip()
+        scheme = "ldaps" if self.use_ssl else "ldap"
+        return f"{scheme}://{self.host}:{self.port}"
+
+    def to_yaml_dict(self) -> dict[str, Any]:
+        """Serializa para gravação em auth.yaml."""
+        return {
+            "enabled": self.enabled,
+            "host": self.host,
+            "port": self.port,
+            "use_ssl": self.use_ssl,
+            "server_url": self.resolved_server_url(),
+            "domain": self.domain,
+            "base_dn": self.base_dn,
+            "uid_attribute": self.uid_attribute,
+            "user_filter": self.user_filter,
+            "bind_dn": self.bind_dn,
+            "bind_password": self.bind_password,
+            "ca_cert_path": self.ca_cert_path,
+            "client_cert_path": self.client_cert_path,
+            "display_name_attribute": self.display_name_attribute,
+            "group_role_mapping": self.group_role_mapping,
+            "default_role": self.default_role,
+            "verify_ssl": self.verify_ssl,
+        }
 
 
 class AuthConfig(BaseModel):
@@ -169,8 +229,141 @@ def load_auth_config() -> AuthConfig:
     ldap_raw = raw.get("ldap", {})
     return AuthConfig(
         local_users=[LocalUserEntry.model_validate(u) for u in local_raw if isinstance(u, dict)],
-        ldap=LdapConfig.model_validate(ldap_raw if isinstance(ldap_raw, dict) else {}),
+        ldap=LdapConfig.from_raw(ldap_raw if isinstance(ldap_raw, dict) else {}),
     )
+
+
+def save_auth_config(config: AuthConfig) -> None:
+    """Persiste ``AuthConfig`` em ``config/auth.yaml``."""
+    path = _config_dir() / "auth.yaml"
+    payload = {
+        "local_users": [
+            {
+                "username": u.username,
+                "password_hash": u.password_hash,
+                "role": u.role,
+                "enabled": u.enabled,
+            }
+            for u in config.local_users
+        ],
+        "ldap": config.ldap.to_yaml_dict(),
+    }
+    header = (
+        "# =============================================================================\n"
+        "# CIEM — Autenticação e Autorização\n"
+        "# Atualizado pelo portal de administração.\n"
+        "# Usuários locais funcionam independentemente do LDAP.\n"
+        "# Usuário padrão: admin (altere a senha em produção).\n"
+        "# Documentação: docs/AUTH.md\n"
+        "# =============================================================================\n"
+    )
+    dumped = yaml.safe_dump(payload, allow_unicode=True, default_flow_style=False, sort_keys=False)
+    path.write_text(header + "\n" + dumped, encoding="utf-8")
+    clear_config_cache()
+
+
+def update_ldap_config(updates: dict[str, Any]) -> LdapConfig:
+    """Atualiza campos LDAP e persiste em auth.yaml."""
+    cfg = load_auth_config()
+    current = cfg.ldap.to_yaml_dict()
+    for key, value in updates.items():
+        if key in current or key in LdapConfig.model_fields:
+            if key == "port" and value is not None:
+                current[key] = int(value)
+            elif key in {"enabled", "use_ssl", "verify_ssl"}:
+                if isinstance(value, str):
+                    current[key] = value.strip().lower() in {"1", "true", "yes", "on"}
+                else:
+                    current[key] = bool(value)
+            elif key == "group_role_mapping" and isinstance(value, dict):
+                current[key] = {str(k): str(v) for k, v in value.items()}
+            else:
+                current[key] = value
+    cfg.ldap = LdapConfig.from_raw(current)
+    # Se server_url vazio, regenera
+    if not str(updates.get("server_url") or "").strip():
+        cfg.ldap.server_url = cfg.ldap.resolved_server_url()
+    save_auth_config(cfg)
+    return load_auth_config().ldap
+
+
+def create_local_user(username: str, password: str, role: str = "observer", enabled: bool = True) -> LocalUserEntry:
+    """Cria usuário local com senha hasheada."""
+    from ciem_common.auth import hash_password
+
+    cfg = load_auth_config()
+    if any(u.username == username for u in cfg.local_users):
+        raise ValueError(f"Usuário '{username}' já existe")
+    if role not in {"admin", "observer"}:
+        raise ValueError("Papel deve ser admin ou observer")
+    if not password:
+        raise ValueError("Senha obrigatória")
+    entry = LocalUserEntry(
+        username=username,
+        password_hash=hash_password(password),
+        role=role,
+        enabled=enabled,
+    )
+    cfg.local_users.append(entry)
+    save_auth_config(cfg)
+    return entry
+
+
+def update_local_user(
+    username: str,
+    *,
+    password: str | None = None,
+    role: str | None = None,
+    enabled: bool | None = None,
+) -> LocalUserEntry:
+    """Atualiza senha, papel ou status de um usuário local."""
+    from ciem_common.auth import hash_password
+
+    cfg = load_auth_config()
+    for index, entry in enumerate(cfg.local_users):
+        if entry.username != username:
+            continue
+        data = entry.model_dump()
+        if password is not None:
+            if not password:
+                raise ValueError("Senha não pode ser vazia")
+            data["password_hash"] = hash_password(password)
+        if role is not None:
+            if role not in {"admin", "observer"}:
+                raise ValueError("Papel deve ser admin ou observer")
+            # Não remover o último admin
+            if entry.role == "admin" and role != "admin":
+                admins = [u for u in cfg.local_users if u.role == "admin" and u.enabled]
+                if len(admins) <= 1:
+                    raise ValueError("Não é possível remover o papel admin do último administrador")
+            data["role"] = role
+        if enabled is not None:
+            if entry.role == "admin" and entry.enabled and not enabled:
+                admins = [u for u in cfg.local_users if u.role == "admin" and u.enabled]
+                if len(admins) <= 1:
+                    raise ValueError("Não é possível desabilitar o último administrador")
+            data["enabled"] = enabled
+        cfg.local_users[index] = LocalUserEntry.model_validate(data)
+        save_auth_config(cfg)
+        return cfg.local_users[index]
+    raise KeyError(f"Usuário '{username}' não encontrado")
+
+
+def delete_local_user(username: str) -> None:
+    """Remove usuário local. Impede exclusão do último admin."""
+    cfg = load_auth_config()
+    target = next((u for u in cfg.local_users if u.username == username), None)
+    if target is None:
+        raise KeyError(f"Usuário '{username}' não encontrado")
+    if target.role == "admin":
+        admins = [u for u in cfg.local_users if u.role == "admin" and u.enabled]
+        if len(admins) <= 1:
+            raise ValueError(
+                "Não é possível excluir o último administrador. "
+                "Crie outro admin antes ou altere a senha do usuário admin."
+            )
+    cfg.local_users = [u for u in cfg.local_users if u.username != username]
+    save_auth_config(cfg)
 
 
 def is_module_enabled(module_name: str) -> bool:

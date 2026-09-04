@@ -22,9 +22,14 @@ from ciem_common.audit import log_session, read_sessions
 from ciem_common.auth import User, authenticate
 from ciem_common.config_loader import (
     clear_config_cache,
+    create_local_user,
+    delete_local_user,
     is_module_enabled,
+    load_auth_config,
     load_main_config,
     load_modules_config,
+    update_ldap_config,
+    update_local_user,
     update_module_config,
 )
 from ciem_common.interfaces import SessionRecord
@@ -155,6 +160,124 @@ async def update_module(
         "description": entry.description,
         "options": entry.options,
     }
+
+
+class LdapUpdateRequest(BaseModel):
+    enabled: bool | None = None
+    host: str | None = None
+    port: int | None = None
+    use_ssl: bool | None = None
+    server_url: str | None = None
+    domain: str | None = None
+    base_dn: str | None = None
+    uid_attribute: str | None = None
+    user_filter: str | None = None
+    bind_dn: str | None = None
+    bind_password: str | None = None
+    ca_cert_path: str | None = None
+    client_cert_path: str | None = None
+    display_name_attribute: str | None = None
+    group_role_mapping: dict[str, str] | None = None
+    default_role: str | None = None
+    verify_ssl: bool | None = None
+
+
+class LocalUserCreateRequest(BaseModel):
+    username: str
+    password: str
+    role: str = "observer"
+    enabled: bool = True
+
+
+class LocalUserUpdateRequest(BaseModel):
+    password: str | None = None
+    role: str | None = None
+    enabled: bool | None = None
+
+
+@app.get("/config/auth")
+async def get_auth_config(user: User = Depends(require_admin)) -> dict[str, Any]:
+    """Retorna LDAP + usuários locais (sem expor password_hash)."""
+    cfg = load_auth_config()
+    ldap = cfg.ldap.to_yaml_dict()
+    # Não devolver senha de bind em claro na UI se quiser mascarar — admin precisa editar
+    return {
+        "local_users": [
+            {
+                "username": u.username,
+                "role": u.role,
+                "enabled": u.enabled,
+                "is_default_admin": u.username == "admin" and u.role == "admin",
+            }
+            for u in cfg.local_users
+        ],
+        "ldap": ldap,
+        "notes": {
+            "local_priority": "Autenticação local é sempre tentada antes do LDAP.",
+            "default_admin": "O usuário admin local existe independentemente do LDAP.",
+        },
+    }
+
+
+@app.put("/config/auth/ldap")
+async def put_ldap_config(
+    body: LdapUpdateRequest,
+    user: User = Depends(require_admin),
+) -> dict[str, Any]:
+    """Atualiza apontamentos LDAP em config/auth.yaml."""
+    updates = body.model_dump(exclude_none=True)
+    if not updates:
+        raise HTTPException(status_code=400, detail="Nenhum campo LDAP informado")
+    try:
+        ldap = update_ldap_config(updates)
+    except (FileNotFoundError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"ldap": ldap.to_yaml_dict(), "status": "saved"}
+
+
+@app.post("/config/auth/users")
+async def post_local_user(
+    body: LocalUserCreateRequest,
+    user: User = Depends(require_admin),
+) -> dict[str, Any]:
+    try:
+        entry = create_local_user(body.username.strip(), body.password, body.role, body.enabled)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"username": entry.username, "role": entry.role, "enabled": entry.enabled}
+
+
+@app.put("/config/auth/users/{username}")
+async def put_local_user(
+    username: str,
+    body: LocalUserUpdateRequest,
+    user: User = Depends(require_admin),
+) -> dict[str, Any]:
+    if body.password is None and body.role is None and body.enabled is None:
+        raise HTTPException(status_code=400, detail="Informe password, role e/ou enabled")
+    try:
+        entry = update_local_user(
+            username,
+            password=body.password,
+            role=body.role,
+            enabled=body.enabled,
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"username": entry.username, "role": entry.role, "enabled": entry.enabled}
+
+
+@app.delete("/config/auth/users/{username}")
+async def remove_local_user(username: str, user: User = Depends(require_admin)) -> dict[str, str]:
+    try:
+        delete_local_user(username)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"status": "deleted", "username": username}
 
 
 
