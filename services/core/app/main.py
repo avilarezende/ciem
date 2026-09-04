@@ -25,6 +25,7 @@ from ciem_common.config_loader import (
     is_module_enabled,
     load_main_config,
     load_modules_config,
+    set_module_enabled,
 )
 from ciem_common.interfaces import SessionRecord
 from ciem_common.sso import guacamole_client_id
@@ -119,6 +120,10 @@ async def login(body: LoginRequest) -> LoginResponse:
     )
 
 
+class ModuleToggleRequest(BaseModel):
+    enabled: bool
+
+
 @app.get("/config/modules")
 async def get_modules_config(user: User = Depends(require_user)) -> dict[str, Any]:
     modules_cfg = load_modules_config()
@@ -126,6 +131,23 @@ async def get_modules_config(user: User = Depends(require_user)) -> dict[str, An
         name: {"enabled": entry.enabled, "description": entry.description, "options": entry.options}
         for name, entry in modules_cfg.modules.items()
     }
+
+
+@app.put("/config/modules/{module_name}")
+async def toggle_module(
+    module_name: str,
+    body: ModuleToggleRequest,
+    user: User = Depends(require_admin),
+) -> dict[str, Any]:
+    """Ativa ou desativa um módulo coletor (persiste em config/modules.yaml)."""
+    try:
+        enabled = set_module_enabled(module_name, body.enabled)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except (FileNotFoundError, RuntimeError) as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return {"module": module_name, "enabled": enabled}
+
 
 
 @app.get("/config/main")

@@ -38,7 +38,7 @@
         <button class="nav-btn" data-panel="history">Histórico</button>
         <button class="nav-btn admin-only" data-panel="sessions">Sessões</button>
         <button class="nav-btn admin-only" data-panel="config">Configuração</button>
-        <a class="nav-btn" href="/grafana/" target="_blank">Grafana</a>
+        <button class="nav-btn" data-panel="grafana">Grafana</button>
         <button id="logout-btn" class="nav-btn danger">Sair</button>
       </nav>
     </header>
@@ -81,8 +81,24 @@
       <!-- Configuração -->
       <section id="panel-config" class="panel">
         <h2>Configuração</h2>
-        <p class="hint">Ative ou desative módulos coletores. Para alterações avançadas, edite os arquivos YAML em <code>config/</code>.</p>
+        <p class="hint">Ative ou desative módulos coletores. A alteração é salva em <code>config/modules.yaml</code>.</p>
+        <p id="config-feedback" class="hint hidden"></p>
         <div id="config-modules" class="config-modules"></div>
+      </section>
+
+      <!-- Grafana (dashboards embutidos via API CIEM) -->
+      <section id="panel-grafana" class="panel">
+        <h2>Dashboards Grafana</h2>
+        <p class="hint">Visão NOC baseada na API CIEM. Em produção com o serviço Grafana, use também <code>/grafana/</code>.</p>
+        <div class="grafana-tabs">
+          <button class="g-tab active" data-gview="overview">Visão Geral NOC</button>
+          <button class="g-tab" data-gview="alarms">Alarmes Ativos</button>
+          <button class="g-tab" data-gview="modules">Módulos</button>
+          <button class="g-tab" data-gview="history">Histórico</button>
+          <button class="g-tab" data-gview="sessions">Sessões</button>
+        </div>
+        <div id="grafana-stats" class="grafana-stats"></div>
+        <div id="grafana-content" class="data-list"></div>
       </section>
     </main>
   </div>

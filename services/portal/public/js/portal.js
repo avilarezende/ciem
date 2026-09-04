@@ -106,9 +106,125 @@ async function loadConfig() {
         <strong>${name}</strong>
         <div class="hint">${cfg.description || ''}</div>
       </div>
-      <div class="toggle ${cfg.enabled ? 'on' : ''}" data-module="${name}" title="Altere em config/modules.yaml"></div>
+      <div class="toggle ${cfg.enabled ? 'on' : ''}"
+           role="switch"
+           aria-checked="${cfg.enabled}"
+           data-module="${name}"
+           title="Clique para ${cfg.enabled ? 'desativar' : 'ativar'}"></div>
     </div>
   `).join('');
+}
+
+async function toggleModule(name, enabled, toggleEl) {
+  const feedback = $('#config-feedback');
+  toggleEl.classList.add('busy');
+  try {
+    const resp = await api(`/config/modules/${name}`, {
+      method: 'PUT',
+      body: JSON.stringify({ enabled }),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.detail || 'Falha ao atualizar módulo');
+    }
+    const data = await resp.json();
+    toggleEl.classList.toggle('on', data.enabled);
+    toggleEl.setAttribute('aria-checked', String(data.enabled));
+    toggleEl.title = `Clique para ${data.enabled ? 'desativar' : 'ativar'}`;
+    feedback.textContent = `Módulo ${name} ${data.enabled ? 'ativado' : 'desativado'}.`;
+    feedback.className = 'hint config-feedback-ok';
+    feedback.classList.remove('hidden');
+    loadModules();
+  } catch (err) {
+    feedback.textContent = err.message || 'Erro ao salvar configuração.';
+    feedback.className = 'hint config-feedback-err';
+    feedback.classList.remove('hidden');
+  } finally {
+    toggleEl.classList.remove('busy');
+  }
+}
+
+async function loadGrafanaView(view = 'overview') {
+  const stats = $('#grafana-stats');
+  const content = $('#grafana-content');
+  if (!stats || !content) return;
+
+  const [alarmsResp, modulesResp, historyResp] = await Promise.all([
+    api('/alarms/active'),
+    api('/modules/status'),
+    api('/history?limit=30'),
+  ]);
+  const alarms = await alarmsResp.json();
+  const modules = await modulesResp.json();
+  const history = await historyResp.json();
+
+  const critical = alarms.filter(a => (a.severity || '').toLowerCase() === 'critical').length;
+  const warning = alarms.filter(a => (a.severity || '').toLowerCase() === 'warning').length;
+  const online = modules.filter(m => m.enabled && m.health?.status === 'ok').length;
+  const enabled = modules.filter(m => m.enabled).length;
+
+  stats.innerHTML = `
+    <div class="stat-card danger"><div class="value">${critical}</div><div class="label">Críticos</div></div>
+    <div class="stat-card warning"><div class="value">${warning}</div><div class="label">Warnings</div></div>
+    <div class="stat-card"><div class="value">${alarms.length}</div><div class="label">Alarmes ativos</div></div>
+    <div class="stat-card success"><div class="value">${online}/${enabled || modules.length}</div><div class="label">Módulos online</div></div>
+  `;
+
+  if (view === 'alarms') {
+    content.innerHTML = alarms.length
+      ? alarms.map(a => `
+        <div class="data-item">
+          <div>
+            <span class="severity-${a.severity || 'warning'}">[${(a.severity || 'warning').toUpperCase()}]</span>
+            ${a.message || a.title || 'Alarme'} — <small>${a.source_module || a.source || ''}</small>
+          </div>
+          <small>${a.timestamp || ''}</small>
+        </div>`).join('')
+      : '<p class="hint">Nenhum alarme ativo.</p>';
+  } else if (view === 'modules') {
+    content.innerHTML = modules.map(m => `
+      <div class="data-item">
+        <div>
+          <strong>${m.module}</strong>
+          <div class="target-meta">${m.enabled ? 'Habilitado' : 'Desabilitado'}</div>
+        </div>
+        <span class="${m.enabled ? (m.health?.status === 'ok' ? 'status-ok' : 'status-error') : 'status-disabled'}">
+          ${m.enabled ? (m.health?.status === 'ok' ? '● Online' : '● Indisponível') : '○ Off'}
+        </span>
+      </div>`).join('');
+  } else if (view === 'history') {
+    content.innerHTML = history.length
+      ? history.map(e => `
+        <div class="data-item">
+          <div>${e.message || e.event_type} — <small>${e.source_module || ''}</small></div>
+          <small>${e.timestamp || ''}</small>
+        </div>`).join('')
+      : '<p class="hint">Nenhum evento no histórico.</p>';
+  } else if (view === 'sessions') {
+    if (currentUser?.role !== 'admin') {
+      content.innerHTML = '<p class="hint">Sessões disponíveis apenas para administradores.</p>';
+    } else {
+      const auditResp = await api('/sessions/audit');
+      const sessions = await auditResp.json();
+      content.innerHTML = sessions.length
+        ? sessions.map(s => `
+          <div class="data-item">
+            <div><strong>${s.user}</strong> → ${s.target_host}
+              <div class="target-meta">${s.protocol} · ${s.started_at || ''}</div>
+            </div>
+          </div>`).join('')
+        : '<p class="hint">Nenhuma sessão registrada.</p>';
+    }
+  } else {
+    content.innerHTML = `
+      <div class="data-item"><div><strong>Dashboard</strong> CIEM — Visão Geral NOC</div><small>ciem-overview</small></div>
+      <div class="data-item"><div><strong>Dashboard</strong> Alarmes Ativos</div><small>ciem-alarms · ${alarms.length} itens</small></div>
+      <div class="data-item"><div><strong>Dashboard</strong> Módulos Coletores</div><small>ciem-modules · ${modules.length} módulos</small></div>
+      <div class="data-item"><div><strong>Dashboard</strong> Histórico de Eventos</div><small>ciem-history · ${history.length} eventos</small></div>
+      <div class="data-item"><div><strong>Dashboard</strong> Sessões e Auditoria</div><small>ciem-sessions</small></div>
+      <p class="hint">Selecione uma aba acima para detalhar. Em stack completa Docker/K8s, o Grafana provisionado fica em /grafana/.</p>
+    `;
+  }
 }
 
 async function loadTargets() {
@@ -196,6 +312,19 @@ $$('.nav-btn[data-panel]').forEach(btn => {
       loadTargets();
       loadAudit();
     }
+    if (btn.dataset.panel === 'config' && currentUser?.role === 'admin') {
+      loadConfig();
+    }
+    if (btn.dataset.panel === 'grafana') {
+      const active = document.querySelector('.g-tab.active');
+      loadGrafanaView(active?.dataset.gview || 'overview');
+    }
+    if (btn.dataset.panel === 'dashboard') {
+      loadModules();
+      loadAlarms();
+    }
+    if (btn.dataset.panel === 'alarms') loadAlarms();
+    if (btn.dataset.panel === 'history') loadHistory();
   });
 });
 
@@ -203,6 +332,20 @@ $('#btn-guacamole-full')?.addEventListener('click', openGuacamoleFull);
 
 document.addEventListener('click', (e) => {
   if (e.target.dataset?.goto) showPanel(e.target.dataset.goto);
+
+  const toggle = e.target.closest?.('.toggle[data-module]');
+  if (toggle && currentUser?.role === 'admin') {
+    const name = toggle.dataset.module;
+    const next = !toggle.classList.contains('on');
+    toggleModule(name, next, toggle);
+  }
+
+  const gtab = e.target.closest?.('.g-tab');
+  if (gtab) {
+    $$('.g-tab').forEach(t => t.classList.remove('active'));
+    gtab.classList.add('active');
+    loadGrafanaView(gtab.dataset.gview || 'overview');
+  }
 });
 
 // Init

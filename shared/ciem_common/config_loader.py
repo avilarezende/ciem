@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -180,6 +181,57 @@ def is_module_enabled(module_name: str) -> bool:
     modules = load_modules_config().modules
     entry = modules.get(module_name)
     return entry is not None and entry.enabled
+
+
+def set_module_enabled(module_name: str, enabled: bool) -> bool:
+    """Atualiza ``enabled`` de um módulo em ``config/modules.yaml``.
+
+    Preserva comentários e demais campos do arquivo. Retorna o novo estado.
+    """
+    path = _config_dir() / "modules.yaml"
+    if not path.is_file():
+        raise FileNotFoundError(f"Arquivo não encontrado: {path}")
+
+    modules = load_modules_config().modules
+    if module_name not in modules:
+        raise KeyError(f"Módulo '{module_name}' não encontrado")
+
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    module_indent = None
+    in_module = False
+    updated = False
+    value = "true" if enabled else "false"
+
+    for index, line in enumerate(lines):
+        stripped = line.lstrip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        indent = len(line) - len(stripped)
+
+        if re.match(rf"^{re.escape(module_name)}\s*:", stripped):
+            in_module = True
+            module_indent = indent
+            continue
+
+        if in_module:
+            if indent <= (module_indent or 0) and re.match(r"^[A-Za-z0-9_]+\s*:", stripped):
+                break
+            if re.match(r"^enabled\s*:", stripped):
+                prefix = line[: line.index("enabled")]
+                comment = ""
+                if "#" in stripped:
+                    comment = "  #" + stripped.split("#", 1)[1].rstrip("\n")
+                newline = "\n" if line.endswith("\n") else ""
+                lines[index] = f"{prefix}enabled: {value}{comment}{newline}"
+                updated = True
+                break
+
+    if not updated:
+        raise RuntimeError(f"Campo enabled não encontrado para módulo '{module_name}'")
+
+    path.write_text("".join(lines), encoding="utf-8")
+    clear_config_cache()
+    return enabled
 
 
 def clear_config_cache() -> None:

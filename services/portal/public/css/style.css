@@ -123,13 +123,37 @@ body {
   background: var(--bg-card); border: 1px solid var(--border);
   border-radius: 6px; padding: 1rem;
 }
-.toggle { width: 44px; height: 24px; background: var(--border); border-radius: 12px; position: relative; cursor: pointer; }
+.toggle { width: 44px; height: 24px; background: var(--border); border-radius: 12px; position: relative; cursor: pointer; flex-shrink: 0; }
 .toggle.on { background: var(--success); }
+.toggle.busy { opacity: 0.5; pointer-events: none; }
 .toggle::after {
   content: ''; position: absolute; top: 2px; left: 2px;
   width: 20px; height: 20px; background: #fff; border-radius: 50%; transition: 0.2s;
 }
 .toggle.on::after { left: 22px; }
+
+.grafana-tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0; }
+.g-tab {
+  padding: 0.45rem 0.9rem; background: var(--bg-card); color: var(--text);
+  border: 1px solid var(--border); border-radius: 4px; cursor: pointer; font-size: 0.85rem;
+}
+.g-tab.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
+.grafana-stats {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.8rem; margin-bottom: 1.2rem;
+}
+.stat-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 6px; padding: 1rem; text-align: center;
+}
+.stat-card .value { font-size: 1.8rem; font-weight: 700; color: var(--accent); }
+.stat-card .label { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem; }
+.stat-card.danger .value { color: var(--danger); }
+.stat-card.warning .value { color: var(--warning); }
+.stat-card.success .value { color: var(--success); }
+
+.config-feedback-ok { color: var(--success); }
+.config-feedback-err { color: var(--danger); }
 
 .admin-only { display: none; }
 body.is-admin .admin-only { display: inline-block; }
