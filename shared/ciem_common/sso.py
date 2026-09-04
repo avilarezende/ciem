@@ -18,29 +18,40 @@ def _secret() -> bytes:
     return os.environ.get("CIEM_SECRET_KEY", _DEFAULT_SECRET).encode()
 
 
+def _b64encode(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).decode().rstrip("=")
+
+
+def _b64decode(data: str) -> bytes:
+    padded = data + "=" * (-len(data) % 4)
+    return base64.urlsafe_b64decode(padded.encode())
+
+
 def create_sso_token(
     username: str,
     *,
     target_id: str | None = None,
     ttl: int | None = None,
 ) -> str:
-    """Gera token SSO assinado (HMAC-SHA256) com expiração."""
+    """Gera token SSO assinado (HMAC-SHA256) com expiração.
+
+    Formato (estilo JWT compacto): ``base64url(payload).base64url(signature)``.
+    """
     expires = int(time.time()) + (ttl if ttl is not None else _SSO_TTL_SECONDS)
     payload: dict[str, Any] = {"user": username, "exp": expires}
     if target_id:
         payload["target"] = target_id
     data = json.dumps(payload, separators=(",", ":")).encode()
     sig = hmac.new(_secret(), data, hashlib.sha256).digest()
-    token_bytes = data + b"." + sig
-    return base64.urlsafe_b64encode(token_bytes).decode().rstrip("=")
+    return f"{_b64encode(data)}.{_b64encode(sig)}"
 
 
 def verify_sso_token(token: str) -> dict[str, Any] | None:
     """Valida token SSO e retorna payload ou None."""
     try:
-        padded = token + "=" * (-len(token) % 4)
-        raw = base64.urlsafe_b64decode(padded.encode())
-        data, sig = raw.rsplit(b".", 1)
+        payload_b64, sig_b64 = token.split(".", 1)
+        data = _b64decode(payload_b64)
+        sig = _b64decode(sig_b64)
         expected = hmac.new(_secret(), data, hashlib.sha256).digest()
         if not hmac.compare_digest(sig, expected):
             return None
