@@ -55,6 +55,10 @@ Usuários locais para o portal (PBKDF2). Padrão de desenvolvimento:
 **Altere em produção.** No portal: **Configuração → Usuários locais → Alterar senha**.  
 Detalhes (LDAP, exclusão do admin, CLI): [AUTH.md](AUTH.md).
 
+### `config/ai.yaml`
+
+Insights de IA (opcional). Só admin configura; com `enabled: true`, todos veem os resultados. Ver [AI.md](AI.md).
+
 ### `config/targets.yaml`
 
 Alvos de manutenção (SSH/RDP/VNC) para o Guacamole — veja [MAINTENANCE.md](MAINTENANCE.md).
