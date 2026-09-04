@@ -38,7 +38,7 @@ Guia para equipes que vão **configurar**, **operar** e **desenvolver** a plataf
 |-----------|----------|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Isolamento, redes e comunicação entre serviços |
 | [MODULES.md](MODULES.md) | Coletores Zabbix, Cacti, Nagios, etc. |
-| [AUTH.md](AUTH.md) | Usuários locais, papéis observer/admin |
+| [AUTH.md](AUTH.md) | Usuários locais, admin padrão, LDAP opcional, alterar/excluir senha |
 | [GRAFANA.md](GRAFANA.md) | Provisionamento técnico do Grafana |
 | [GUACAMOLE.md](GUACAMOLE.md) | SSO e provisionamento de conexões |
 | [MAINTENANCE.md](MAINTENANCE.md) | Sessões SSH/RDP e `targets.yaml` |

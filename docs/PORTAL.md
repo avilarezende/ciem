@@ -53,7 +53,7 @@ O portal (`services/portal/`) é uma SPA estática servida pelo proxy em `/`. Us
 | Papel | O que vê |
 |-------|----------|
 | **observer** | Dashboard, Alarmes, Histórico, Grafana |
-| **admin** | Tudo + Sessões + Configuração |
+| **admin** | Tudo + Sessões + Configuração (módulos, usuários locais, LDAP) |
 
 ## Estrutura do código
 
@@ -77,6 +77,7 @@ services/portal/public/
 - [ ] Observer não vê abas admin  
 - [ ] Banner de alarmes reflete contagem real  
 - [ ] Links Grafana e Guacamole abrem com SSO (admin)  
+- [ ] Configuração: usuários locais (criar/alterar senha/excluir) e LDAP (salvar apontamentos)  
 - [ ] Mockup atualizado em `docs/assets/` (se aplicável)  
 
 ## Customização

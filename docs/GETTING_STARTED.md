@@ -52,7 +52,8 @@ Usuários locais para o portal (PBKDF2). Padrão de desenvolvimento:
 | `admin` | `admin123` | admin |
 | `observador` | `observer123` | observer |
 
-**Altere em produção.** Veja [AUTH.md](AUTH.md) para gerar hash PBKDF2.
+**Altere em produção.** No portal: **Configuração → Usuários locais → Alterar senha**.  
+Detalhes (LDAP, exclusão do admin, CLI): [AUTH.md](AUTH.md).
 
 ### `config/targets.yaml`
 
