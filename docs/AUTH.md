@@ -13,7 +13,7 @@ O CIEM combina **usuários locais** (sempre disponíveis) e **LDAP/Active Direct
 | Papel | Código | Permissões |
 |-------|--------|-----------|
 | **Observador** | `observer` | Visualiza dashboards, alarmes ativos, histórico de eventos |
-| **Administrador** | `admin` | Tudo do observador + configura módulos, LDAP, usuários, sessões e auditoria |
+| **Administrador** | `admin` | Tudo do observador + configura módulos, LDAP, usuários, IA, sessões e auditoria |
 
 ## Usuário admin padrão
 
@@ -220,4 +220,7 @@ curl -X POST https://ciem.exemplo.local/api/auth/login \
 | `GET /config/auth` | admin |
 | `PUT /config/auth/ldap` | admin |
 | `POST/PUT/DELETE /config/auth/users...` | admin |
+| `GET/PUT /config/ai` | admin |
+| `GET /insights` | observer |
+| `POST /insights/refresh` | admin |
 | `POST /sessions/start` | admin |

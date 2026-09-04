@@ -99,9 +99,13 @@ Detalhes: [KUBERNETES.md](KUBERNETES.md) e [deploy/kubernetes/README.md](../depl
 
 ## 6. Próximos passos
 
-1. [USAGE.md](USAGE.md) — como usar o portal no dia a dia  
-2. [DASHBOARDS.md](DASHBOARDS.md) — interpretar painéis Grafana  
-3. [PROCESSES.md](PROCESSES.md) — coleta, alarmes e sessões remotas  
+1. Login como `admin` → **Configuração**: alterar senha; (opcional) LDAP, módulos e IA  
+2. [USAGE.md](USAGE.md) — uso diário do portal  
+3. [AUTH.md](AUTH.md) — usuários locais, LDAP, exclusão do admin  
+4. [AI.md](AI.md) — insights de IA (se for usar)  
+5. [DASHBOARDS.md](DASHBOARDS.md) — painéis Grafana  
+6. [CHANGELOG_FEATURES.md](CHANGELOG_FEATURES.md) — resumo das funções recentes  
+7. [PROCESSES.md](PROCESSES.md) — coleta, alarmes e sessões remotas  
 
 ## Desenvolvimento local (sem Docker)
 

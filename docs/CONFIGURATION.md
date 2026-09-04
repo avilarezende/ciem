@@ -158,24 +158,31 @@ credentials:
 ## Interface web
 
 O portal CIEM (`https://seu-dominio/`) oferece:
-- Dashboard com status dos módulos
+- Dashboard com status dos módulos e indicação de Insights IA
 - Alarmes ativos em destaque
 - Histórico de eventos
-- Configuração visual de módulos (admin)
-- Link direto para Grafana
+- Grafana embutido (visão NOC + Insights IA)
+- **Configuração (admin):**
+  - Usuários locais (criar, alterar senha, excluir — último admin protegido)
+  - LDAP / AD (servidor, porta, SSL, domínio, UID, bind, certificados)
+  - Módulos coletores (switch + formulário de URL/credenciais/opções)
+  - Provedor de IA (URL, API key, modelo); resultados visíveis a todos quando ativo
 
 **Credenciais padrão de desenvolvimento:**
-- Admin: `admin` / `admin123`
+- Admin: `admin` / `admin123` — altere em **Configuração → Usuários locais**
 - Observador: `observador` / `observer123`
+
+Ver também: [AUTH.md](AUTH.md), [AI.md](AI.md), [CHANGELOG_FEATURES.md](CHANGELOG_FEATURES.md).
 
 ## Checklist de implantação
 
 - [ ] Copiar `.env.example` → `.env`
-- [ ] Configurar `config/modules.yaml` (habilitar módulos necessários)
-- [ ] Configurar URLs e credenciais de cada módulo
-- [ ] Alterar senhas em `config/auth.yaml`
+- [ ] Configurar `config/modules.yaml` **ou** ativar módulos pelo portal
+- [ ] Alterar senha do `admin` (portal ou `config/auth.yaml`)
+- [ ] (Opcional) LDAP em Configuração ou `auth.yaml`
+- [ ] (Opcional) Provedor de IA em Configuração ou `ai.yaml`
 - [ ] Colocar certificado wildcard em `certs/`
 - [ ] Configurar alvos em `config/targets.yaml`
 - [ ] Subir com `docker compose --profile full up -d --build`
 - [ ] Verificar `https://seu-dominio/api/health`
-- [ ] Acessar portal e Grafana
+- [ ] Acessar portal e Grafana; validar Insights se IA estiver ativa

@@ -6,8 +6,20 @@ Cada módulo é um **serviço independente** que coleta dados de um sistema de m
 
 1. **Isolamento** — cada módulo roda em container/pod separado
 2. **Independência** — módulos não se comunicam entre si
-3. **Ativação seletiva** — habilite apenas o que precisa em `config/modules.yaml`
+3. **Ativação seletiva** — habilite apenas o que precisa em `config/modules.yaml` **ou no portal**
 4. **Coleta direta** — dados vêm dos sistemas existentes, não do CIEM
+
+## Configuração pelo portal (admin)
+
+1. Login como administrador  
+2. **Configuração → Módulos coletores**  
+3. Ative o **switch** do módulo desejado  
+4. Com o módulo **ON**, o formulário exibe campos de opções (URL, credenciais, filtros, etc.)  
+5. **Salvar** — persiste `enabled` e `options` em `config/modules.yaml`  
+
+Observers veem o efeito (alarmes, dashboards, status ONLINE/OFFLINE), mas **não** alteram a configuração.
+
+Campos típicos por módulo estão descritos abaixo e espelhados em `services/portal/public/js/portal.js` (`MODULE_FIELDS`).
 
 ## Módulos disponíveis
 

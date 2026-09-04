@@ -1,6 +1,6 @@
 # Grafana — Dashboards CIEM
 
-O CIEM provisiona automaticamente **12 dashboards** (5 da plataforma + 6 por módulo + visão de módulos).
+O CIEM provisiona automaticamente **13 dashboards** (6 da plataforma incluindo Insights IA + 6 por módulo + visão de módulos).
 
 ## Dashboards por módulo
 
@@ -36,7 +36,8 @@ python3 scripts/generate-grafana-dashboards.py
 
 | Dashboard | UID | Função |
 |-----------|-----|--------|
-| **Visão Geral NOC** | `ciem-overview` | Painel principal com alarmes em destaque |
+| **Visão Geral NOC** | `ciem-overview` | Painel principal com alarmes em destaque (+ painel Insights IA) |
+| **Insights IA** | `ciem-insights` | Análise de alarmes/logs por provedor de IA (visível a todos quando ativo) |
 | **Alarmes Ativos** | `ciem-alarms` | Problemas em andamento (ação imediata) |
 | **Histórico de Eventos** | `ciem-history` | O que já aconteceu (separado dos ativos) |
 | **Módulos Coletores** | `ciem-modules` | Saúde de Zabbix, Cacti, Nagios, etc. |

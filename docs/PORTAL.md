@@ -10,6 +10,7 @@ O portal (`services/portal/`) é uma SPA estática servida pelo proxy em `/`. Us
 
 - Campos: usuário e senha  
 - Autenticação: `POST /api/auth/login` → token Bearer em `localStorage`  
+- Aceita usuários locais e LDAP (se habilitado)  
 - Erros exibidos abaixo do formulário  
 
 ### Dashboard — visão geral
@@ -18,7 +19,8 @@ O portal (`services/portal/`) é uma SPA estática servida pelo proxy em `/`. Us
 
 - Banner vermelho quando há alarmes ativos (link para painel Alarmes)  
 - Grade de módulos: status **ONLINE** / **OFFLINE**, última coleta  
-- Dados: `GET /api/modules/status`, `GET /api/alarms/active`  
+- Indicação de Insights IA (ativo/desabilitado)  
+- Dados: `GET /api/modules/status`, `GET /api/alarms/active`, `GET /api/insights`  
 
 ### Alarmes ativos
 
@@ -40,20 +42,31 @@ O portal (`services/portal/`) é uma SPA estática servida pelo proxy em `/`. Us
 
 | Aba | Papel | Função |
 |-----|-------|--------|
-| Dashboard | Todos | Status dos módulos + resumo de alarmes |
+| Dashboard | Todos | Status dos módulos + resumo de alarmes + status IA |
 | Alarmes | Todos | Problemas em andamento |
-| Histórico | Todos | Últimos 50 eventos agregados |
+| Histórico | Todos | Últimos eventos agregados |
 | Sessões | Admin | Guacamole + auditoria |
-| Configuração | Admin | Visualização de módulos (edição via YAML) |
-| Grafana | Todos | Abre `/grafana/` em nova aba |
+| Configuração | Admin | Usuários, LDAP, módulos (switch+opções), provedor de IA |
+| Grafana | Todos | Visão NOC embutida + abas (incl. Insights IA) / link `/grafana/` |
 | Sair | Todos | Remove token e volta ao login |
 
 ## Papéis
 
 | Papel | O que vê |
 |-------|----------|
-| **observer** | Dashboard, Alarmes, Histórico, Grafana |
-| **admin** | Tudo + Sessões + Configuração (módulos, usuários locais, LDAP, provedores de IA) |
+| **observer** | Dashboard, Alarmes, Histórico, Grafana, Insights IA (somente leitura, se habilitado) |
+| **admin** | Tudo + Sessões + Configuração completa |
+
+## Configuração (somente admin)
+
+A aba **Configuração** concentra:
+
+1. **Usuários locais** — CRUD; admin padrão protegido (não excluir o último admin)  
+2. **LDAP / Active Directory** — apontamentos (host, porta, SSL, URL, domain, base DN, uid, filtros, bind, certificados)  
+3. **Inteligência Artificial** — switch + campos de provedor (URL, API key, modelo, …); ao salvar com `enabled`, insights ficam públicos  
+4. **Módulos coletores** — switch por módulo; com ON, formulário de opções/credenciais; persistência em `config/modules.yaml`  
+
+Documentação: [AUTH.md](AUTH.md), [AI.md](AI.md), [MODULES.md](MODULES.md).
 
 ## Estrutura do código
 
@@ -78,6 +91,7 @@ services/portal/public/
 - [ ] Banner de alarmes reflete contagem real  
 - [ ] Links Grafana e Guacamole abrem com SSO (admin)  
 - [ ] Configuração: usuários locais (criar/alterar senha/excluir) e LDAP (salvar apontamentos)  
+- [ ] Configuração: switch de módulos + formulário de opções ao ativar  
 - [ ] Configuração: Insights IA (admin ativa + URL/API key/modelo; observer só vê resultados)  
 - [ ] Mockup atualizado em `docs/assets/` (se aplicável)  
 
@@ -92,5 +106,6 @@ services/portal/public/
 
 ## Limitações atuais
 
-- Configuração de módulos é **somente leitura** no portal — edite `config/modules.yaml` e reinicie os pods/containers  
-- Coleta não é disparada automaticamente pelo portal — ocorre sob demanda (ver [PROCESSES.md](PROCESSES.md))  
+- Bind LDAP em runtime pode ser stub conforme ambiente; apontamentos já são persistidos e editáveis (ver [AUTH.md](AUTH.md))  
+- Coleta periódica em background depende do agendador documentado em [PROCESSES.md](PROCESSES.md); o portal dispara consultas sob demanda  
+- API keys de IA não devem ser versionadas em repositório público  

@@ -71,6 +71,9 @@ Atualizadas quando o Prometheus (ou Grafana) faz scrape em `/metrics`.
 | `/grafana/modules/{nome}/alarms` | Alarmes de um módulo |
 | `/grafana/modules/{nome}/history` | Histórico de um módulo |
 | `/grafana/modules-list` | Mapa módulo → UID do dashboard |
+| `/grafana/insights` | Pacote completo de insights de IA |
+| `/grafana/insights/table` | Insights achatados (tabela Infinity) |
+| `/grafana/insights/charts` | Séries sugeridas pela IA |
 
 ## Quando usar portal vs Grafana
 
@@ -80,6 +83,7 @@ Atualizadas quando o Prometheus (ou Grafana) faz scrape em `/metrics`.
 | Correlação entre módulos | Grafana → Visão Geral NOC |
 | Detalhe de um sistema | Dashboard do módulo (`ciem-mod-*`) |
 | Tendência / histórico longo | Grafana → Histórico de Eventos |
+| Insights / recomendações de IA | Portal → Insights IA ou Grafana → `ciem-insights` |
 | Auditoria de acesso | Grafana → Sessões ou Portal → Sessões |
 
 ## Regenerar dashboards

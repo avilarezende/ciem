@@ -5,8 +5,10 @@ Manual para operadores de NOC e administradores que usam o portal no dia a dia.
 ## Acesso
 
 1. Abra `https://<seu-dominio>/`  
-2. Entre com usuário e senha configurados em `config/auth.yaml`  
+2. Entre com usuário local (`config/auth.yaml`) ou LDAP (se o admin tiver habilitado)  
 3. O token fica no navegador até **Sair** ou expiração da sessão  
+
+Credenciais padrão de desenvolvimento: `admin` / `admin123` (altere em produção — ver [AUTH.md](AUTH.md)).
 
 ### URLs dos serviços
 
@@ -21,11 +23,12 @@ Manual para operadores de NOC e administradores que usam o portal no dia a dia.
 
 ```
 1. Login no portal
-2. Dashboard → verificar módulos ONLINE e banner de alarmes
+2. Dashboard → módulos ONLINE, banner de alarmes e status de Insights IA (se ativo)
 3. Alarmes → triagem por severidade (critical primeiro)
-4. Grafana → análise detalhada / tendências
+4. Grafana / Insights IA → análise detalhada, tendências e recomendações
 5. (Admin) Sessões → conectar no alvo e executar manutenção
 6. (Admin) Auditoria → confirmar registro da sessão
+7. (Admin) Configuração → módulos, usuários/LDAP ou provedor de IA conforme necessário
 ```
 
 ## Por papel
@@ -34,16 +37,19 @@ Manual para operadores de NOC e administradores que usam o portal no dia a dia.
 
 - Monitorar dashboard e alarmes  
 - Consultar histórico de eventos  
-- Abrir Grafana para gráficos e tabelas  
+- Abrir Grafana e, **se a IA estiver habilitada**, ver insights/recomendações  
 - **Não** inicia sessões remotas nem altera configuração  
 
-### Admin (operação)
+### Admin (operação e configuração)
 
 - Tudo do observer  
 - Iniciar sessão Guacamole (todos os alvos ou por alvo)  
 - Consultar log de auditoria  
-- Ver estado dos módulos em Configuração  
-- Editar YAML no repositório / ConfigMap (não no portal)  
+- **Configuração** no portal:
+  - Usuários locais (criar, alterar senha, desabilitar, excluir)
+  - LDAP / AD (servidor, porta, SSL, domínio, UID, bind, certificados)
+  - Módulos coletores (switch + formulário de URL/credenciais/opções)
+  - Inteligência Artificial (URL, API key, modelo; resultados ficam visíveis a todos)
 
 ## Operações comuns
 
@@ -71,10 +77,13 @@ curl -X POST -H "Authorization: Bearer ciem-admin" \
 
 **API:** `GET /api/alarms/active`  
 
-### Abrir Grafana
+### Abrir Grafana / Insights IA
 
-Clique em **Grafana** na barra superior ou acesse `/grafana/`.  
-Credenciais Grafana padrão: `admin` / `admin` (altere via `.env` ou Secret).
+- Barra superior **Grafana** ou `/grafana/`  
+- No portal embutido: aba **Insights IA** (quando habilitado pelo admin)  
+- Credenciais Grafana padrão: `admin` / `admin` (altere via `.env` ou Secret)
+
+Detalhes de IA: [AI.md](AI.md).
 
 ### Conectar em servidor (admin)
 
@@ -83,11 +92,29 @@ Credenciais Grafana padrão: `admin` / `admin` (altere via `.env` ou Secret).
 3. SSO redireciona sem pedir senha novamente  
 4. Ao encerrar, a sessão é registrada em auditoria  
 
-## Habilitar ou desabilitar um módulo
+### Habilitar ou configurar um módulo (admin)
 
-1. Edite `config/modules.yaml` → `enabled: true/false`  
-2. **Docker:** `docker compose ... up -d` (recria apenas o módulo se usar profile isolado)  
-3. **Kubernetes:** atualize ConfigMap e `kubectl rollout restart deployment/module-<nome> -n ciem`  
+1. **Configuração → Módulos coletores**  
+2. Ative o switch do módulo  
+3. Preencha o formulário (URL, usuário/senha ou API key, opções)  
+4. **Salvar** — grava em `config/modules.yaml`  
+
+Alternativa: editar o YAML e reiniciar o serviço do módulo (Docker/K8s). Ver [MODULES.md](MODULES.md).
+
+### Gerenciar usuários e LDAP (admin)
+
+1. **Configuração → Usuários locais** — criar, alterar senha, excluir  
+2. **Configuração → LDAP** — habilitar e preencher apontamentos  
+3. Admin padrão `admin` continua válido mesmo com LDAP ativo  
+
+Guia completo: [AUTH.md](AUTH.md).
+
+### Ativar Insights de IA (admin)
+
+1. **Configuração → Inteligência Artificial**  
+2. Habilitar e preencher URL, API key e modelo  
+3. **Salvar** → opcionalmente **Gerar insights agora**  
+4. Todos os usuários passam a ver os resultados no portal/Grafana  
 
 ## Credenciais de desenvolvimento
 
@@ -103,9 +130,11 @@ Credenciais Grafana padrão: `admin` / `admin` (altere via `.env` ou Secret).
 
 | Sintoma | Causa provável | Ação |
 |---------|----------------|------|
-| Módulo OFFLINE | URL/credencial errada em `modules.yaml` | Ver logs: `docker logs module-zabbix` |
-| Sem alarmes | Módulo desabilitado ou fonte sem problemas | `POST /api/modules/{nome}/collect` |
+| Módulo OFFLINE | URL/credencial errada | Revisar formulário em Configuração ou `modules.yaml`; logs do container |
+| Sem alarmes | Módulo desabilitado ou fonte sem problemas | Ativar módulo; `POST /api/modules/{nome}/collect` |
 | Guacamole 403 | Usuário não é admin | Login como admin |
 | Grafana vazio | Token Infinity incorreto | Confira `CIEM_GRAFANA_TOKEN` no core e Grafana |
+| Insights “desabilitados” | IA off ou só admin configurou depois | Admin habilita em Configuração → IA |
+| Não consegue excluir `admin` | É o último administrador local | Crie outro admin antes |
 
-Mais detalhes: [DEPLOYMENT.md](DEPLOYMENT.md) (troubleshooting).
+Mais detalhes: [DEPLOYMENT.md](DEPLOYMENT.md), [CHANGELOG_FEATURES.md](CHANGELOG_FEATURES.md).

@@ -9,20 +9,25 @@ Descrição dos processos de ponta a ponta: coleta, alarmes, visualização e ma
 ## 1. Autenticação no portal
 
 ```
-Usuário → POST /api/auth/login {user, password}
-       → Core valida em config/auth.yaml (PBKDF2)
-       → Retorna token Bearer "ciem-<username>"
+Usuário → POST /api/auth/login {username, password}
+       → Core tenta usuários locais (config/auth.yaml, PBKDF2)
+       → Se falhar e LDAP enabled → tenta diretório
+       → Retorna token Bearer
        → Portal armazena e envia em Authorization
 ```
 
 | Papel | Escopo |
 |-------|--------|
-| observer | Leitura: módulos, alarmes, histórico |
-| admin | + sessões, config, SSO Guacamole |
+| observer | Leitura: módulos, alarmes, histórico, insights IA (se ativo) |
+| admin | + sessões, config (usuários, LDAP, módulos, IA), SSO Guacamole |
+
+Admin padrão `admin` autentica **sempre** via usuário local, independente do LDAP. Detalhes: [AUTH.md](AUTH.md).
 
 ## 2. Coleta de dados (módulos)
 
 A coleta é **sob demanda** — disparada quando alguém ou algo consulta alarmes/histórico.
+
+Admin habilita módulos e opções em **Configuração** (grava `config/modules.yaml`).
 
 ```
 Cliente (portal, Grafana, API)
@@ -115,7 +120,22 @@ Prometheus/Grafana scrape GET /api/metrics
     → Dashboards CIEM-Prometheus refletem valores
 ```
 
-## 6. Deploy e atualização (CI/CD)
+## 6. Insights de Inteligência Artificial
+
+```
+Admin → Configuração → IA (URL, API key, modelo) → PUT /api/config/ai
+     → grava config/ai.yaml; limpa cache de insights
+
+Qualquer usuário autenticado → GET /api/insights
+     → se disabled: status disabled
+     → se enabled: cache ou chamada ao provedor (OpenAI-compatible)
+     → fallback heurístico se sem key / erro do provedor
+     → portal (aba Insights IA) e Grafana (/grafana/insights*)
+```
+
+Configuração apenas admin; resultados públicos quando habilitado. Detalhes: [AI.md](AI.md).
+
+## 7. Deploy e atualização (CI/CD)
 
 ```
 git push main
@@ -125,25 +145,32 @@ git push main
     → rollout restart se ConfigMap mudou
 ```
 
-## 7. Checklist operacional
+## 8. Checklist operacional
 
 ### Após deploy
 
 - [ ] `/api/health` retorna 200  
 - [ ] Todos os módulos habilitados **ONLINE** no dashboard  
-- [ ] Grafana pasta CIEM com 12 dashboards  
+- [ ] Grafana pasta CIEM com 13 dashboards (incl. `ciem-insights`)  
+- [ ] Login `admin` → alterar senha em Configuração  
+- [ ] (Opcional) LDAP e IA configurados pelo portal  
 - [ ] Teste SSO Guacamole com usuário admin  
 - [ ] Entrada de auditoria em `sessions.jsonl`  
 
 ### Após mudança em `config/`
 
-- [ ] Reiniciar `ciem-core` e módulos afetados  
+- [ ] Reiniciar `ciem-core` se YAML foi editado fora do portal  
+- [ ] Reiniciar módulos afetados se o coletor só lê YAML no boot  
 - [ ] Reiniciar `guacamole` se `targets.yaml` mudou  
 - [ ] Validar coleta: `POST /api/modules/{nome}/collect`  
+- [ ] Se IA ativa: `GET /api/insights` retorna habilitado  
 
 ## Referências
 
 - [USAGE.md](USAGE.md) — operações no portal  
+- [AUTH.md](AUTH.md) — usuários locais e LDAP  
+- [AI.md](AI.md) — provedores e insights  
+- [CHANGELOG_FEATURES.md](CHANGELOG_FEATURES.md) — novidades do portal  
 - [GUACAMOLE.md](GUACAMOLE.md) — SSO e targets  
 - [MODULES.md](MODULES.md) — detalhe por coletor  
 - [KUBERNETES.md](KUBERNETES.md) — rollout em pods  
