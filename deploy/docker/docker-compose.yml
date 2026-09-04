@@ -59,7 +59,8 @@ services:
       CIEM_SECRET_KEY: ${CIEM_SECRET_KEY:-change-me}
       CIEM_GRAFANA_TOKEN: ${CIEM_GRAFANA_TOKEN:-ciem-grafana-internal}
     volumes:
-      - ./config:/app/config:ro
+      # RW: portal admin persiste modules.yaml, auth.yaml e ai.yaml via API
+      - ./config:/app/config
       - ciem-audit:/app/data/audit
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]

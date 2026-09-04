@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CIEM — Centro Integrado de Estatística e Manutenção</title>
-  <link rel="stylesheet" href="/css/style.css?v=4">
+  <link rel="stylesheet" href="/css/style.css?v=5">
 </head>
 <body>
   <!-- Tela de login -->
@@ -114,6 +114,20 @@
           <button type="submit" class="btn-primary">Salvar LDAP</button>
         </form>
 
+        <h3>Inteligência Artificial — Insights</h3>
+        <p class="hint">
+          Somente administradores configuram o provedor. Quando <strong>habilitado</strong>,
+          os insights (resumo, recomendações e gráficos derivados de alarmes/logs) ficam
+          visíveis a <strong>todos</strong> os usuários no portal e no Grafana.
+        </p>
+        <form id="form-ai" class="auth-form module-options">
+          <div class="opt-grid" id="ai-fields"></div>
+          <div class="ai-actions">
+            <button type="submit" class="btn-primary">Salvar IA</button>
+            <button type="button" id="btn-ai-refresh" class="btn-secondary">Gerar insights agora</button>
+          </div>
+        </form>
+
         <h3>Módulos coletores</h3>
         <p class="hint">Ative um módulo para exibir e editar URL, credenciais e opções. Os valores são salvos em <code>config/modules.yaml</code>.</p>
         <div id="config-modules" class="config-modules"></div>
@@ -125,6 +139,7 @@
         <p class="hint">Visão NOC baseada na API CIEM. Em produção com o serviço Grafana, use também <code>/grafana/</code>.</p>
         <div class="grafana-tabs">
           <button class="g-tab active" data-gview="overview">Visão Geral NOC</button>
+          <button class="g-tab" data-gview="insights">Insights IA</button>
           <button class="g-tab" data-gview="alarms">Alarmes Ativos</button>
           <button class="g-tab" data-gview="modules">Módulos</button>
           <button class="g-tab" data-gview="history">Histórico</button>
@@ -136,6 +151,6 @@
     </main>
   </div>
 
-  <script src="/js/portal.js?v=4"></script>
+  <script src="/js/portal.js?v=5"></script>
 </body>
 </html>

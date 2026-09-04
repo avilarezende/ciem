@@ -1,14 +1,15 @@
 # Dashboards Grafana — o que cada painel mostra
 
-O CIEM provisiona **12 dashboards** na pasta **CIEM** do Grafana (`grafana/dashboards/`).
+O CIEM provisiona **13 dashboards** na pasta **CIEM** do Grafana (`grafana/dashboards/`).
 
 ## Visão geral dos dashboards
 
-### Plataforma (5)
+### Plataforma (6)
 
 | Dashboard | UID | Para quê |
 |-----------|-----|----------|
-| **Visão Geral NOC** | `ciem-overview` | Painel principal: alarmes em destaque, módulos, sessões |
+| **Visão Geral NOC** | `ciem-overview` | Painel principal: alarmes em destaque, módulos, sessões, insights IA |
+| **Insights IA** | `ciem-insights` | Análise de alarmes/logs por provedor de IA (visível a todos quando ativo) |
 | **Alarmes Ativos** | `ciem-alarms` | Somente problemas **em andamento** — ação imediata |
 | **Histórico de Eventos** | `ciem-history` | Eventos passados (separado dos ativos) |
 | **Módulos Coletores** | `ciem-modules` | Saúde e latência de cada coletor |

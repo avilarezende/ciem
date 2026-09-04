@@ -16,6 +16,12 @@
       "url": "/grafana/d/ciem-history",
       "type": "link",
       "icon": "history"
+    },
+    {
+      "title": "Insights IA",
+      "url": "/grafana/d/ciem-insights",
+      "type": "link",
+      "icon": "dashboard"
     }
   ],
   "panels": [
@@ -198,6 +204,30 @@
             { "selector": "message", "text": "Descrição", "type": "string" },
             { "selector": "source_module", "text": "Módulo", "type": "string" },
             { "selector": "timestamp", "text": "Detectado em", "type": "timestamp" }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Insights de IA (visível a todos quando ativo)",
+      "description": "Configurado apenas por administradores; resultados exibidos a todos",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 25 },
+      "id": 9,
+      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "ciem-api" },
+      "options": { "showHeader": true },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "url": "/grafana/insights/table",
+          "url_options": { "method": "GET" },
+          "columns": [
+            { "selector": "severity", "text": "Severidade", "type": "string" },
+            { "selector": "title", "text": "Insight", "type": "string" },
+            { "selector": "detail", "text": "Detalhe", "type": "string" },
+            { "selector": "recommendation", "text": "Recomendação", "type": "string" }
           ]
         }
       ]

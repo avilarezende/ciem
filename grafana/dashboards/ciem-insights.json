@@ -1,0 +1,116 @@
+{
+  "annotations": { "list": [] },
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "title": "Visão Geral",
+      "url": "/grafana/d/ciem-overview",
+      "type": "link",
+      "icon": "dashboard"
+    },
+    {
+      "title": "Alarmes",
+      "url": "/grafana/d/ciem-alarms",
+      "type": "link",
+      "icon": "bolt"
+    }
+  ],
+  "panels": [
+    {
+      "type": "text",
+      "title": "",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "mode": "markdown",
+        "content": "# Insights de Inteligência Artificial\nAnálise de alarmes e logs agregados. **Configuração apenas para administradores**; resultados visíveis a todos quando a função estiver ativa."
+      }
+    },
+    {
+      "type": "table",
+      "title": "Insights e recomendações",
+      "description": "Padrões relevantes identificados nos alarmes/logs",
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 3 },
+      "id": 2,
+      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "ciem-api" },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "left" } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "severity" },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "color-background", "mode": "basic" }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "value", "options": { "critical": { "color": "red", "text": "CRÍTICO" } } },
+                  { "type": "value", "options": { "high": { "color": "orange", "text": "ALTO" } } },
+                  { "type": "value", "options": { "warning": { "color": "yellow", "text": "AVISO" } } },
+                  { "type": "value", "options": { "info": { "color": "blue", "text": "INFO" } } }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": { "showHeader": true },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "url": "/grafana/insights/table",
+          "url_options": { "method": "GET" },
+          "columns": [
+            { "selector": "severity", "text": "Severidade", "type": "string" },
+            { "selector": "title", "text": "Insight", "type": "string" },
+            { "selector": "detail", "text": "Detalhe", "type": "string" },
+            { "selector": "recommendation", "text": "Recomendação", "type": "string" },
+            { "selector": "mode", "text": "Modo", "type": "string" },
+            { "selector": "generated_at", "text": "Gerado em", "type": "string" }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Gráficos sugeridos pela IA",
+      "description": "Distribuições e séries derivadas dos logs/alarmes",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 15 },
+      "id": 3,
+      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "ciem-api" },
+      "options": { "showHeader": true },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "url": "/grafana/insights/charts",
+          "url_options": { "method": "GET" },
+          "columns": [
+            { "selector": "chart_title", "text": "Gráfico", "type": "string" },
+            { "selector": "chart_type", "text": "Tipo", "type": "string" },
+            { "selector": "label", "text": "Rótulo", "type": "string" },
+            { "selector": "value", "text": "Valor", "type": "number" },
+            { "selector": "generated_at", "text": "Gerado em", "type": "string" }
+          ]
+        }
+      ]
+    }
+  ],
+  "refresh": "2m",
+  "schemaVersion": 39,
+  "tags": ["ciem", "ai", "insights"],
+  "templating": { "list": [] },
+  "time": { "from": "now-6h", "to": "now" },
+  "timezone": "browser",
+  "title": "CIEM — Insights IA",
+  "uid": "ciem-insights",
+  "version": 1
+}

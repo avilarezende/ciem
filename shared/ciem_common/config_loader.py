@@ -137,7 +137,9 @@ class LdapConfig(BaseModel):
     )
     domain: str = Field(default="exemplo.local", description="Domínio AD/LDAP")
     base_dn: str = Field(default="ou=usuarios,dc=exemplo,dc=local")
-    uid_attribute: str = Field(default="uid", description="Atributo de login (uid, sAMAccountName, etc.)")
+    uid_attribute: str = Field(
+        default="uid", description="Atributo de login (uid, sAMAccountName, etc.)"
+    )
     user_filter: str = Field(default="(uid=%s)", description="Filtro de busca; %s = username")
     bind_dn: str = Field(default="")
     bind_password: str = Field(default="")
@@ -209,6 +211,70 @@ class AuthConfig(BaseModel):
     ldap: LdapConfig = Field(default_factory=LdapConfig)
 
 
+class AiConfig(BaseModel):
+    """Configuração de provedores de IA (``config/ai.yaml``).
+
+    Apenas administradores configuram. Quando ``enabled``, os insights
+    gerados ficam visíveis a todos os usuários autenticados e no Grafana.
+    """
+
+    enabled: bool = Field(default=False, description="Ativa geração e exibição de insights")
+    provider: str = Field(default="openai_compatible", description="Tipo do provedor")
+    base_url: str = Field(default="https://api.openai.com/v1", description="URL base da API")
+    api_key: str = Field(default="", description="Chave de API do provedor")
+    model: str = Field(default="gpt-4o-mini", description="Nome do modelo")
+    organization: str = Field(default="", description="Organização OpenAI (opcional)")
+    temperature: float = Field(default=0.2, ge=0.0, le=2.0)
+    max_tokens: int = Field(default=1200, ge=64, le=16000)
+    refresh_interval_seconds: int = Field(default=300, ge=30, le=86400)
+    max_alarms: int = Field(default=40, ge=1, le=500)
+    max_history: int = Field(default=60, ge=1, le=500)
+    language: str = Field(default="pt-BR")
+    verify_ssl: bool = Field(default=True)
+    timeout_seconds: int = Field(default=60, ge=5, le=300)
+    auth_header: str = Field(default="Authorization")
+    auth_scheme: str = Field(default="Bearer")
+    chat_path: str = Field(default="/chat/completions")
+    system_prompt: str = Field(default="")
+
+    def to_yaml_dict(self) -> dict[str, Any]:
+        """Serializa para gravação em ai.yaml."""
+        return {
+            "enabled": self.enabled,
+            "provider": self.provider,
+            "base_url": self.base_url,
+            "api_key": self.api_key,
+            "model": self.model,
+            "organization": self.organization,
+            "temperature": self.temperature,
+            "max_tokens": self.max_tokens,
+            "refresh_interval_seconds": self.refresh_interval_seconds,
+            "max_alarms": self.max_alarms,
+            "max_history": self.max_history,
+            "language": self.language,
+            "verify_ssl": self.verify_ssl,
+            "timeout_seconds": self.timeout_seconds,
+            "auth_header": self.auth_header,
+            "auth_scheme": self.auth_scheme,
+            "chat_path": self.chat_path,
+            "system_prompt": self.system_prompt,
+        }
+
+    def public_dict(self, *, include_secrets: bool = False) -> dict[str, Any]:
+        """Dicionário para API (mascara api_key por padrão)."""
+        data = self.to_yaml_dict()
+        if include_secrets:
+            return data
+        key = data.get("api_key") or ""
+        if key:
+            data["api_key"] = ("*" * max(0, len(key) - 4)) + key[-4:]
+            data["api_key_set"] = True
+        else:
+            data["api_key"] = ""
+            data["api_key_set"] = False
+        return data
+
+
 @lru_cache(maxsize=1)
 def load_main_config() -> MainConfig:
     """Carrega e valida ``config/main.yaml`` (ou equivalente em ``CONFIG_PATH``)."""
@@ -231,6 +297,72 @@ def load_auth_config() -> AuthConfig:
         local_users=[LocalUserEntry.model_validate(u) for u in local_raw if isinstance(u, dict)],
         ldap=LdapConfig.from_raw(ldap_raw if isinstance(ldap_raw, dict) else {}),
     )
+
+
+@lru_cache(maxsize=1)
+def load_ai_config() -> AiConfig:
+    """Carrega e valida ``config/ai.yaml``."""
+    raw = _read_yaml("ai.yaml")
+    ai_raw = raw.get("ai", raw)
+    if not isinstance(ai_raw, dict):
+        return AiConfig()
+    return AiConfig.model_validate(ai_raw)
+
+
+def save_ai_config(config: AiConfig) -> None:
+    """Persiste ``AiConfig`` em ``config/ai.yaml``."""
+    path = _config_dir() / "ai.yaml"
+    payload = {"ai": config.to_yaml_dict()}
+    header = (
+        "# =============================================================================\n"
+        "# CIEM — Inteligência Artificial (insights de logs / alarmes)\n"
+        "# Atualizado pelo portal de administração.\n"
+        "# Configurável apenas por administradores; insights visíveis a todos quando ativo.\n"
+        "# Documentação: docs/AI.md\n"
+        "# =============================================================================\n"
+    )
+    dumped = yaml.safe_dump(payload, allow_unicode=True, default_flow_style=False, sort_keys=False)
+    path.write_text(header + "\n" + dumped, encoding="utf-8")
+    clear_config_cache()
+
+
+def update_ai_config(updates: dict[str, Any]) -> AiConfig:
+    """Atualiza campos de IA e persiste em ai.yaml."""
+    cfg = load_ai_config()
+    current = cfg.to_yaml_dict()
+    bool_keys = {"enabled", "verify_ssl"}
+    int_keys = {
+        "max_tokens",
+        "refresh_interval_seconds",
+        "max_alarms",
+        "max_history",
+        "timeout_seconds",
+    }
+    float_keys = {"temperature"}
+
+    for key, value in updates.items():
+        if key not in current and key not in AiConfig.model_fields:
+            continue
+        if key == "api_key" and isinstance(value, str) and value.strip().startswith("*"):
+            # Campo mascarado na UI — não sobrescrever a chave existente
+            continue
+        if key in bool_keys:
+            if isinstance(value, str):
+                current[key] = value.strip().lower() in {"1", "true", "yes", "on"}
+            else:
+                current[key] = bool(value)
+        elif key in int_keys and value is not None:
+            current[key] = int(value)
+        elif key in float_keys and value is not None:
+            current[key] = float(value)
+        else:
+            current[key] = (
+                _coerce_option_value(value) if not isinstance(value, dict | list) else value
+            )
+
+    cfg = AiConfig.model_validate(current)
+    save_ai_config(cfg)
+    return load_ai_config()
 
 
 def save_auth_config(config: AuthConfig) -> None:
@@ -287,7 +419,9 @@ def update_ldap_config(updates: dict[str, Any]) -> LdapConfig:
     return load_auth_config().ldap
 
 
-def create_local_user(username: str, password: str, role: str = "observer", enabled: bool = True) -> LocalUserEntry:
+def create_local_user(
+    username: str, password: str, role: str = "observer", enabled: bool = True
+) -> LocalUserEntry:
     """Cria usuário local com senha hasheada."""
     from ciem_common.auth import hash_password
 
@@ -517,6 +651,7 @@ def clear_config_cache() -> None:
     load_main_config.cache_clear()
     load_modules_config.cache_clear()
     load_auth_config.cache_clear()
+    load_ai_config.cache_clear()
     from ciem_common.targets_loader import clear_targets_cache
 
     clear_targets_cache()

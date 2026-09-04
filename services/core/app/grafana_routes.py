@@ -153,6 +153,93 @@ async def grafana_targets(
     ]
 
 
+@router.get("/insights")
+async def grafana_insights(
+    x_grafana_token: str | None = Header(default=None),
+) -> dict[str, Any]:
+    """Pacote completo de insights de IA para painéis Grafana."""
+    _verify_grafana_token(x_grafana_token)
+    from .ai_insights import get_insights_public
+
+    return await get_insights_public(force=False)
+
+
+@router.get("/insights/table")
+async def grafana_insights_table(
+    x_grafana_token: str | None = Header(default=None),
+) -> list[dict[str, Any]]:
+    """Insights achatados (tabela) para o datasource Infinity."""
+    _verify_grafana_token(x_grafana_token)
+    from .ai_insights import get_insights_public
+
+    data = await get_insights_public(force=False)
+    if not data.get("enabled"):
+        return [
+            {
+                "title": "IA desabilitada",
+                "severity": "info",
+                "detail": data.get("message") or "Ative Insights de IA na Configuração (admin).",
+                "recommendation": "",
+                "summary": "",
+                "generated_at": "",
+                "mode": "disabled",
+            }
+        ]
+    rows = []
+    for item in data.get("insights") or []:
+        rows.append(
+            {
+                "title": item.get("title"),
+                "severity": item.get("severity"),
+                "detail": item.get("detail"),
+                "recommendation": item.get("recommendation"),
+                "summary": data.get("summary"),
+                "generated_at": data.get("generated_at"),
+                "mode": data.get("mode"),
+            }
+        )
+    if not rows:
+        rows.append(
+            {
+                "title": "Sem insights",
+                "severity": "info",
+                "detail": data.get("summary") or "Nenhum padrão identificado.",
+                "recommendation": "",
+                "summary": data.get("summary"),
+                "generated_at": data.get("generated_at"),
+                "mode": data.get("mode"),
+            }
+        )
+    return rows
+
+
+@router.get("/insights/charts")
+async def grafana_insights_charts(
+    x_grafana_token: str | None = Header(default=None),
+) -> list[dict[str, Any]]:
+    """Séries de gráficos gerados pela IA (labels/values achatados)."""
+    _verify_grafana_token(x_grafana_token)
+    from .ai_insights import get_insights_public
+
+    data = await get_insights_public(force=False)
+    rows: list[dict[str, Any]] = []
+    for chart in data.get("charts") or []:
+        labels = chart.get("labels") or []
+        values = chart.get("values") or []
+        for index, label in enumerate(labels):
+            rows.append(
+                {
+                    "chart_id": chart.get("id"),
+                    "chart_title": chart.get("title"),
+                    "chart_type": chart.get("type"),
+                    "label": label,
+                    "value": values[index] if index < len(values) else 0,
+                    "generated_at": data.get("generated_at"),
+                }
+            )
+    return rows
+
+
 def _check_module(module_name: str) -> None:
     if module_name not in MODULE_URLS:
         raise HTTPException(status_code=404, detail=f"Módulo '{module_name}' não encontrado")

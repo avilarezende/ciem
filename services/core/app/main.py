@@ -12,6 +12,7 @@ from prometheus_client import CONTENT_TYPE_LATEST, Counter, generate_latest
 from pydantic import BaseModel, Field
 
 from app.aggregators import MODULE_URLS, aggregate_alarms, aggregate_history, aggregate_modules
+from app.ai_insights import clear_insights_cache, get_insights_public
 from app.config import settings
 from app.deps import require_admin, require_user
 from app.grafana_routes import refresh_prometheus_metrics
@@ -25,9 +26,11 @@ from ciem_common.config_loader import (
     create_local_user,
     delete_local_user,
     is_module_enabled,
+    load_ai_config,
     load_auth_config,
     load_main_config,
     load_modules_config,
+    update_ai_config,
     update_ldap_config,
     update_local_user,
     update_module_config,
@@ -280,6 +283,72 @@ async def remove_local_user(username: str, user: User = Depends(require_admin)) 
     return {"status": "deleted", "username": username}
 
 
+class AiUpdateRequest(BaseModel):
+    enabled: bool | None = None
+    provider: str | None = None
+    base_url: str | None = None
+    api_key: str | None = None
+    model: str | None = None
+    organization: str | None = None
+    temperature: float | None = None
+    max_tokens: int | None = None
+    refresh_interval_seconds: int | None = None
+    max_alarms: int | None = None
+    max_history: int | None = None
+    language: str | None = None
+    verify_ssl: bool | None = None
+    timeout_seconds: int | None = None
+    auth_header: str | None = None
+    auth_scheme: str | None = None
+    chat_path: str | None = None
+    system_prompt: str | None = None
+
+
+@app.get("/config/ai")
+async def get_ai_config(user: User = Depends(require_admin)) -> dict[str, Any]:
+    """Configuração do provedor de IA (apenas admin)."""
+    cfg = load_ai_config()
+    return {
+        "ai": cfg.public_dict(include_secrets=False),
+        "notes": {
+            "admin_only_config": "Somente administradores configuram provedores e credenciais.",
+            "visible_to_all": (
+                "Quando enabled=true, insights ficam visíveis a todos no portal e Grafana."
+            ),
+        },
+    }
+
+
+@app.put("/config/ai")
+async def put_ai_config(
+    body: AiUpdateRequest,
+    user: User = Depends(require_admin),
+) -> dict[str, Any]:
+    """Atualiza apontamentos do provedor de IA em config/ai.yaml."""
+    updates = body.model_dump(exclude_none=True)
+    if not updates:
+        raise HTTPException(status_code=400, detail="Nenhum campo de IA informado")
+    try:
+        cfg = update_ai_config(updates)
+    except (FileNotFoundError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    clear_insights_cache()
+    return {"ai": cfg.public_dict(include_secrets=False), "status": "saved"}
+
+
+@app.get("/insights")
+async def get_insights(user: User = Depends(require_user)) -> dict[str, Any]:
+    """Insights de IA — visíveis a qualquer usuário autenticado quando habilitados."""
+    return await get_insights_public(force=False)
+
+
+@app.post("/insights/refresh")
+async def refresh_insights(user: User = Depends(require_admin)) -> dict[str, Any]:
+    """Força regeneração dos insights (admin)."""
+    if not load_ai_config().enabled:
+        raise HTTPException(status_code=400, detail="Insights de IA estão desabilitados")
+    clear_insights_cache()
+    return await get_insights_public(force=True)
 
 
 @app.get("/config/main")

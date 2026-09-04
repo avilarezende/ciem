@@ -9,9 +9,14 @@ O CIEM é configurado via arquivos YAML comentados em português, localizados em
 | Arquivo | Função | Reinício necessário |
 |---------|--------|-------------------|
 | `config/main.yaml` | Configuração global (proxy, grafana, guacamole) | Sim |
-| `config/modules.yaml` | Ativar/desativar módulos coletores | Sim |
-| `config/auth.yaml` | Usuários locais e LDAP | Sim |
+| `config/modules.yaml` | Ativar/desativar módulos coletores | Sim* |
+| `config/auth.yaml` | Usuários locais e LDAP | Sim* |
+| `config/ai.yaml` | Provedores de IA / insights | Não (cache invalidado na API) |
 | `config/targets.yaml` | Alvos de manutenção (SSH/RDP) | Não |
+
+\* Alterações via portal são aplicadas na hora na API; reinício garante que outros processos releiam o YAML.
+
+Documentação de IA: [AI.md](AI.md).
 
 ## config/main.yaml
 
@@ -100,6 +105,25 @@ ldap:
     "cn=ciem-admins,ou=grupos,dc=sua-rede,dc=local": admin
     "cn=ciem-observers,ou=grupos,dc=sua-rede,dc=local": observer
 ```
+
+## config/ai.yaml
+
+Provedores de IA para insights de alarmes/logs. **Somente admin** configura; com `enabled: true`, resultados ficam visíveis a todos.
+
+```yaml
+ai:
+  enabled: false
+  provider: openai_compatible
+  base_url: "https://api.openai.com/v1"
+  api_key: ""
+  model: "gpt-4o-mini"
+  temperature: 0.2
+  max_tokens: 1200
+  refresh_interval_seconds: 300
+  language: "pt-BR"
+```
+
+Detalhes: [AI.md](AI.md).
 
 ## config/targets.yaml
 

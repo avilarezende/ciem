@@ -98,7 +98,7 @@ async function loadHistory() {
 }
 
 async function loadConfig() {
-  await Promise.all([loadAuthConfig(), loadModulesConfig()]);
+  await Promise.all([loadAuthConfig(), loadAiConfig(), loadModulesConfig()]);
 }
 
 async function loadModulesConfig() {
@@ -161,6 +161,90 @@ async function loadAuthConfig() {
   const data = await resp.json();
   renderLocalUsers(data.local_users || []);
   renderLdapForm(data.ldap || {});
+}
+
+const AI_FIELDS = [
+  { key: 'enabled', label: 'Habilitar Insights de IA', type: 'boolean' },
+  { key: 'provider', label: 'Provedor', type: 'text', placeholder: 'openai_compatible' },
+  { key: 'base_url', label: 'URL base da API', type: 'url', placeholder: 'https://api.openai.com/v1' },
+  { key: 'api_key', label: 'API Key', type: 'password', placeholder: 'sk-... ou chave do provedor' },
+  { key: 'model', label: 'Modelo', type: 'text', placeholder: 'gpt-4o-mini' },
+  { key: 'organization', label: 'Organização (opcional)', type: 'text' },
+  { key: 'temperature', label: 'Temperatura', type: 'number', placeholder: '0.2' },
+  { key: 'max_tokens', label: 'Máx. tokens', type: 'number', placeholder: '1200' },
+  { key: 'refresh_interval_seconds', label: 'Intervalo de refresh (s)', type: 'number', placeholder: '300' },
+  { key: 'max_alarms', label: 'Máx. alarmes no contexto', type: 'number', placeholder: '40' },
+  { key: 'max_history', label: 'Máx. eventos no contexto', type: 'number', placeholder: '60' },
+  { key: 'language', label: 'Idioma das respostas', type: 'text', placeholder: 'pt-BR' },
+  { key: 'verify_ssl', label: 'Verificar certificado SSL', type: 'boolean' },
+  { key: 'timeout_seconds', label: 'Timeout HTTP (s)', type: 'number', placeholder: '60' },
+  { key: 'chat_path', label: 'Path do chat completions', type: 'text', placeholder: '/chat/completions' },
+  { key: 'system_prompt', label: 'System prompt adicional', type: 'text', placeholder: 'Instruções extras (opcional)' },
+];
+
+async function loadAiConfig() {
+  const resp = await api('/config/ai');
+  if (!resp.ok) {
+    showConfigFeedback('Falha ao carregar configuração de IA.', true);
+    return;
+  }
+  const data = await resp.json();
+  renderAiForm(data.ai || {});
+}
+
+function renderAiForm(ai) {
+  const grid = $('#ai-fields');
+  if (!grid) return;
+  const values = { ...ai };
+  // Campo mascarado: não preencher com asteriscos no password input
+  if (values.api_key_set && String(values.api_key || '').startsWith('*')) {
+    values.api_key = '';
+  }
+  grid.innerHTML = AI_FIELDS.map((field) => renderField(field, values)).join('');
+  // Mostra/oculta campos conforme enabled
+  const enabledCb = grid.querySelector('input[name="enabled"]');
+  const syncVisibility = () => {
+    const on = enabledCb?.checked;
+    grid.querySelectorAll('.opt-field').forEach((label) => {
+      const input = label.querySelector('input');
+      if (!input || input.name === 'enabled') return;
+      label.style.opacity = on ? '1' : '0.45';
+      input.disabled = !on;
+    });
+  };
+  enabledCb?.addEventListener('change', syncVisibility);
+  syncVisibility();
+}
+
+async function saveAiForm(form) {
+  const payload = {};
+  form.querySelectorAll('input[name]').forEach((input) => {
+    if (input.disabled && input.name !== 'enabled') return;
+    if (input.type === 'checkbox') payload[input.name] = input.checked;
+    else if (input.type === 'number') payload[input.name] = input.value === '' ? null : Number(input.value);
+    else if (input.name === 'api_key' && !input.value) return; // não sobrescrever com vazio
+    else payload[input.name] = input.value;
+  });
+  const resp = await api('/config/ai', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(typeof err.detail === 'string' ? err.detail : 'Falha ao salvar IA');
+  }
+  showConfigFeedback('Configuração de IA salva em ai.yaml. Insights visíveis a todos quando habilitado.');
+  loadAiConfig();
+}
+
+async function refreshAiInsights() {
+  const resp = await api('/insights/refresh', { method: 'POST' });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(typeof err.detail === 'string' ? err.detail : 'Falha ao gerar insights');
+  }
+  const data = await resp.json();
+  showConfigFeedback(`Insights gerados (${data.mode || 'ok'}). Abra Grafana → Insights IA.`);
 }
 
 function renderLocalUsers(users) {
@@ -468,14 +552,16 @@ async function loadGrafanaView(view = 'overview') {
   const content = $('#grafana-content');
   if (!stats || !content) return;
 
-  const [alarmsResp, modulesResp, historyResp] = await Promise.all([
+  const [alarmsResp, modulesResp, historyResp, insightsResp] = await Promise.all([
     api('/alarms/active'),
     api('/modules/status'),
     api('/history?limit=30'),
+    api('/insights'),
   ]);
   const alarms = await alarmsResp.json();
   const modules = await modulesResp.json();
   const history = await historyResp.json();
+  const insights = insightsResp.ok ? await insightsResp.json() : { enabled: false };
 
   const critical = alarms.filter(a => (a.severity || '').toLowerCase() === 'critical').length;
   const warning = alarms.filter(a => (a.severity || '').toLowerCase() === 'warning').length;
@@ -488,6 +574,54 @@ async function loadGrafanaView(view = 'overview') {
     <div class="stat-card"><div class="value">${alarms.length}</div><div class="label">Alarmes ativos</div></div>
     <div class="stat-card success"><div class="value">${online}/${enabled || modules.length}</div><div class="label">Módulos online</div></div>
   `;
+
+  if (view === 'insights') {
+    if (!insights.enabled) {
+      content.innerHTML = `
+        <p class="hint">
+          Insights de IA estão <strong>desabilitados</strong>.
+          ${currentUser?.role === 'admin'
+            ? 'Ative em <strong>Configuração → Inteligência Artificial</strong> e preencha URL, API key e modelo.'
+            : 'Peça a um administrador para ativar o provedor de IA.'}
+        </p>`;
+      return;
+    }
+    const items = insights.insights || [];
+    const charts = insights.charts || [];
+    content.innerHTML = `
+      <div class="insight-summary data-item">
+        <div>
+          <strong>Resumo IA</strong>
+          <div class="target-meta">${escapeAttr(insights.summary || '')}</div>
+          <div class="target-meta">modo: ${escapeAttr(insights.mode || '')}
+            ${insights.model ? ` · modelo: ${escapeAttr(insights.model)}` : ''}
+            ${insights.generated_at ? ` · ${escapeAttr(insights.generated_at)}` : ''}
+          </div>
+        </div>
+      </div>
+      ${items.map((item) => `
+        <div class="data-item">
+          <div>
+            <span class="severity-${escapeAttr(item.severity || 'info')}">[${escapeAttr((item.severity || 'info').toUpperCase())}]</span>
+            <strong>${escapeAttr(item.title || 'Insight')}</strong>
+            <div class="target-meta">${escapeAttr(item.detail || '')}</div>
+            ${item.recommendation ? `<div class="target-meta"><em>Recomendação:</em> ${escapeAttr(item.recommendation)}</div>` : ''}
+          </div>
+        </div>`).join('') || '<p class="hint">Nenhum insight gerado ainda.</p>'}
+      ${charts.length ? `
+        <h3>Gráficos sugeridos</h3>
+        ${charts.map((c) => `
+          <div class="data-item">
+            <div>
+              <strong>${escapeAttr(c.title || c.id)}</strong>
+              <div class="target-meta">${escapeAttr(c.type)} · ${(c.labels || []).map(escapeAttr).join(', ')}</div>
+              <div class="target-meta">valores: ${(c.values || []).join(', ')}</div>
+            </div>
+          </div>`).join('')}
+      ` : ''}
+    `;
+    return;
+  }
 
   if (view === 'alarms') {
     content.innerHTML = alarms.length
@@ -535,8 +669,12 @@ async function loadGrafanaView(view = 'overview') {
         : '<p class="hint">Nenhuma sessão registrada.</p>';
     }
   } else {
+    const insightLine = insights.enabled
+      ? `<div class="data-item"><div><strong>Insights IA</strong> ${escapeAttr((insights.summary || '').slice(0, 160))}</div><small>${escapeAttr(insights.mode || 'ativo')}</small></div>`
+      : `<div class="data-item"><div><strong>Insights IA</strong> desabilitados</div><small>admin ativa em Configuração</small></div>`;
     content.innerHTML = `
       <div class="data-item"><div><strong>Dashboard</strong> CIEM — Visão Geral NOC</div><small>ciem-overview</small></div>
+      ${insightLine}
       <div class="data-item"><div><strong>Dashboard</strong> Alarmes Ativos</div><small>ciem-alarms · ${alarms.length} itens</small></div>
       <div class="data-item"><div><strong>Dashboard</strong> Módulos Coletores</div><small>ciem-modules · ${modules.length} módulos</small></div>
       <div class="data-item"><div><strong>Dashboard</strong> Histórico de Eventos</div><small>ciem-history · ${history.length} eventos</small></div>
@@ -655,6 +793,23 @@ $('#form-ldap')?.addEventListener('submit', async (e) => {
     await saveLdapForm(e.target);
   } catch (err) {
     showConfigFeedback(err.message || 'Erro ao salvar LDAP.', true);
+  }
+});
+
+$('#form-ai')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try {
+    await saveAiForm(e.target);
+  } catch (err) {
+    showConfigFeedback(err.message || 'Erro ao salvar IA.', true);
+  }
+});
+
+$('#btn-ai-refresh')?.addEventListener('click', async () => {
+  try {
+    await refreshAiInsights();
+  } catch (err) {
+    showConfigFeedback(err.message || 'Erro ao gerar insights.', true);
   }
 });
 

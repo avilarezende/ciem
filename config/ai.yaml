@@ -1,0 +1,40 @@
+# =============================================================================
+# CIEM — Inteligência Artificial (insights de logs / alarmes)
+# Configurável apenas por administradores no portal.
+# Quando habilitado, os insights ficam visíveis a todos os usuários.
+# Documentação: docs/AI.md
+# =============================================================================
+
+ai:
+  enabled: false
+  provider: openai_compatible
+  # URL base da API (ex.: https://api.openai.com/v1 ou endpoint interno)
+  base_url: "https://api.openai.com/v1"
+  # Chave de API — NUNCA versionar valores reais em produção
+  api_key: ""
+  # Modelo (ex.: gpt-4o-mini, gpt-4.1, claude-3-5-sonnet, llama3.1)
+  model: "gpt-4o-mini"
+  # Organização / projeto (opcional — OpenAI)
+  organization: ""
+  # Temperatura da geração (0–2)
+  temperature: 0.2
+  # Máximo de tokens na resposta
+  max_tokens: 1200
+  # Intervalo mínimo entre gerações automáticas (segundos)
+  refresh_interval_seconds: 300
+  # Quantidade de alarmes/eventos enviados ao modelo
+  max_alarms: 40
+  max_history: 60
+  # Idioma preferido das respostas
+  language: "pt-BR"
+  # Verificar certificado TLS ao chamar o provedor
+  verify_ssl: true
+  # Timeout HTTP em segundos
+  timeout_seconds: 60
+  # Cabeçalho Authorization customizado (padrão: Bearer <api_key>)
+  auth_header: "Authorization"
+  auth_scheme: "Bearer"
+  # Caminho relativo do endpoint de chat (OpenAI-compatible)
+  chat_path: "/chat/completions"
+  # Prompt de sistema adicional (opcional)
+  system_prompt: ""
