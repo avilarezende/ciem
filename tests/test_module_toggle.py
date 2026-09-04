@@ -80,6 +80,36 @@ def test_toggle_module_requires_admin(client: TestClient, observer_headers: dict
     assert resp.status_code == 403
 
 
+def test_update_module_options_api(client: TestClient, admin_headers: dict[str, str], modules_yaml_backup: Path) -> None:
+    resp = client.put(
+        "/config/modules/zabbix",
+        json={
+            "enabled": True,
+            "options": {
+                "url": "https://zabbix.lab.local",
+                "username": "ops",
+                "password": "s3cret",
+                "verify_ssl": False,
+                "problem_limit": "25",
+            },
+        },
+        headers=admin_headers,
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["enabled"] is True
+    assert data["options"]["url"] == "https://zabbix.lab.local"
+    assert data["options"]["username"] == "ops"
+    assert data["options"]["password"] == "s3cret"
+    assert data["options"]["verify_ssl"] is False
+    assert data["options"]["problem_limit"] == 25
+
+    stored = client.get("/config/modules", headers=admin_headers).json()["zabbix"]
+    assert stored["enabled"] is True
+    assert stored["options"]["url"] == "https://zabbix.lab.local"
+    assert "https://zabbix.lab.local" in modules_yaml_backup.read_text(encoding="utf-8")
+
+
 def test_toggle_unknown_module(client: TestClient, admin_headers: dict[str, str]) -> None:
     resp = client.put(
         "/config/modules/naoexiste",

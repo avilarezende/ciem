@@ -105,22 +105,7 @@ async function loadConfig() {
   }
   const modules = await resp.json();
   const container = $('#config-modules');
-  container.innerHTML = Object.entries(modules).map(([name, cfg]) => `
-    <div class="config-row">
-      <div>
-        <strong>${name}</strong>
-        <div class="hint">${cfg.description || ''}</div>
-      </div>
-      <button type="button"
-              class="toggle ${cfg.enabled ? 'on' : ''}"
-              role="switch"
-              aria-checked="${cfg.enabled}"
-              data-module="${name}"
-              title="Clique para ${cfg.enabled ? 'desativar' : 'ativar'}">
-        <span class="toggle-knob" aria-hidden="true"></span>
-      </button>
-    </div>
-  `).join('');
+  container.innerHTML = Object.entries(modules).map(([name, cfg]) => renderModuleCard(name, cfg)).join('');
 
   container.querySelectorAll('.toggle[data-module]').forEach((btn) => {
     btn.addEventListener('click', (e) => {
@@ -135,6 +120,129 @@ async function loadConfig() {
       toggleModule(name, next, btn);
     });
   });
+
+  container.querySelectorAll('form.module-options').forEach((form) => {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      saveModuleOptions(form);
+    });
+  });
+}
+
+/** Campos de personalização por módulo (labels em português). */
+const MODULE_FIELDS = {
+  zabbix: [
+    { key: 'url', label: 'URL do Zabbix', type: 'url', placeholder: 'https://zabbix.exemplo.local' },
+    { key: 'username', label: 'Usuário', type: 'text', placeholder: 'Admin' },
+    { key: 'password', label: 'Senha', type: 'password', placeholder: '••••••••' },
+    { key: 'verify_ssl', label: 'Verificar certificado SSL', type: 'boolean' },
+    { key: 'problem_limit', label: 'Limite de problemas', type: 'number', placeholder: '50' },
+  ],
+  cacti: [
+    { key: 'url', label: 'URL do Cacti', type: 'url', placeholder: 'https://cacti.exemplo.local' },
+    { key: 'username', label: 'Usuário', type: 'text' },
+    { key: 'password', label: 'Senha', type: 'password' },
+    { key: 'verify_ssl', label: 'Verificar certificado SSL', type: 'boolean' },
+  ],
+  nagios: [
+    { key: 'url', label: 'URL do Nagios / Nagios XI', type: 'url', placeholder: 'https://nagios.exemplo.local' },
+    { key: 'api_key', label: 'API Key', type: 'password', placeholder: 'chave da API' },
+    { key: 'verify_ssl', label: 'Verificar certificado SSL', type: 'boolean' },
+  ],
+  topdesk: [
+    { key: 'url', label: 'URL do TOPdesk', type: 'url', placeholder: 'https://topdesk.exemplo.local' },
+    { key: 'username', label: 'Usuário', type: 'text' },
+    { key: 'password', label: 'Senha', type: 'password' },
+    { key: 'application_password', label: 'Senha de aplicação', type: 'password' },
+  ],
+  inventory: [
+    { key: 'url', label: 'URL da API de inventário', type: 'url', placeholder: 'https://inventory.exemplo.local/api/v1/assets' },
+    { key: 'api_key', label: 'API Key', type: 'password' },
+    { key: 'verify_ssl', label: 'Verificar certificado SSL', type: 'boolean' },
+  ],
+  syslog: [
+    { key: 'url', label: 'URL da API Syslog (Graylog/ELK)', type: 'url', placeholder: 'https://syslog.exemplo.local/api' },
+    { key: 'api_key', label: 'API Key', type: 'password' },
+    { key: 'file_path', label: 'Caminho do arquivo local', type: 'text', placeholder: '/var/log/syslog' },
+    { key: 'severity_filter', label: 'Filtro de severidade (vírgula)', type: 'text', placeholder: 'warning, error, critical' },
+  ],
+  email_support: [
+    { key: 'provider', label: 'Provedor', type: 'text', placeholder: 'imap ou microsoft_graph' },
+    { key: 'host', label: 'Servidor de e-mail', type: 'text', placeholder: 'mail.exemplo.local' },
+    { key: 'username', label: 'Usuário', type: 'text' },
+    { key: 'password', label: 'Senha', type: 'password' },
+    { key: 'folder', label: 'Pasta', type: 'text', placeholder: 'INBOX' },
+    { key: 'max_messages', label: 'Máx. mensagens', type: 'number', placeholder: '100' },
+  ],
+};
+
+function escapeAttr(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function formatOptionValue(value) {
+  if (Array.isArray(value)) return value.join(', ');
+  if (value === null || value === undefined) return '';
+  return String(value);
+}
+
+function renderField(field, options) {
+  const raw = options?.[field.key];
+  const value = formatOptionValue(raw);
+  const id = `opt-${field.key}`;
+  if (field.type === 'boolean') {
+    const checked = raw === true || raw === 'true' ? 'checked' : '';
+    return `
+      <label class="opt-field opt-bool">
+        <input type="checkbox" name="${field.key}" ${checked}>
+        <span>${field.label}</span>
+      </label>`;
+  }
+  const inputType = field.type === 'password' ? 'password'
+    : field.type === 'number' ? 'number'
+    : field.type === 'url' ? 'url' : 'text';
+  return `
+    <label class="opt-field">
+      <span>${field.label}</span>
+      <input type="${inputType}" name="${field.key}" value="${escapeAttr(value)}"
+             placeholder="${escapeAttr(field.placeholder || '')}" autocomplete="off">
+    </label>`;
+}
+
+function renderModuleCard(name, cfg) {
+  const fields = MODULE_FIELDS[name] || Object.keys(cfg.options || {}).map((key) => ({
+    key,
+    label: key,
+    type: /password|secret|api_key/i.test(key) ? 'password' : 'text',
+  }));
+  const optionsHtml = fields.map((f) => renderField(f, cfg.options || {})).join('');
+  return `
+    <div class="config-card" data-module-card="${name}">
+      <div class="config-row">
+        <div>
+          <strong>${name}</strong>
+          <div class="hint">${cfg.description || ''}</div>
+        </div>
+        <button type="button"
+                class="toggle ${cfg.enabled ? 'on' : ''}"
+                role="switch"
+                aria-checked="${cfg.enabled}"
+                data-module="${name}"
+                title="Clique para ${cfg.enabled ? 'desativar' : 'ativar'}">
+          <span class="toggle-knob" aria-hidden="true"></span>
+        </button>
+      </div>
+      <form class="module-options ${cfg.enabled ? '' : 'hidden'}" data-module="${name}">
+        <h4>Parâmetros de conexão</h4>
+        <p class="hint">Preencha URL, credenciais e opções. Os valores são salvos em <code>config/modules.yaml</code>.</p>
+        <div class="opt-grid">${optionsHtml}</div>
+        <button type="submit" class="btn-primary btn-save-module">Salvar configuração</button>
+      </form>
+    </div>`;
 }
 
 function showConfigFeedback(message, isError = false) {
@@ -145,13 +253,23 @@ function showConfigFeedback(message, isError = false) {
   feedback.classList.remove('hidden');
 }
 
+function setModuleFormVisible(name, visible) {
+  const form = document.querySelector(`form.module-options[data-module="${name}"]`);
+  if (!form) return;
+  form.classList.toggle('hidden', !visible);
+  if (visible) {
+    const first = form.querySelector('input:not([type="checkbox"])');
+    first?.focus();
+  }
+}
+
 async function toggleModule(name, enabled, toggleEl) {
   if (toggleEl.classList.contains('busy')) return;
   toggleEl.classList.add('busy');
-  // Atualização otimista — o usuário vê o switch mudar imediatamente
   toggleEl.classList.toggle('on', enabled);
   toggleEl.setAttribute('aria-checked', String(enabled));
   toggleEl.title = `Clique para ${enabled ? 'desativar' : 'ativar'}`;
+  setModuleFormVisible(name, enabled);
 
   try {
     const resp = await api(`/config/modules/${encodeURIComponent(name)}`, {
@@ -167,16 +285,53 @@ async function toggleModule(name, enabled, toggleEl) {
     toggleEl.classList.toggle('on', data.enabled);
     toggleEl.setAttribute('aria-checked', String(data.enabled));
     toggleEl.title = `Clique para ${data.enabled ? 'desativar' : 'ativar'}`;
-    showConfigFeedback(`Módulo ${name} ${data.enabled ? 'ativado' : 'desativado'}.`);
+    setModuleFormVisible(name, data.enabled);
+    showConfigFeedback(
+      data.enabled
+        ? `Módulo ${name} ativado. Preencha e salve os parâmetros abaixo.`
+        : `Módulo ${name} desativado.`
+    );
     loadModules();
   } catch (err) {
-    // Reverte UI se a API falhar
     toggleEl.classList.toggle('on', !enabled);
     toggleEl.setAttribute('aria-checked', String(!enabled));
     toggleEl.title = `Clique para ${!enabled ? 'desativar' : 'ativar'}`;
+    setModuleFormVisible(name, !enabled);
     showConfigFeedback(err.message || 'Erro ao salvar configuração.', true);
   } finally {
     toggleEl.classList.remove('busy');
+  }
+}
+
+async function saveModuleOptions(form) {
+  const name = form.dataset.module;
+  const submitBtn = form.querySelector('.btn-save-module');
+  if (submitBtn) submitBtn.disabled = true;
+
+  const options = {};
+  form.querySelectorAll('input[name]').forEach((input) => {
+    if (input.type === 'checkbox') {
+      options[input.name] = input.checked;
+    } else {
+      options[input.name] = input.value;
+    }
+  });
+
+  try {
+    const resp = await api(`/config/modules/${encodeURIComponent(name)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ options }),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      const detail = typeof err.detail === 'string' ? err.detail : 'Falha ao salvar opções';
+      throw new Error(detail);
+    }
+    showConfigFeedback(`Configuração do módulo ${name} salva em modules.yaml.`);
+  } catch (err) {
+    showConfigFeedback(err.message || 'Erro ao salvar opções.', true);
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
   }
 }
 

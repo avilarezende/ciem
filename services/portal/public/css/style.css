@@ -117,12 +117,41 @@ body {
 }
 
 /* Config toggles */
-.config-modules { display: flex; flex-direction: column; gap: 0.8rem; }
+.config-modules { display: flex; flex-direction: column; gap: 1rem; }
+.config-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 8px; overflow: hidden;
+}
 .config-row {
   display: flex; justify-content: space-between; align-items: center;
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 6px; padding: 1rem;
+  padding: 1rem 1.1rem; gap: 1rem;
 }
+.module-options {
+  border-top: 1px solid var(--border);
+  padding: 1rem 1.1rem 1.2rem;
+  background: rgba(0,0,0,0.15);
+}
+.module-options h4 {
+  margin: 0 0 0.4rem; font-size: 0.95rem; color: var(--accent);
+}
+.opt-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.8rem 1rem; margin: 0.8rem 0 1rem;
+}
+.opt-field { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.85rem; color: var(--text-muted); }
+.opt-field input[type="text"],
+.opt-field input[type="url"],
+.opt-field input[type="password"],
+.opt-field input[type="number"] {
+  width: 100%; padding: 0.55rem 0.7rem; border: 1px solid var(--border);
+  border-radius: 6px; background: var(--bg-primary); color: var(--text); font-size: 0.9rem;
+}
+.opt-bool {
+  flex-direction: row; align-items: center; gap: 0.55rem;
+  padding-top: 1.4rem;
+}
+.opt-bool input { width: auto; accent-color: var(--accent); }
+.btn-save-module { margin-top: 0.2rem; }
 .toggle {
   width: 48px; height: 28px; background: var(--border); border-radius: 14px;
   position: relative; cursor: pointer; flex-shrink: 0; border: none; padding: 0;

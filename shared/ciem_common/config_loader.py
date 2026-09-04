@@ -183,6 +183,25 @@ def is_module_enabled(module_name: str) -> bool:
     return entry is not None and entry.enabled
 
 
+def _coerce_option_value(value: Any) -> Any:
+    """Normaliza valores vindos do portal (strings de formulário → tipos YAML)."""
+    if isinstance(value, str):
+        stripped = value.strip()
+        lowered = stripped.lower()
+        if lowered in {"true", "false"}:
+            return lowered == "true"
+        if re.fullmatch(r"-?\d+", stripped):
+            return int(stripped)
+        if re.fullmatch(r"-?\d+\.\d+", stripped):
+            return float(stripped)
+        if "," in stripped and not stripped.startswith("http"):
+            parts = [p.strip() for p in stripped.split(",") if p.strip()]
+            if parts and all(re.fullmatch(r"[A-Za-z0-9_\-]+", p) for p in parts):
+                return parts
+        return value
+    return value
+
+
 def set_module_enabled(module_name: str, enabled: bool) -> bool:
     """Atualiza ``enabled`` de um módulo em ``config/modules.yaml``.
 
@@ -232,6 +251,72 @@ def set_module_enabled(module_name: str, enabled: bool) -> bool:
     path.write_text("".join(lines), encoding="utf-8")
     clear_config_cache()
     return enabled
+
+
+def update_module_config(
+    module_name: str,
+    *,
+    enabled: bool | None = None,
+    options: dict[str, Any] | None = None,
+) -> ModuleEntry:
+    """Atualiza ``enabled`` e/ou ``options`` de um módulo em ``modules.yaml``.
+
+    - Somente ``enabled``: preserva comentários do arquivo.
+    - Com ``options``: regrava o YAML a partir da configuração atual (mantém
+      todos os módulos/descrições; comentários inline podem ser omitidos).
+    """
+    modules = load_modules_config().modules
+    if module_name not in modules:
+        raise KeyError(f"Módulo '{module_name}' não encontrado")
+
+    if options is None:
+        if enabled is None:
+            return modules[module_name]
+        set_module_enabled(module_name, enabled)
+        return load_modules_config().modules[module_name]
+
+    path = _config_dir() / "modules.yaml"
+    if not path.is_file():
+        raise FileNotFoundError(f"Arquivo não encontrado: {path}")
+
+    raw = _read_yaml("modules.yaml")
+    modules_raw: dict[str, Any] = raw.get("modules", raw)
+    if not isinstance(modules_raw, dict) or module_name not in modules_raw:
+        raise KeyError(f"Módulo '{module_name}' não encontrado")
+
+    entry_raw = modules_raw[module_name]
+    if not isinstance(entry_raw, dict):
+        entry_raw = {"enabled": bool(entry_raw), "description": "", "options": {}}
+
+    if enabled is not None:
+        entry_raw["enabled"] = enabled
+
+    current_options = entry_raw.get("options")
+    if not isinstance(current_options, dict):
+        current_options = {}
+    merged = dict(current_options)
+    for key, value in options.items():
+        merged[key] = _coerce_option_value(value)
+    entry_raw["options"] = merged
+    modules_raw[module_name] = entry_raw
+
+    out: dict[str, Any] = {"modules": modules_raw}
+    header = (
+        "# =============================================================================\n"
+        "# CIEM — Módulos Coletores\n"
+        "# Atualizado pelo portal de administração.\n"
+        "# Documentação: docs/MODULES.md\n"
+        "# =============================================================================\n"
+    )
+    dumped = yaml.safe_dump(
+        out,
+        allow_unicode=True,
+        default_flow_style=False,
+        sort_keys=False,
+    )
+    path.write_text(header + "\n" + dumped, encoding="utf-8")
+    clear_config_cache()
+    return load_modules_config().modules[module_name]
 
 
 def clear_config_cache() -> None:

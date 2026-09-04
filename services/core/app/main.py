@@ -25,7 +25,7 @@ from ciem_common.config_loader import (
     is_module_enabled,
     load_main_config,
     load_modules_config,
-    set_module_enabled,
+    update_module_config,
 )
 from ciem_common.interfaces import SessionRecord
 from ciem_common.sso import guacamole_client_id
@@ -120,8 +120,9 @@ async def login(body: LoginRequest) -> LoginResponse:
     )
 
 
-class ModuleToggleRequest(BaseModel):
-    enabled: bool
+class ModuleUpdateRequest(BaseModel):
+    enabled: bool | None = None
+    options: dict[str, Any] | None = None
 
 
 @app.get("/config/modules")
@@ -134,19 +135,27 @@ async def get_modules_config(user: User = Depends(require_user)) -> dict[str, An
 
 
 @app.put("/config/modules/{module_name}")
-async def toggle_module(
+async def update_module(
     module_name: str,
-    body: ModuleToggleRequest,
+    body: ModuleUpdateRequest,
     user: User = Depends(require_admin),
 ) -> dict[str, Any]:
-    """Ativa ou desativa um módulo coletor (persiste em config/modules.yaml)."""
+    """Ativa/desativa módulo e/ou atualiza opções (URL, credenciais, etc.)."""
+    if body.enabled is None and body.options is None:
+        raise HTTPException(status_code=400, detail="Informe enabled e/ou options")
     try:
-        enabled = set_module_enabled(module_name, body.enabled)
+        entry = update_module_config(module_name, enabled=body.enabled, options=body.options)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except (FileNotFoundError, RuntimeError) as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
-    return {"module": module_name, "enabled": enabled}
+    return {
+        "module": module_name,
+        "enabled": entry.enabled,
+        "description": entry.description,
+        "options": entry.options,
+    }
+
 
 
 
