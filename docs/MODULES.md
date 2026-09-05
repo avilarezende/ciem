@@ -12,7 +12,7 @@ Cada módulo é um **serviço independente** que coleta dados de um sistema de m
 ## Configuração pelo portal (admin)
 
 1. Login como administrador  
-2. **Configuração → Módulos coletores**  
+2. Sidebar **Configuração** → seção **Módulos**  
 3. Ative o **switch** do módulo desejado  
 4. Com o módulo **ON**, o formulário exibe campos de opções (URL, credenciais, filtros, etc.)  
 5. **Salvar** — persiste `enabled` e `options` em `config/modules.yaml`  

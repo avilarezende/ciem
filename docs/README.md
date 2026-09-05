@@ -55,10 +55,11 @@ Imagens em `docs/assets/` para alinhar times de produto, UX e desenvolvimento:
 
 | Arquivo | Tela |
 |---------|------|
-| [ciem-portal-login.jpg](assets/ciem-portal-login.jpg) | Login |
-| [ciem-portal-dashboard.jpg](assets/ciem-portal-dashboard.jpg) | Dashboard / visão geral |
+| [ciem-portal-login.jpg](assets/ciem-portal-login.jpg) | Login (brand-first) |
+| [ciem-portal-dashboard.jpg](assets/ciem-portal-dashboard.jpg) | Visão geral (KPIs + gráfico + insights) |
 | [ciem-portal-alarms.jpg](assets/ciem-portal-alarms.jpg) | Alarmes ativos |
 | [ciem-portal-sessions.jpg](assets/ciem-portal-sessions.jpg) | Sessões e Guacamole |
+| [ciem-config-interface.png](assets/ciem-config-interface.png) | Configuração (seções admin) |
 | [ciem-architecture-diagram.jpg](assets/ciem-architecture-diagram.jpg) | Arquitetura ZTNA |
 
 > Ao alterar o portal (`services/portal/`), atualize o mockup correspondente e referencie o PR na descrição da mudança.

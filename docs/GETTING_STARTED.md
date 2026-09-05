@@ -52,7 +52,7 @@ Usuários locais para o portal (PBKDF2). Padrão de desenvolvimento:
 | `admin` | `admin123` | admin |
 | `observador` | `observer123` | observer |
 
-**Altere em produção.** No portal: **Configuração → Usuários locais → Alterar senha**.  
+**Altere em produção.** No portal: sidebar **Configuração → Usuários → Alterar senha**.  
 Detalhes (LDAP, exclusão do admin, CLI): [AUTH.md](AUTH.md).
 
 ### `config/ai.yaml`
@@ -99,8 +99,8 @@ Detalhes: [KUBERNETES.md](KUBERNETES.md) e [deploy/kubernetes/README.md](../depl
 
 ## 6. Próximos passos
 
-1. Login como `admin` → **Configuração**: alterar senha; (opcional) LDAP, módulos e IA  
-2. [USAGE.md](USAGE.md) — uso diário do portal  
+1. Login como `admin` → sidebar **Configuração**: alterar senha; (opcional) LDAP, módulos e IA  
+2. [USAGE.md](USAGE.md) — uso diário (Visão geral, Análise, papéis)  
 3. [AUTH.md](AUTH.md) — usuários locais, LDAP, exclusão do admin  
 4. [AI.md](AI.md) — insights de IA (se for usar)  
 5. [DASHBOARDS.md](DASHBOARDS.md) — painéis Grafana  

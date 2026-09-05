@@ -50,7 +50,7 @@ docker compose -f deploy/docker/docker-compose.yml --profile core --profile modu
 | Grafana | `https://localhost/grafana/` | `admin` / `admin` |
 | API | `https://localhost/api/health` | — |
 
-Após o login admin: **Configuração** → usuários/LDAP, switches de módulos (com formulário de opções) e provedor de IA.
+Após o login admin: sidebar **Configuração** (seções Usuários, LDAP, IA e Módulos). Operadores usam **Visão geral** e **Análise** para KPIs, gráficos e insights.
 
 ## Início rápido (Kubernetes)
 
@@ -68,10 +68,11 @@ Referência visual em `docs/assets/` para alinhar produto, UX e desenvolvimento:
 
 | Imagem | Tela |
 |--------|------|
-| [login](docs/assets/ciem-portal-login.jpg) | Autenticação |
-| [dashboard](docs/assets/ciem-portal-dashboard.jpg) | Visão geral NOC |
+| [login](docs/assets/ciem-portal-login.jpg) | Autenticação (brand-first) |
+| [dashboard](docs/assets/ciem-portal-dashboard.jpg) | Visão geral (KPIs + gráfico + insights) |
 | [alarmes](docs/assets/ciem-portal-alarms.jpg) | Alarmes ativos |
 | [sessões](docs/assets/ciem-portal-sessions.jpg) | Guacamole + auditoria |
+| [configuração](docs/assets/ciem-config-interface.png) | Configuração por seções (admin) |
 | [arquitetura](docs/assets/ciem-architecture-diagram.jpg) | Fluxo ZTNA |
 
 ## Arquitetura

@@ -35,10 +35,22 @@ Resumo das capacidades adicionadas ao CIEM para operação pelo portal (administ
 
 **Documentação:** [AI.md](AI.md)
 
+## 4. Interface ergonômica (admin + observer)
+
+| Capacidade | Detalhe |
+|------------|---------|
+| Sidebar + workspace | Navegação clara; login com marca CIEM em destaque |
+| Visão geral analítica | KPIs, gráfico de severidade, preview de insights e grade de coletores |
+| Painel Análise | Abas (resumo, insights IA, alarmes, módulos, histórico, sessões) + área de gráfico |
+| Configuração por seções | Usuários · LDAP · IA · Módulos — uma tarefa por vez |
+| Tipografia / tema | DM Sans + IBM Plex Mono; tema escuro NOC com accent teal |
+
+**Documentação:** [PORTAL.md](PORTAL.md), [USAGE.md](USAGE.md)
+
 ## Papéis em uma frase
 
 - **admin** — configura LDAP, usuários, módulos e IA; inicia sessões Guacamole  
-- **observer** — monitora alarmes, histórico, Grafana e (se ativo) insights de IA  
+- **observer** — monitora alarmes, histórico, análise/Grafana e (se ativo) insights de IA  
 
 ## Arquivos YAML envolvidos
 

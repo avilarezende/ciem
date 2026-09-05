@@ -9,12 +9,12 @@ O CIEM pode usar **provedores de IA** (APIs compatíveis com OpenAI Chat Complet
 | **Administrador** | Ativar/desativar, preencher URL, API key, modelo e demais opções; forçar regeneração |
 | **Todos os usuários** (observer incluso) | Ver os insights **somente quando a função estiver habilitada** |
 
-A tela de configuração aparece apenas em **Configuração** (aba admin-only do portal).
+A tela de configuração aparece apenas na sidebar **Configuração** (somente admin).
 
 ## Configuração no portal
 
 1. Login como `admin`
-2. **Configuração → Inteligência Artificial — Insights**
+2. Sidebar **Configuração** → seção **Inteligência Artificial**
 3. Marque **Habilitar Insights de IA**
 4. Preencha os campos que ficam habilitados:
    - **URL base da API** (ex.: `https://api.openai.com/v1` ou endpoint interno)
@@ -37,7 +37,7 @@ Valores são persistidos em `config/ai.yaml`.
 
 | Superfície | Detalhe |
 |------------|---------|
-| Portal → **Dashboards Grafana → Insights IA** | Resumo, lista de insights e gráficos sugeridos |
+| Portal → **Análise → Insights IA** (e preview na Visão geral) | Resumo, lista de insights e gráficos sugeridos |
 | Portal → Visão Geral | Linha de status dos insights |
 | Grafana → dashboard `ciem-insights` | Tabelas via Infinity (`/grafana/insights/table` e `/charts`) |
 | Grafana → Visão Geral NOC | Painel “Insights de IA” |
