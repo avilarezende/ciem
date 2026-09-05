@@ -5,8 +5,11 @@
 O **CIEM** (Centro Integrado de Estatística e Manutenção) é uma plataforma ZTNA que combina:
 
 1. **Coleta** — dados de sistemas de monitoramento existentes (sem dependência do CIEM)
-2. **Visualização** — Grafana com alarmes ativos em destaque e histórico separado
-3. **Manutenção** — sessões SSH/RDP/VNC via Guacamole com auditoria completa
+2. **Portal** — interface web para admin e observer (KPIs, Análise, configuração por seções)
+3. **Visualização** — Grafana com alarmes ativos em destaque, histórico e Insights de IA
+4. **Autenticação** — usuários locais (prioritários) + LDAP/AD opcional
+5. **Insights de IA** — provedor OpenAI-compatible opcional (config só admin; resultados para todos)
+6. **Manutenção** — sessões SSH/RDP/VNC via Guacamole com auditoria completa
 
 ## Princípio de isolamento
 
@@ -24,7 +27,9 @@ Isso garante:
 ```mermaid
 graph TB
     subgraph "Rede Externa"
-        ADMIN[Sysadmin]
+        ADMIN[Usuários admin/observer]
+        LDAP[LDAP / Active Directory]
+        AI[Provedor de IA]
         EXT_ZBX[Zabbix]
         EXT_CAC[Cacti]
         EXT_NAG[Nagios]
@@ -35,16 +40,16 @@ graph TB
     end
 
     subgraph "CIEM — Proxy (isolado)"
-        PROXY[Nginx SSL Wildcard]
+        PROXY[Nginx SSL / ZTNA]
     end
 
-    subgraph "CIEM — Core (isolado)"
-        CORE[API ZTNA]
+    subgraph "CIEM — Core e Portal (isolados)"
         PORTAL[Portal Web]
+        CORE[Core API]
     end
 
     subgraph "CIEM — Visualização (isolado)"
-        GRAF[Grafana]
+        GRAF[Grafana + Insights IA]
     end
 
     subgraph "CIEM — Manutenção (isolado)"
@@ -68,6 +73,8 @@ graph TB
     PROXY --> GUAC
 
     CORE --> MOD_ZBX & MOD_CAC & MOD_NAG & MOD_TD & MOD_INV & MOD_SYS
+    CORE -.->|auth opcional| LDAP
+    CORE -.->|insights opcional| AI
     MOD_ZBX -->|API| EXT_ZBX
     MOD_CAC -->|Web| EXT_CAC
     MOD_NAG -->|API| EXT_NAG
@@ -93,13 +100,22 @@ Sistema externo → Módulo coletor → POST /collect → Core API → Grafana
 - Retorna JSON normalizado: `active_alarms[]` + `history_events[]`
 - O core agrega dados de todos os módulos habilitados
 
-### 2. Visualização (Grafana)
+### 2. Visualização (Portal + Grafana)
 
-- **Alarmes ativos** — banner vermelho no portal + painel dedicado no Grafana
-- **Histórico** — painel separado com eventos passados
-- Dashboards provisionados automaticamente em `grafana/dashboards/`
+- **Portal** — Visão geral (KPIs/gráfico), Alarmes, Histórico e Análise
+- **Insights de IA** — quando habilitados pelo admin, visíveis a todos no portal e no Grafana
+- **Grafana** — dashboards NOC provisionados em `grafana/dashboards/`
 
-### 3. Manutenção (Guacamole → alvos)
+### 3. Autenticação
+
+```
+Login → usuários locais (prioridade) → LDAP/AD (se habilitado)
+```
+
+- Admin configura LDAP e usuários em **Configuração** no portal
+- Papéis: `admin` (config + sessões) e `observer` (somente leitura/análise)
+
+### 4. Manutenção (Guacamole → alvos)
 
 ```
 Admin → Portal → Core API → Guacamole → guacd → Equipamento
