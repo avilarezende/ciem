@@ -3,6 +3,7 @@ const API_BASE = '/api';
 
 let authToken = localStorage.getItem('ciem_token');
 let currentUser = JSON.parse(localStorage.getItem('ciem_user') || 'null');
+let analysisView = 'overview';
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
@@ -20,11 +21,28 @@ function showScreen(id) {
   $(`#${id}`).classList.add('active');
 }
 
+const PAGE_META = {
+  dashboard: { title: 'Visão geral', subtitle: 'Estado operacional e espaço para análise' },
+  alarms: { title: 'Alarmes', subtitle: 'Priorize critical e high antes de warning/info' },
+  history: { title: 'Histórico', subtitle: 'Últimos eventos agregados dos módulos' },
+  analysis: { title: 'Análise', subtitle: 'Gráficos, insights e detalhe filtrado' },
+  sessions: { title: 'Sessões', subtitle: 'SSO Guacamole e auditoria de manutenção' },
+  config: { title: 'Configuração', subtitle: 'Usuários, LDAP, IA e módulos coletores' },
+};
+
 function showPanel(name) {
   $$('.panel').forEach(p => p.classList.remove('active'));
   $$('.nav-btn').forEach(b => b.classList.remove('active'));
   $(`#panel-${name}`)?.classList.add('active');
   $(`.nav-btn[data-panel="${name}"]`)?.classList.add('active');
+  const meta = PAGE_META[name] || { title: name, subtitle: '' };
+  if ($('#page-title')) $('#page-title').textContent = meta.title;
+  if ($('#page-subtitle')) $('#page-subtitle').textContent = meta.subtitle;
+}
+
+function showConfigSection(name) {
+  $$('.config-nav-btn').forEach(b => b.classList.toggle('active', b.dataset.csec === name));
+  $$('.config-pane').forEach(p => p.classList.toggle('active', p.dataset.csec === name));
 }
 
 function logout() {
@@ -50,18 +68,127 @@ async function login(username, password) {
   initPortal();
 }
 
+const SEV_COLORS = { critical: '#f07178', high: '#ff8f70', warning: '#e6a23c', info: '#6cb6ff' };
+
+function countBySeverity(alarms) {
+  const counts = { critical: 0, high: 0, warning: 0, info: 0 };
+  for (const a of alarms) {
+    const sev = String(a.severity || 'info').toLowerCase();
+    if (sev in counts) counts[sev] += 1;
+    else counts.info += 1;
+  }
+  return counts;
+}
+
+function drawBarChart(canvas, labels, values, colors) {
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth || 640;
+  const cssH = canvas.clientHeight || 260;
+  canvas.width = Math.floor(cssW * dpr);
+  canvas.height = Math.floor(cssH * dpr);
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cssW, cssH);
+  const max = Math.max(1, ...values.map(Number));
+  const padL = 28, padB = 36, padT = 18, padR = 12;
+  const plotW = cssW - padL - padR;
+  const plotH = cssH - padT - padB;
+  const n = Math.max(labels.length, 1);
+  const gap = 10;
+  const barW = Math.max(16, plotW / n - gap);
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.beginPath();
+  ctx.moveTo(padL, cssH - padB);
+  ctx.lineTo(cssW - padR, cssH - padB);
+  ctx.stroke();
+  labels.forEach((label, i) => {
+    const v = Number(values[i]) || 0;
+    const h = (v / max) * plotH;
+    const x = padL + i * (plotW / n) + gap / 2;
+    const y = cssH - padB - h;
+    ctx.fillStyle = colors[i] || SEV_COLORS.info;
+    ctx.fillRect(x, y, barW, h);
+    ctx.fillStyle = '#e8eef6';
+    ctx.font = '600 12px "IBM Plex Mono", monospace';
+    ctx.fillText(String(v), x + 2, Math.max(padT + 10, y - 6));
+    ctx.fillStyle = '#9aabbd';
+    ctx.font = '500 11px "DM Sans", sans-serif';
+    ctx.fillText(String(label).slice(0, 10), x, cssH - 14);
+  });
+}
+
+function renderLegend(el, labels, values, colors) {
+  if (!el) return;
+  el.innerHTML = labels.map((l, i) => `
+    <div class="legend-item">
+      <span class="legend-swatch" style="background:${colors[i]}"></span>
+      <span>${escapeAttr(l)}</span>
+      <strong style="margin-left:auto;font-family:var(--mono)">${values[i]}</strong>
+    </div>`).join('');
+}
+
+function renderKpis(container, alarms, modules) {
+  if (!container) return;
+  const counts = countBySeverity(alarms);
+  const online = modules.filter(m => m.enabled && m.health?.status === 'ok').length;
+  const enabled = modules.filter(m => m.enabled).length;
+  container.innerHTML = `
+    <div class="kpi danger"><div class="kpi-label">Críticos</div><div class="kpi-value">${counts.critical}</div><div class="kpi-meta">+ ${counts.high} high</div></div>
+    <div class="kpi warning"><div class="kpi-label">Warnings</div><div class="kpi-value">${counts.warning}</div><div class="kpi-meta">${counts.info} info</div></div>
+    <div class="kpi accent"><div class="kpi-label">Alarmes</div><div class="kpi-value">${alarms.length}</div><div class="kpi-meta">ativos agora</div></div>
+    <div class="kpi success"><div class="kpi-label">Módulos</div><div class="kpi-value">${online}/${enabled || modules.length}</div><div class="kpi-meta">online / habilitados</div></div>`;
+}
+
 async function loadModules() {
-  const resp = await api('/modules/status');
-  const modules = await resp.json();
+  const [modResp, alarmResp, insightsResp] = await Promise.all([
+    api('/modules/status'),
+    api('/alarms/active'),
+    api('/insights'),
+  ]);
+  const modules = await modResp.json();
+  const alarms = await alarmResp.json();
+  const insights = insightsResp.ok ? await insightsResp.json() : { enabled: false };
+
+  renderKpis($('#kpi-row'), alarms, modules);
+  const counts = countBySeverity(alarms);
+  const labels = Object.keys(counts);
+  const values = labels.map(k => counts[k]);
+  const colors = labels.map(k => SEV_COLORS[k]);
+  drawBarChart($('#severity-chart'), labels, values, colors);
+  renderLegend($('#severity-legend'), labels, values, colors);
+
+  const status = $('#insights-status');
+  if (status) status.textContent = insights.enabled ? `Atualizado · ${insights.mode || 'ativo'}` : 'Desabilitado';
+  const preview = $('#insights-preview');
+  if (preview) {
+    if (!insights.enabled) {
+      preview.innerHTML = `<p class="list-empty">Insights de IA desabilitados. ${
+        currentUser?.role === 'admin' ? 'Ative em Configuração → Inteligência Artificial.' : 'Peça a um administrador para ativar.'
+      }</p>`;
+    } else {
+      const items = insights.insights || [];
+      preview.innerHTML = (insights.summary ? `<div class="insight-card"><strong>Resumo</strong><p>${escapeAttr(insights.summary)}</p></div>` : '')
+        + (items.slice(0, 4).map(item => `
+          <div class="insight-card">
+            <strong><span class="sev sev-${escapeAttr(item.severity || 'info')}">${escapeAttr((item.severity || 'info').toUpperCase())}</span>
+              ${escapeAttr(item.title || 'Insight')}</strong>
+            <p>${escapeAttr(item.detail || '')}</p>
+          </div>`).join('') || '<p class="list-empty">Nenhum insight gerado ainda.</p>');
+    }
+  }
+
   const grid = $('#modules-grid');
-  grid.innerHTML = modules.map(m => `
-    <div class="module-card">
-      <div class="name">${m.module}</div>
-      <div class="status ${m.enabled ? (m.health?.status === 'ok' ? 'status-ok' : 'status-error') : 'status-disabled'}">
-        ${m.enabled ? (m.health?.status === 'ok' ? '● Online' : '● Indisponível') : '○ Desabilitado'}
+  if (grid) {
+    grid.innerHTML = modules.map(m => `
+      <div class="module-card">
+        <div class="name">${escapeAttr(m.module)}</div>
+        <div class="status ${m.enabled ? (m.health?.status === 'ok' ? 'status-ok' : 'status-error') : 'status-disabled'}">
+          ${m.enabled ? (m.health?.status === 'ok' ? '● Online' : '● Indisponível') : '○ Desabilitado'}
+        </div>
       </div>
-    </div>
-  `).join('');
+    `).join('');
+  }
 }
 
 async function loadAlarms() {
@@ -76,13 +203,13 @@ async function loadAlarms() {
   }
   $('#alarms-list').innerHTML = alarms.length
     ? alarms.map(a => `
-      <div class="data-item">
+      <div class="list-row">
         <div>
-          <span class="severity-${a.severity || 'warning'}">[${(a.severity || 'warning').toUpperCase()}]</span>
+          <span class="sev sev-${a.severity || 'warning'}">[${(a.severity || 'warning').toUpperCase()}]</span>
           ${a.message || a.title || 'Alarme'} — <small>${a.source_module}</small>
         </div>
       </div>`).join('')
-    : '<p class="hint">Nenhum alarme ativo no momento.</p>';
+    : '<p class="list-empty">Nenhum alarme ativo no momento.</p>';
 }
 
 async function loadHistory() {
@@ -90,11 +217,11 @@ async function loadHistory() {
   const events = await resp.json();
   $('#history-list').innerHTML = events.length
     ? events.map(e => `
-      <div class="data-item">
+      <div class="list-row">
         <div>${e.message || e.event_type} — <small>${e.source_module}</small></div>
         <small>${e.timestamp || ''}</small>
       </div>`).join('')
-    : '<p class="hint">Nenhum evento registrado.</p>';
+    : '<p class="list-empty">Nenhum evento registrado.</p>';
 }
 
 async function loadConfig() {
@@ -205,7 +332,7 @@ function renderAiForm(ai) {
   const enabledCb = grid.querySelector('input[name="enabled"]');
   const syncVisibility = () => {
     const on = enabledCb?.checked;
-    grid.querySelectorAll('.opt-field').forEach((label) => {
+    grid.querySelectorAll('.field').forEach((label) => {
       const input = label.querySelector('input');
       if (!input || input.name === 'enabled') return;
       label.style.opacity = on ? '1' : '0.45';
@@ -252,21 +379,21 @@ function renderLocalUsers(users) {
   if (!list) return;
   list.innerHTML = users.length
     ? users.map((u) => `
-      <div class="data-item">
+      <div class="list-row">
         <div>
           <strong>${escapeAttr(u.username)}</strong>
           ${u.is_default_admin ? '<span class="badge-admin">admin padrão</span>' : ''}
-          <div class="target-meta">${u.role} · ${u.enabled ? 'ativo' : 'desabilitado'}</div>
+          <div class="meta">${u.role} · ${u.enabled ? 'ativo' : 'desabilitado'}</div>
         </div>
         <div class="user-actions">
           <button type="button" data-action="password" data-user="${escapeAttr(u.username)}">Alterar senha</button>
           <button type="button" data-action="toggle" data-user="${escapeAttr(u.username)}" data-enabled="${u.enabled}">
             ${u.enabled ? 'Desabilitar' : 'Habilitar'}
           </button>
-          <button type="button" class="danger-btn" data-action="delete" data-user="${escapeAttr(u.username)}">Excluir</button>
+          <button type="button" class="btn-danger btn-sm" data-action="delete" data-user="${escapeAttr(u.username)}">Excluir</button>
         </div>
       </div>`).join('')
-    : '<p class="hint">Nenhum usuário local cadastrado.</p>';
+    : '<p class="list-empty">Nenhum usuário local cadastrado.</p>';
 
   list.querySelectorAll('button[data-action]').forEach((btn) => {
     btn.addEventListener('click', () => handleUserAction(btn));
@@ -409,7 +536,7 @@ function renderField(field, options) {
   if (field.type === 'boolean') {
     const checked = raw === true || raw === 'true' ? 'checked' : '';
     return `
-      <label class="opt-field opt-bool">
+      <label class="field field-bool">
         <input type="checkbox" name="${field.key}" ${checked}>
         <span>${field.label}</span>
       </label>`;
@@ -418,7 +545,7 @@ function renderField(field, options) {
     : field.type === 'number' ? 'number'
     : field.type === 'url' ? 'url' : 'text';
   return `
-    <label class="opt-field">
+    <label class="field">
       <span>${field.label}</span>
       <input type="${inputType}" name="${field.key}" value="${escapeAttr(value)}"
              placeholder="${escapeAttr(field.placeholder || '')}" autocomplete="off">
@@ -450,8 +577,8 @@ function renderModuleCard(name, cfg) {
       </div>
       <form class="module-options ${cfg.enabled ? '' : 'hidden'}" data-module="${name}">
         <h4>Parâmetros de conexão</h4>
-        <p class="hint">Preencha URL, credenciais e opções. Os valores são salvos em <code>config/modules.yaml</code>.</p>
-        <div class="opt-grid">${optionsHtml}</div>
+        <p class="list-empty">Preencha URL, credenciais e opções. Os valores são salvos em <code>config/modules.yaml</code>.</p>
+        <div class="field-grid">${optionsHtml}</div>
         <button type="submit" class="btn-primary btn-save-module">Salvar configuração</button>
       </form>
     </div>`;
@@ -461,7 +588,7 @@ function showConfigFeedback(message, isError = false) {
   const feedback = $('#config-feedback');
   if (!feedback) return;
   feedback.textContent = message;
-  feedback.className = isError ? 'hint config-feedback-err' : 'hint config-feedback-ok';
+  feedback.className = `toast ${isError ? 'err' : 'ok'}`;
   feedback.classList.remove('hidden');
 }
 
@@ -547,10 +674,12 @@ async function saveModuleOptions(form) {
   }
 }
 
-async function loadGrafanaView(view = 'overview') {
-  const stats = $('#grafana-stats');
-  const content = $('#grafana-content');
+async function loadAnalysis(view = 'overview') {
+  const stats = $('#analysis-kpis');
+  const content = $('#analysis-content');
   if (!stats || !content) return;
+  analysisView = view;
+  $$('.seg-tab').forEach(t => t.classList.toggle('active', t.dataset.aview === view));
 
   const [alarmsResp, modulesResp, historyResp, insightsResp] = await Promise.all([
     api('/alarms/active'),
@@ -568,17 +697,45 @@ async function loadGrafanaView(view = 'overview') {
   const online = modules.filter(m => m.enabled && m.health?.status === 'ok').length;
   const enabled = modules.filter(m => m.enabled).length;
 
+  const canvas = $('#analysis-chart');
+  const caption = $('#analysis-chart-caption');
+  if (view === 'insights' && caption) caption.textContent = 'Gráficos sugeridos pela IA';
+  else if (view === 'alarms' && caption) caption.textContent = 'Severidade dos alarmes ativos';
+  else if (view === 'modules' && caption) caption.textContent = 'Saúde dos coletores';
+  else if (view === 'history' && caption) caption.textContent = 'Volume recente de eventos';
+  else if (caption) caption.textContent = 'Severidade e fontes';
+
+  if (canvas) {
+    if (view === 'modules') {
+      const labels = modules.map(m => m.module || m.id || '?').slice(0, 8);
+      const values = modules.slice(0, 8).map(m => m.enabled && m.health?.status === 'ok' ? 1 : m.enabled ? 0.35 : 0.1);
+      const colors = modules.slice(0, 8).map(m => !m.enabled ? '#6d7f93' : m.health?.status === 'ok' ? '#7dcea0' : '#f07178');
+      drawBarChart(canvas, labels, values, colors);
+    } else if (view === 'history') {
+      const byModule = {};
+      history.forEach(e => { const k = e.source_module || 'outros'; byModule[k] = (byModule[k] || 0) + 1; });
+      const labels = Object.keys(byModule);
+      drawBarChart(canvas, labels, Object.values(byModule), labels.map((_, i) => Object.values(SEV_COLORS)[i % 4]));
+    } else if (view === 'insights' && (insights.charts || []).length) {
+      const c = insights.charts[0];
+      drawBarChart(canvas, c.labels || [], (c.values || []).map(Number), (c.labels || []).map((_, i) => Object.values(SEV_COLORS)[i % 4]));
+    } else {
+      const counts = countBySeverity(alarms);
+      drawBarChart(canvas, Object.keys(counts), Object.values(counts), Object.keys(counts).map(k => SEV_COLORS[k]));
+    }
+  }
+
   stats.innerHTML = `
-    <div class="stat-card danger"><div class="value">${critical}</div><div class="label">Críticos</div></div>
-    <div class="stat-card warning"><div class="value">${warning}</div><div class="label">Warnings</div></div>
-    <div class="stat-card"><div class="value">${alarms.length}</div><div class="label">Alarmes ativos</div></div>
-    <div class="stat-card success"><div class="value">${online}/${enabled || modules.length}</div><div class="label">Módulos online</div></div>
+    <div class="kpi danger"><div class="kpi-label">Críticos</div><div class="kpi-value">${critical}</div></div>
+    <div class="kpi warning"><div class="kpi-label">Warnings</div><div class="kpi-value">${warning}</div></div>
+    <div class="kpi accent"><div class="kpi-label">Alarmes</div><div class="kpi-value">${alarms.length}</div></div>
+    <div class="kpi success"><div class="kpi-label">Módulos</div><div class="kpi-value">${online}/${enabled || modules.length}</div></div>
   `;
 
   if (view === 'insights') {
     if (!insights.enabled) {
       content.innerHTML = `
-        <p class="hint">
+        <p class="list-empty">
           Insights de IA estão <strong>desabilitados</strong>.
           ${currentUser?.role === 'admin'
             ? 'Ative em <strong>Configuração → Inteligência Artificial</strong> e preencha URL, API key e modelo.'
@@ -592,30 +749,30 @@ async function loadGrafanaView(view = 'overview') {
       <div class="insight-summary data-item">
         <div>
           <strong>Resumo IA</strong>
-          <div class="target-meta">${escapeAttr(insights.summary || '')}</div>
-          <div class="target-meta">modo: ${escapeAttr(insights.mode || '')}
+          <div class="meta">${escapeAttr(insights.summary || '')}</div>
+          <div class="meta">modo: ${escapeAttr(insights.mode || '')}
             ${insights.model ? ` · modelo: ${escapeAttr(insights.model)}` : ''}
             ${insights.generated_at ? ` · ${escapeAttr(insights.generated_at)}` : ''}
           </div>
         </div>
       </div>
       ${items.map((item) => `
-        <div class="data-item">
+        <div class="list-row">
           <div>
-            <span class="severity-${escapeAttr(item.severity || 'info')}">[${escapeAttr((item.severity || 'info').toUpperCase())}]</span>
+            <span class="sev sev-${escapeAttr(item.severity || 'info')}">[${escapeAttr((item.severity || 'info').toUpperCase())}]</span>
             <strong>${escapeAttr(item.title || 'Insight')}</strong>
-            <div class="target-meta">${escapeAttr(item.detail || '')}</div>
-            ${item.recommendation ? `<div class="target-meta"><em>Recomendação:</em> ${escapeAttr(item.recommendation)}</div>` : ''}
+            <div class="meta">${escapeAttr(item.detail || '')}</div>
+            ${item.recommendation ? `<div class="meta"><em>Recomendação:</em> ${escapeAttr(item.recommendation)}</div>` : ''}
           </div>
-        </div>`).join('') || '<p class="hint">Nenhum insight gerado ainda.</p>'}
+        </div>`).join('') || '<p class="list-empty">Nenhum insight gerado ainda.</p>'}
       ${charts.length ? `
         <h3>Gráficos sugeridos</h3>
         ${charts.map((c) => `
-          <div class="data-item">
+          <div class="list-row">
             <div>
               <strong>${escapeAttr(c.title || c.id)}</strong>
-              <div class="target-meta">${escapeAttr(c.type)} · ${(c.labels || []).map(escapeAttr).join(', ')}</div>
-              <div class="target-meta">valores: ${(c.values || []).join(', ')}</div>
+              <div class="meta">${escapeAttr(c.type)} · ${(c.labels || []).map(escapeAttr).join(', ')}</div>
+              <div class="meta">valores: ${(c.values || []).join(', ')}</div>
             </div>
           </div>`).join('')}
       ` : ''}
@@ -626,20 +783,20 @@ async function loadGrafanaView(view = 'overview') {
   if (view === 'alarms') {
     content.innerHTML = alarms.length
       ? alarms.map(a => `
-        <div class="data-item">
+        <div class="list-row">
           <div>
-            <span class="severity-${a.severity || 'warning'}">[${(a.severity || 'warning').toUpperCase()}]</span>
+            <span class="sev sev-${a.severity || 'warning'}">[${(a.severity || 'warning').toUpperCase()}]</span>
             ${a.message || a.title || 'Alarme'} — <small>${a.source_module || a.source || ''}</small>
           </div>
           <small>${a.timestamp || ''}</small>
         </div>`).join('')
-      : '<p class="hint">Nenhum alarme ativo.</p>';
+      : '<p class="list-empty">Nenhum alarme ativo.</p>';
   } else if (view === 'modules') {
     content.innerHTML = modules.map(m => `
-      <div class="data-item">
+      <div class="list-row">
         <div>
           <strong>${m.module}</strong>
-          <div class="target-meta">${m.enabled ? 'Habilitado' : 'Desabilitado'}</div>
+          <div class="meta">${m.enabled ? 'Habilitado' : 'Desabilitado'}</div>
         </div>
         <span class="${m.enabled ? (m.health?.status === 'ok' ? 'status-ok' : 'status-error') : 'status-disabled'}">
           ${m.enabled ? (m.health?.status === 'ok' ? '● Online' : '● Indisponível') : '○ Off'}
@@ -648,38 +805,38 @@ async function loadGrafanaView(view = 'overview') {
   } else if (view === 'history') {
     content.innerHTML = history.length
       ? history.map(e => `
-        <div class="data-item">
+        <div class="list-row">
           <div>${e.message || e.event_type} — <small>${e.source_module || ''}</small></div>
           <small>${e.timestamp || ''}</small>
         </div>`).join('')
-      : '<p class="hint">Nenhum evento no histórico.</p>';
+      : '<p class="list-empty">Nenhum evento no histórico.</p>';
   } else if (view === 'sessions') {
     if (currentUser?.role !== 'admin') {
-      content.innerHTML = '<p class="hint">Sessões disponíveis apenas para administradores.</p>';
+      content.innerHTML = '<p class="list-empty">Sessões disponíveis apenas para administradores.</p>';
     } else {
       const auditResp = await api('/sessions/audit');
       const sessions = await auditResp.json();
       content.innerHTML = sessions.length
         ? sessions.map(s => `
-          <div class="data-item">
+          <div class="list-row">
             <div><strong>${s.user}</strong> → ${s.target_host}
-              <div class="target-meta">${s.protocol} · ${s.started_at || ''}</div>
+              <div class="meta">${s.protocol} · ${s.started_at || ''}</div>
             </div>
           </div>`).join('')
-        : '<p class="hint">Nenhuma sessão registrada.</p>';
+        : '<p class="list-empty">Nenhuma sessão registrada.</p>';
     }
   } else {
     const insightLine = insights.enabled
-      ? `<div class="data-item"><div><strong>Insights IA</strong> ${escapeAttr((insights.summary || '').slice(0, 160))}</div><small>${escapeAttr(insights.mode || 'ativo')}</small></div>`
-      : `<div class="data-item"><div><strong>Insights IA</strong> desabilitados</div><small>admin ativa em Configuração</small></div>`;
+      ? `<div class="list-row"><div><strong>Insights IA</strong> ${escapeAttr((insights.summary || '').slice(0, 160))}</div><small>${escapeAttr(insights.mode || 'ativo')}</small></div>`
+      : `<div class="list-row"><div><strong>Insights IA</strong> desabilitados</div><small>admin ativa em Configuração</small></div>`;
     content.innerHTML = `
-      <div class="data-item"><div><strong>Dashboard</strong> CIEM — Visão Geral NOC</div><small>ciem-overview</small></div>
+      <div class="list-row"><div><strong>Dashboard</strong> CIEM — Visão Geral NOC</div><small>ciem-overview</small></div>
       ${insightLine}
-      <div class="data-item"><div><strong>Dashboard</strong> Alarmes Ativos</div><small>ciem-alarms · ${alarms.length} itens</small></div>
-      <div class="data-item"><div><strong>Dashboard</strong> Módulos Coletores</div><small>ciem-modules · ${modules.length} módulos</small></div>
-      <div class="data-item"><div><strong>Dashboard</strong> Histórico de Eventos</div><small>ciem-history · ${history.length} eventos</small></div>
-      <div class="data-item"><div><strong>Dashboard</strong> Sessões e Auditoria</div><small>ciem-sessions</small></div>
-      <p class="hint">Selecione uma aba acima para detalhar. Em stack completa Docker/K8s, o Grafana provisionado fica em /grafana/.</p>
+      <div class="list-row"><div><strong>Dashboard</strong> Alarmes Ativos</div><small>ciem-alarms · ${alarms.length} itens</small></div>
+      <div class="list-row"><div><strong>Dashboard</strong> Módulos Coletores</div><small>ciem-modules · ${modules.length} módulos</small></div>
+      <div class="list-row"><div><strong>Dashboard</strong> Histórico de Eventos</div><small>ciem-history · ${history.length} eventos</small></div>
+      <div class="list-row"><div><strong>Dashboard</strong> Sessões e Auditoria</div><small>ciem-sessions</small></div>
+      <p class="list-empty">Selecione uma aba acima para detalhar. Em stack completa Docker/K8s, o Grafana provisionado fica em /grafana/.</p>
     `;
   }
 }
@@ -689,17 +846,19 @@ async function loadTargets() {
   const targets = await resp.json();
   $('#targets-list').innerHTML = targets.length
     ? targets.map(t => `
-      <div class="data-item">
+      <div class="list-row">
         <div>
           <strong>${t.name}</strong>
-          <div class="target-meta">${t.protocol.toUpperCase()} — ${t.hostname}:${t.port} · ${t.description || ''}</div>
+          <div class="meta">${t.protocol.toUpperCase()} — ${t.hostname}:${t.port} · ${t.description || ''}</div>
         </div>
-        <button class="btn-connect" ${t.enabled ? '' : 'disabled'}
-          onclick="connectTarget('${t.id}')">
+        <button type="button" class="btn-primary btn-sm" data-connect="${t.id}" ${t.enabled ? '' : 'disabled'}>
           ${t.enabled ? 'Conectar' : 'Desabilitado'}
         </button>
       </div>`).join('')
-    : '<p class="hint">Nenhum alvo configurado em config/targets.yaml</p>';
+    : '<p class="list-empty">Nenhum alvo configurado em config/targets.yaml</p>';
+  $('#targets-list')?.querySelectorAll('[data-connect]').forEach(btn => {
+    btn.addEventListener('click', () => connectTarget(btn.dataset.connect));
+  });
 }
 
 async function loadAudit() {
@@ -707,13 +866,21 @@ async function loadAudit() {
   const sessions = await resp.json();
   $('#audit-list').innerHTML = sessions.length
     ? sessions.map(s => `
-      <div class="data-item">
+      <div class="list-row">
         <div>
           <strong>${s.user}</strong> → ${s.target_host}
-          <div class="target-meta">${s.protocol} · ${s.started_at || ''} · ${s.duration_seconds ? s.duration_seconds + 's' : 'em andamento'}</div>
+          <div class="meta">${s.protocol} · ${s.started_at || ''} · ${s.duration_seconds ? s.duration_seconds + 's' : 'em andamento'}</div>
         </div>
       </div>`).join('')
-    : '<p class="hint">Nenhuma sessão registrada ainda.</p>';
+    : '<p class="list-empty">Nenhuma sessão registrada ainda.</p>';
+}
+
+function ssoOpenUrl(loginUrl) {
+  if (!loginUrl) return null;
+  if (/^https?:\/\//i.test(loginUrl)) return loginUrl;
+  if (loginUrl.startsWith('/api/')) return loginUrl;
+  if (loginUrl.startsWith('/')) return `${API_BASE}${loginUrl}`;
+  return `${API_BASE}/${loginUrl}`;
 }
 
 async function connectTarget(targetId) {
@@ -721,15 +888,22 @@ async function connectTarget(targetId) {
     method: 'POST',
     body: JSON.stringify({ target_id: targetId }),
   });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    alert(typeof err.detail === 'string' ? err.detail : 'Falha no SSO');
+    return;
+  }
   const data = await resp.json();
-  window.open(`/api${data.login_url}`, '_blank', 'noopener');
+  const url = ssoOpenUrl(data.login_url);
+  if (url) window.open(url, '_blank', 'noopener');
 }
-window.connectTarget = connectTarget;
 
 async function openGuacamoleFull() {
   const resp = await api('/sso/guacamole', { method: 'POST', body: '{}' });
+  if (!resp.ok) return;
   const data = await resp.json();
-  window.open(`/api${data.login_url}`, '_blank', 'noopener');
+  const url = ssoOpenUrl(data.login_url);
+  if (url) window.open(url, '_blank', 'noopener');
 }
 
 function initPortal() {
@@ -772,9 +946,8 @@ $$('.nav-btn[data-panel]').forEach(btn => {
     if (btn.dataset.panel === 'config' && currentUser?.role === 'admin') {
       loadConfig();
     }
-    if (btn.dataset.panel === 'grafana') {
-      const active = document.querySelector('.g-tab.active');
-      loadGrafanaView(active?.dataset.gview || 'overview');
+    if (btn.dataset.panel === 'analysis') {
+      loadAnalysis(analysisView || 'overview');
     }
     if (btn.dataset.panel === 'dashboard') {
       loadModules();
@@ -842,12 +1015,12 @@ $('#form-create-user')?.addEventListener('submit', async (e) => {
 document.addEventListener('click', (e) => {
   if (e.target.dataset?.goto) showPanel(e.target.dataset.goto);
 
-  const gtab = e.target.closest?.('.g-tab');
-  if (gtab) {
-    $$('.g-tab').forEach(t => t.classList.remove('active'));
-    gtab.classList.add('active');
-    loadGrafanaView(gtab.dataset.gview || 'overview');
+  const stab = e.target.closest?.('.seg-tab');
+  if (stab) {
+    loadAnalysis(stab.dataset.aview || 'overview');
   }
+  const cnav = e.target.closest?.('.config-nav-btn');
+  if (cnav?.dataset.csec) showConfigSection(cnav.dataset.csec);
 });
 
 // Init
