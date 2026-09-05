@@ -2,9 +2,13 @@
 
 [![CI](https://github.com/avilarezende/ciem/actions/workflows/ci.yml/badge.svg)](https://github.com/avilarezende/ciem/actions/workflows/ci.yml)
 
-Plataforma **ZTNA** para manutenção de redes: agrega Zabbix, Cacti, Nagios, TOPdesk, inventário e syslog em um portal unificado, com Grafana, sessões remotas auditadas via Guacamole, autenticação local/LDAP e insights opcionais de IA.
+Plataforma **ZTNA** para manutenção de redes: agrega Zabbix, Cacti, Nagios, TOPdesk, inventário e syslog em um portal unificado, com **Navegador HTML5** embutido, Grafana, sessões remotas auditadas via Guacamole, autenticação local/LDAP e insights opcionais de IA.
 
-![Dashboard CIEM](docs/assets/ciem-portal-dashboard.jpg)
+> **Versão atual (`main`):** portal ergonômico + **Navegador HTML5** para todos os papéis (Grafana, URLs e, para admin, Guacamole/SSO).
+
+![Navegador HTML5 do portal CIEM](docs/assets/ciem-portal-browser.jpg)
+
+![Visão geral (dashboard)](docs/assets/ciem-portal-dashboard.jpg)
 
 ## Funções do portal (administração)
 
