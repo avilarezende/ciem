@@ -59,10 +59,21 @@ Resumo das capacidades adicionadas ao CIEM para operação pelo portal (administ
 
 **Documentação:** [PORTAL.md](PORTAL.md), [MANUAL_USER.md](MANUAL_USER.md)
 
+## 6. Lembretes e calendário no dashboard
+
+| Capacidade | Detalhe |
+|------------|---------|
+| Lembretes flutuantes | Painel arrastável; adicionar/concluir/ocultar; posição e itens em `localStorage` |
+| Aba Calendário | Gaveta deslizante à direita (ou botão no cabeçalho) |
+| Google / Microsoft | Iframe via URL pública de incorporação (allowlist https) |
+| Ergonomia | Backdrop, Esc para fechar, tabs claras Google · Microsoft · Configurar |
+
+**Documentação:** [PORTAL.md](PORTAL.md), [MANUAL_USER.md](MANUAL_USER.md)
+
 ## Papéis em uma frase
 
-- **admin** — configura LDAP, usuários, módulos e IA; inicia sessões Guacamole (navegador ou nova aba)  
-- **observer** — monitora alarmes, histórico, análise; usa o Navegador (Grafana/URLs) e (se ativo) insights de IA  
+- **admin** — configura LDAP, usuários, módulos e IA; inicia sessões Guacamole (navegador ou nova aba); usa lembretes e calendário  
+- **observer** — monitora alarmes, histórico, análise; usa Navegador, lembretes e calendário; (se ativo) insights de IA  
 
 ## Arquivos YAML envolvidos
 

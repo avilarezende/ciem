@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=8">
+  <link rel="stylesheet" href="/css/style.css?v=10">
 </head>
 <body>
   <!-- Login -->
@@ -16,7 +16,7 @@
       <div class="login-brand">
         <p class="brand-mark">CIEM</p>
         <h1>Centro Integrado de Estatística e Manutenção</h1>
-        <p class="brand-lead">Visão NOC unificada: alarmes, navegador HTML5, coletores, sessões auditadas e insights.</p>
+        <p class="brand-lead">Visão NOC unificada: alarmes, navegador HTML5, lembretes, calendário, coletores e insights.</p>
       </div>
       <form id="login-form" class="login-form" autocomplete="on">
         <h2>Entrar</h2>
@@ -72,9 +72,12 @@
           <h1 id="page-title">Visão geral</h1>
           <p id="page-subtitle" class="page-subtitle">Estado operacional e espaço para análise</p>
         </div>
-        <div id="alarm-banner" class="alarm-chip hidden">
-          <strong id="alarm-count">0</strong> alarmes ativos
-          <button type="button" class="linkish" data-goto="alarms">Abrir</button>
+        <div class="workspace-header-actions">
+          <button type="button" id="btn-open-calendar" class="btn-ghost" title="Abrir calendário">Calendário</button>
+          <div id="alarm-banner" class="alarm-chip hidden">
+            <strong id="alarm-count">0</strong> alarmes ativos
+            <button type="button" class="linkish" data-goto="alarms">Abrir</button>
+          </div>
         </div>
       </header>
 
@@ -306,8 +309,72 @@
         </section>
       </main>
     </div>
+
+    <!-- Lembretes flutuantes (arrastável) -->
+    <div id="reminder-widget" class="reminder-widget" role="complementary" aria-label="Lembretes" hidden>
+      <header class="reminder-widget-head" id="reminder-drag-handle" title="Arraste para mover">
+        <span class="reminder-widget-title">Lembretes</span>
+        <div class="reminder-widget-actions">
+          <button type="button" id="reminder-minimize" class="reminder-icon-btn" title="Recolher" aria-label="Recolher">–</button>
+          <button type="button" id="reminder-close" class="reminder-icon-btn" title="Ocultar" aria-label="Ocultar">×</button>
+        </div>
+      </header>
+      <div class="reminder-widget-body">
+        <ul id="reminder-list" class="reminder-list" aria-live="polite"></ul>
+        <form id="reminder-form" class="reminder-form" autocomplete="off">
+          <label class="sr-only" for="reminder-input">Novo lembrete</label>
+          <input type="text" id="reminder-input" maxlength="160" placeholder="Novo lembrete…" required>
+          <button type="submit" class="btn-primary reminder-add" title="Adicionar">+</button>
+        </form>
+        <p class="reminder-hint">Arraste pelo título · local neste navegador</p>
+      </div>
+    </div>
+    <button type="button" id="reminder-reopen" class="reminder-reopen hidden" title="Mostrar lembretes" aria-label="Mostrar lembretes">
+      Lembretes
+    </button>
+
+    <!-- Aba deslizante de calendário (Google / Microsoft) -->
+    <button type="button" id="calendar-tab" class="calendar-edge-tab" aria-expanded="false" aria-controls="calendar-drawer">
+      <span class="calendar-edge-label">Calendário</span>
+    </button>
+    <div id="calendar-backdrop" class="calendar-backdrop hidden" aria-hidden="true"></div>
+    <aside id="calendar-drawer" class="calendar-drawer" aria-hidden="true" aria-label="Calendário">
+      <header class="calendar-drawer-head">
+        <div>
+          <h2>Calendário</h2>
+          <p>Agenda embutida · Google ou Microsoft</p>
+        </div>
+        <button type="button" id="calendar-close" class="btn-ghost" aria-label="Fechar calendário">Fechar</button>
+      </header>
+      <div class="calendar-provider-tabs" role="tablist" aria-label="Provedor">
+        <button type="button" class="calendar-provider-tab active" data-cal-provider="google" role="tab" aria-selected="true">Google</button>
+        <button type="button" class="calendar-provider-tab" data-cal-provider="microsoft" role="tab" aria-selected="false">Microsoft</button>
+        <button type="button" class="calendar-provider-tab" data-cal-provider="setup" role="tab" aria-selected="false">Configurar</button>
+      </div>
+      <div id="calendar-view" class="calendar-view">
+        <div id="calendar-empty" class="calendar-empty">
+          <p><strong>Conecte sua agenda</strong></p>
+          <p>Abra <em>Configurar</em>, cole a URL pública de incorporação do Google Calendar ou Outlook e salve. A agenda aparece neste painel sem sair do CIEM.</p>
+          <button type="button" class="btn-secondary" data-cal-provider="setup">Abrir configuração</button>
+        </div>
+        <iframe id="calendar-frame" class="calendar-frame hidden" title="Calendário embutido" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      </div>
+      <form id="calendar-setup" class="calendar-setup hidden" autocomplete="off">
+        <label for="calendar-google-url">URL de incorporação — Google Calendar</label>
+        <input type="url" id="calendar-google-url" placeholder="https://calendar.google.com/calendar/embed?src=…">
+        <p class="hint">Google Agenda → Configurações do calendário → Integrar agenda → URL de incorporação</p>
+        <label for="calendar-ms-url">URL de incorporação — Microsoft Outlook</label>
+        <input type="url" id="calendar-ms-url" placeholder="https://outlook.office.com/calendar/published/…">
+        <p class="hint">Outlook → Configurações → Calendários compartilhados → Publicar um calendário → HTML / iframe</p>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">Salvar agendas</button>
+          <button type="button" id="calendar-clear" class="btn-ghost">Limpar</button>
+        </div>
+        <p id="calendar-setup-feedback" class="toast hidden" role="status"></p>
+      </form>
+    </aside>
   </div>
 
-  <script src="/js/portal.js?v=8"></script>
+  <script src="/js/portal.js?v=10"></script>
 </body>
 </html>

@@ -66,6 +66,10 @@ function logout() {
   currentUser = null;
   localStorage.removeItem('ciem_token');
   localStorage.removeItem('ciem_user');
+  try { setCalendarOpen(false); } catch (_) { /* drawer pode não existir no login */ }
+  const reminder = $('#reminder-widget');
+  if (reminder) reminder.hidden = true;
+  $('#reminder-reopen')?.classList.add('hidden');
   showScreen('login-screen');
 }
 
@@ -1227,11 +1231,416 @@ function initPortal() {
   loadAlarms();
   loadHistory();
   refreshBrowserPresets();
+  initReminders();
+  initCalendarDrawer();
   if (currentUser?.role === 'admin') {
     loadConfig();
     loadTargets();
     loadAudit();
   }
+}
+
+/* —— Lembretes arrastáveis —— */
+const REMINDERS_KEY = 'ciem_reminders';
+const REMINDER_POS_KEY = 'ciem_reminder_pos';
+const REMINDER_UI_KEY = 'ciem_reminder_ui';
+
+function loadReminders() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(REMINDERS_KEY) || '[]');
+    return Array.isArray(raw) ? raw : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveReminders(items) {
+  localStorage.setItem(REMINDERS_KEY, JSON.stringify(items.slice(0, 40)));
+}
+
+function loadReminderUi() {
+  try {
+    return JSON.parse(localStorage.getItem(REMINDER_UI_KEY) || '{}') || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveReminderUi(patch) {
+  const next = { ...loadReminderUi(), ...patch };
+  localStorage.setItem(REMINDER_UI_KEY, JSON.stringify(next));
+  return next;
+}
+
+function renderReminders() {
+  const list = $('#reminder-list');
+  if (!list) return;
+  const items = loadReminders();
+  if (!items.length) {
+    list.innerHTML = '<li class="reminder-empty">Nenhum lembrete. Adicione abaixo.</li>';
+    return;
+  }
+  list.innerHTML = items.map((item) => `
+    <li class="reminder-item ${item.done ? 'is-done' : ''}" data-id="${escapeAttr(item.id)}">
+      <input type="checkbox" ${item.done ? 'checked' : ''} aria-label="Concluir lembrete">
+      <span class="reminder-text">${escapeAttr(item.text)}</span>
+      <button type="button" class="reminder-delete" title="Remover" aria-label="Remover">×</button>
+    </li>
+  `).join('');
+}
+
+function addReminder(text) {
+  const value = String(text || '').trim();
+  if (!value) return;
+  const items = loadReminders();
+  items.unshift({
+    id: `r_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
+    text: value.slice(0, 160),
+    done: false,
+    createdAt: new Date().toISOString(),
+  });
+  saveReminders(items);
+  renderReminders();
+}
+
+function toggleReminder(id, done) {
+  const items = loadReminders().map((item) => (
+    item.id === id ? { ...item, done: Boolean(done) } : item
+  ));
+  saveReminders(items);
+  renderReminders();
+}
+
+function removeReminder(id) {
+  saveReminders(loadReminders().filter((item) => item.id !== id));
+  renderReminders();
+}
+
+function clampReminderPosition(left, top, el) {
+  const margin = 8;
+  const w = el?.offsetWidth || 300;
+  const h = el?.offsetHeight || 120;
+  const maxL = Math.max(margin, window.innerWidth - w - margin);
+  const maxT = Math.max(margin, window.innerHeight - h - margin);
+  return {
+    left: Math.min(Math.max(margin, left), maxL),
+    top: Math.min(Math.max(margin, top), maxT),
+  };
+}
+
+function applyReminderPosition(pos) {
+  const widget = $('#reminder-widget');
+  if (!widget || !pos) return;
+  const clamped = clampReminderPosition(pos.left, pos.top, widget);
+  widget.style.left = `${clamped.left}px`;
+  widget.style.top = `${clamped.top}px`;
+  widget.style.right = 'auto';
+  widget.style.bottom = 'auto';
+  localStorage.setItem(REMINDER_POS_KEY, JSON.stringify(clamped));
+}
+
+function defaultReminderPosition() {
+  const widget = $('#reminder-widget');
+  const w = widget?.offsetWidth || 300;
+  return {
+    left: Math.max(16, window.innerWidth - w - 72),
+    top: Math.max(96, window.innerHeight - 360),
+  };
+}
+
+function showReminderWidget() {
+  const widget = $('#reminder-widget');
+  const reopen = $('#reminder-reopen');
+  if (!widget) return;
+  widget.hidden = false;
+  reopen?.classList.add('hidden');
+  saveReminderUi({ hidden: false });
+  const saved = (() => {
+    try { return JSON.parse(localStorage.getItem(REMINDER_POS_KEY) || 'null'); } catch { return null; }
+  })();
+  applyReminderPosition(saved || defaultReminderPosition());
+}
+
+function hideReminderWidget() {
+  const widget = $('#reminder-widget');
+  const reopen = $('#reminder-reopen');
+  if (widget) widget.hidden = true;
+  reopen?.classList.remove('hidden');
+  saveReminderUi({ hidden: true });
+}
+
+function bindReminderDrag() {
+  const widget = $('#reminder-widget');
+  const handle = $('#reminder-drag-handle');
+  if (!widget || !handle) return;
+
+  let dragging = false;
+  let startX = 0;
+  let startY = 0;
+  let origL = 0;
+  let origT = 0;
+
+  const onMove = (clientX, clientY) => {
+    if (!dragging) return;
+    const next = clampReminderPosition(
+      origL + (clientX - startX),
+      origT + (clientY - startY),
+      widget,
+    );
+    widget.style.left = `${next.left}px`;
+    widget.style.top = `${next.top}px`;
+  };
+
+  const onEnd = () => {
+    if (!dragging) return;
+    dragging = false;
+    widget.classList.remove('is-dragging');
+    applyReminderPosition({
+      left: parseFloat(widget.style.left) || 0,
+      top: parseFloat(widget.style.top) || 0,
+    });
+    window.removeEventListener('pointermove', onPointerMove);
+    window.removeEventListener('pointerup', onPointerUp);
+  };
+
+  const onPointerMove = (e) => onMove(e.clientX, e.clientY);
+  const onPointerUp = () => onEnd();
+
+  handle.addEventListener('pointerdown', (e) => {
+    if (e.button != null && e.button !== 0) return;
+    if (e.target.closest('button')) return;
+    e.preventDefault();
+    const rect = widget.getBoundingClientRect();
+    dragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    origL = rect.left;
+    origT = rect.top;
+    widget.classList.add('is-dragging');
+    handle.setPointerCapture?.(e.pointerId);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+  });
+}
+
+function initReminders() {
+  const widget = $('#reminder-widget');
+  if (!widget) return;
+
+  renderReminders();
+  bindReminderDrag();
+
+  const ui = loadReminderUi();
+  if (ui.minimized) widget.classList.add('is-minimized');
+  if (ui.hidden) hideReminderWidget();
+  else showReminderWidget();
+
+  $('#reminder-form')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = $('#reminder-input');
+    addReminder(input?.value);
+    if (input) input.value = '';
+    input?.focus();
+  });
+
+  $('#reminder-list')?.addEventListener('click', (e) => {
+    const row = e.target.closest('.reminder-item');
+    if (!row) return;
+    const id = row.dataset.id;
+    if (e.target.classList.contains('reminder-delete')) {
+      removeReminder(id);
+      return;
+    }
+    if (e.target.matches('input[type="checkbox"]')) {
+      toggleReminder(id, e.target.checked);
+    }
+  });
+
+  $('#reminder-minimize')?.addEventListener('click', () => {
+    const next = !widget.classList.contains('is-minimized');
+    widget.classList.toggle('is-minimized', next);
+    saveReminderUi({ minimized: next });
+  });
+
+  $('#reminder-close')?.addEventListener('click', hideReminderWidget);
+  $('#reminder-reopen')?.addEventListener('click', () => {
+    saveReminderUi({ minimized: false });
+    widget.classList.remove('is-minimized');
+    showReminderWidget();
+  });
+
+  window.addEventListener('resize', () => {
+    if (widget.hidden) return;
+    const left = parseFloat(widget.style.left);
+    const top = parseFloat(widget.style.top);
+    if (Number.isFinite(left) && Number.isFinite(top)) {
+      applyReminderPosition({ left, top });
+    }
+  });
+}
+
+/* —— Calendário deslizante (Google / Microsoft) —— */
+const CAL_GOOGLE_KEY = 'ciem_calendar_google_url';
+const CAL_MS_KEY = 'ciem_calendar_ms_url';
+const CAL_PROVIDER_KEY = 'ciem_calendar_provider';
+
+function isSafeCalendarEmbedUrl(raw) {
+  try {
+    const u = new URL(String(raw || '').trim());
+    if (u.protocol !== 'https:') return false;
+    const host = u.hostname.toLowerCase();
+    const allowed = [
+      'calendar.google.com',
+      'www.google.com',
+      'outlook.office.com',
+      'outlook.office365.com',
+      'outlook.live.com',
+      'calendars.office.com',
+    ];
+    return allowed.some((h) => host === h || host.endsWith(`.${h}`));
+  } catch {
+    return false;
+  }
+}
+
+function getCalendarUrls() {
+  return {
+    google: localStorage.getItem(CAL_GOOGLE_KEY) || '',
+    microsoft: localStorage.getItem(CAL_MS_KEY) || '',
+  };
+}
+
+function setCalendarOpen(open) {
+  const drawer = $('#calendar-drawer');
+  const backdrop = $('#calendar-backdrop');
+  const tab = $('#calendar-tab');
+  if (!drawer) return;
+  drawer.classList.toggle('is-open', open);
+  drawer.setAttribute('aria-hidden', open ? 'false' : 'true');
+  tab?.setAttribute('aria-expanded', open ? 'true' : 'false');
+  backdrop?.classList.toggle('hidden', !open);
+  document.body.classList.toggle('calendar-open', open);
+  if (open) {
+    const provider = localStorage.getItem(CAL_PROVIDER_KEY) || 'google';
+    setCalendarProvider(provider === 'setup' ? 'google' : provider);
+  }
+}
+
+function setCalendarProvider(provider) {
+  const mode = provider || 'google';
+  localStorage.setItem(CAL_PROVIDER_KEY, mode);
+
+  $$('.calendar-provider-tab').forEach((btn) => {
+    const active = btn.dataset.calProvider === mode;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+
+  const setup = $('#calendar-setup');
+  const empty = $('#calendar-empty');
+  const frame = $('#calendar-frame');
+  const urls = getCalendarUrls();
+
+  if (mode === 'setup') {
+    setup?.classList.remove('hidden');
+    empty?.classList.add('hidden');
+    frame?.classList.add('hidden');
+    if ($('#calendar-google-url')) $('#calendar-google-url').value = urls.google;
+    if ($('#calendar-ms-url')) $('#calendar-ms-url').value = urls.microsoft;
+    return;
+  }
+
+  setup?.classList.add('hidden');
+  const url = mode === 'microsoft' ? urls.microsoft : urls.google;
+  if (url && isSafeCalendarEmbedUrl(url)) {
+    empty?.classList.add('hidden');
+    if (frame) {
+      frame.classList.remove('hidden');
+      if (frame.getAttribute('src') !== url) frame.src = url;
+    }
+  } else {
+    if (frame) {
+      frame.classList.add('hidden');
+      frame.removeAttribute('src');
+    }
+    empty?.classList.remove('hidden');
+  }
+}
+
+function initCalendarDrawer() {
+  if (!$('#calendar-drawer')) return;
+
+  const urls = getCalendarUrls();
+  if ($('#calendar-google-url')) $('#calendar-google-url').value = urls.google;
+  if ($('#calendar-ms-url')) $('#calendar-ms-url').value = urls.microsoft;
+
+  const open = () => setCalendarOpen(true);
+  const close = () => setCalendarOpen(false);
+
+  $('#calendar-tab')?.addEventListener('click', () => {
+    const expanded = $('#calendar-tab')?.getAttribute('aria-expanded') === 'true';
+    setCalendarOpen(!expanded);
+  });
+  $('#btn-open-calendar')?.addEventListener('click', open);
+  $('#calendar-close')?.addEventListener('click', close);
+  $('#calendar-backdrop')?.addEventListener('click', close);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.body.classList.contains('calendar-open')) {
+      close();
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    const providerBtn = e.target.closest?.('[data-cal-provider]');
+    if (providerBtn?.dataset.calProvider) {
+      setCalendarProvider(providerBtn.dataset.calProvider);
+    }
+  });
+
+  $('#calendar-setup')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const google = ($('#calendar-google-url')?.value || '').trim();
+    const microsoft = ($('#calendar-ms-url')?.value || '').trim();
+    const feedback = $('#calendar-setup-feedback');
+
+    if ((google && !isSafeCalendarEmbedUrl(google)) || (microsoft && !isSafeCalendarEmbedUrl(microsoft))) {
+      if (feedback) {
+        feedback.textContent = 'Use apenas URLs https de Google Calendar ou Outlook.';
+        feedback.classList.remove('hidden', 'ok');
+        feedback.classList.add('err');
+      }
+      return;
+    }
+
+    if (google) localStorage.setItem(CAL_GOOGLE_KEY, google);
+    else localStorage.removeItem(CAL_GOOGLE_KEY);
+    if (microsoft) localStorage.setItem(CAL_MS_KEY, microsoft);
+    else localStorage.removeItem(CAL_MS_KEY);
+
+    if (feedback) {
+      feedback.textContent = 'Agendas salvas neste navegador.';
+      feedback.classList.remove('hidden', 'err');
+      feedback.classList.add('ok');
+    }
+
+    const prefer = google ? 'google' : (microsoft ? 'microsoft' : 'setup');
+    setCalendarProvider(prefer);
+  });
+
+  $('#calendar-clear')?.addEventListener('click', () => {
+    localStorage.removeItem(CAL_GOOGLE_KEY);
+    localStorage.removeItem(CAL_MS_KEY);
+    if ($('#calendar-google-url')) $('#calendar-google-url').value = '';
+    if ($('#calendar-ms-url')) $('#calendar-ms-url').value = '';
+    const feedback = $('#calendar-setup-feedback');
+    if (feedback) {
+      feedback.textContent = 'URLs removidas.';
+      feedback.classList.remove('hidden', 'err');
+      feedback.classList.add('ok');
+    }
+    setCalendarProvider('setup');
+  });
 }
 
 // Event listeners
