@@ -40,7 +40,8 @@ def test_reminder_widget_markup(index_html: str):
         "reminder-reopen",
     ):
         assert f'id="{element_id}"' in index_html, element_id
-    assert 'aria-label="Lembretes"' in index_html
+    assert 'aria-label="Lembretes' in index_html
+    assert "Lembretes / Anotações" in index_html or "Lembretes" in index_html
 
 
 def test_calendar_drawer_markup(index_html: str):

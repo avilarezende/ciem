@@ -31,27 +31,45 @@ Layout com **sidebar** à esquerda e **workspace** à direita:
 - Grade de **coletores** com status online/indisponível/desabilitado  
 - Dados: `GET /api/modules/status`, `GET /api/alarms/active`, `GET /api/insights`  
 - Atalho **Abrir navegador** (Grafana embutido)
-- **Lembretes** flutuantes (arrastáveis, persistidos no navegador)
-- Aba lateral **Calendário** (deslizante) com Google Calendar e/ou Microsoft Outlook via URL de incorporação
+- Botões **Wiki** e **Calendário** no cabeçalho + abas laterais deslizantes
+- Painel flutuante **Lembretes / Anotações** (arrastável)
 
-### Lembretes (flutuante, arrastável)
+O mockup da visão geral mostra as três funções ao mesmo tempo: aba Wiki à esquerda, aba Calendário à direita e o painel de lembretes flutuante.
+
+### Lembretes / Anotações (flutuante, arrastável)
+
+![Lembretes flutuantes](assets/ciem-portal-reminders.jpg)
 
 Painel compacto sobre o workspace (visível após o login):
 
 - Arraste pelo título para reposicionar; posição salva em `localStorage`
-- Adicionar, concluir e remover itens; recolher ou ocultar (botão **Lembretes** reabre)
+- Adicionar, concluir e remover itens (lembretes ou anotações curtas do turno)
+- Recolher ou ocultar (botão **Lembretes** reabre)
 - Dados locais ao navegador — não vão para o servidor
 
-### Calendário (aba deslizante)
+### Calendário (aba deslizante à direita)
 
-Aba vertical à direita (**Calendário**) ou botão no cabeçalho:
+![Calendário compartilhado](assets/ciem-portal-calendar.jpg)
+
+Aba vertical **Calendário** ou botão no cabeçalho:
 
 - Abre gaveta deslizante com transição suave e backdrop
-- Provedores: **Google** e **Microsoft** (iframe de calendário publicado)
-- Aba **Configurar**: cole a URL pública de incorporação (Google Agenda → Integrar agenda; Outlook → Publicar calendário)
+- Provedores: **Google** e **Microsoft** (iframe de calendário publicado/compartilhado)
+- Aba **Configurar**: cole a URL pública de incorporação
 - Apenas URLs `https` de domínios Google/Outlook são aceitas
 - Esc ou **Fechar** fecha a gaveta
 
+### Wiki de serviços (aba deslizante à esquerda)
+
+![Wiki de serviços](assets/ciem-portal-wiki.jpg)
+
+Aba vertical **Wiki** ou botão **Wiki** no cabeçalho:
+
+- Documentação colaborativa dos serviços da instituição (Markdown)
+- Qualquer usuário autenticado lê e edita; exclusão de páginas é só admin
+- Persistência em `config/wiki.yaml` via `GET/PUT/POST/DELETE /api/wiki…`
+- Lista de páginas + visualização / edição sem sair do dashboard
+- Esc ou **Fechar** fecha a gaveta (não abre junto com o calendário)
 ### Navegador HTML5 (todos os papéis)
 
 ![Navegador HTML5](assets/ciem-portal-browser.jpg)

@@ -13,9 +13,10 @@ Guia para quem **configura e opera** o CIEM: usuários, LDAP, módulos, IA, sess
 
 Além de tudo que o observer vê, o admin acessa:
 
-| Item da sidebar | Função |
-|-----------------|--------|
+| Item da sidebar / UI | Função |
+|----------------------|--------|
 | **Navegador** | Igual ao observer + Guacamole SSO embutido e URLs dos módulos |
+| **Wiki** | Edita páginas como todos; **exclui** páginas da wiki de serviços |
 | **Sessões** | SSO Guacamole + auditoria (abrir no navegador ou em nova aba) |
 | **Configuração** | Usuários · LDAP · IA · Módulos |
 
@@ -91,7 +92,15 @@ Guia técnico: [GUACAMOLE.md](GUACAMOLE.md) · [MAINTENANCE.md](MAINTENANCE.md).
 
 Use **Visão geral**, **Navegador**, **Alarmes**, **Histórico** e **Análise** para operar o NOC — o mesmo fluxo do observer, com acesso total.
 
+Também use **Lembretes**, **Calendário** e a **Wiki** de serviços (você pode excluir páginas).
+
 ![Visão geral](assets/ciem-portal-dashboard.jpg)
+
+![Wiki de serviços](assets/ciem-portal-wiki.jpg)
+
+![Calendário](assets/ciem-portal-calendar.jpg)
+
+![Lembretes / Anotações](assets/ciem-portal-reminders.jpg)
 
 ![Análise](assets/ciem-portal-analysis.jpg)
 
@@ -103,6 +112,9 @@ Use **Visão geral**, **Navegador**, **Alarmes**, **Histórico** e **Análise** 
 - [ ] Ativar módulos e validar cards “online”  
 - [ ] (Opcional) Ativar IA e gerar insights  
 - [ ] Validar Grafana no **Navegador** e em `/grafana/`  
+- [ ] Validar **Wiki** (criar/editar página) e exclusão como admin  
+- [ ] Validar **Calendário** com URL de incorporação Google ou Microsoft  
+- [ ] Validar **Lembretes** flutuantes (arrastar / ocultar / reabrir)  
 - [ ] Validar um alvo em Sessões (**No navegador** e nova aba)  
 
 ## APIs úteis

@@ -59,21 +59,21 @@ Resumo das capacidades adicionadas ao CIEM para operação pelo portal (administ
 
 **Documentação:** [PORTAL.md](PORTAL.md), [MANUAL_USER.md](MANUAL_USER.md)
 
-## 6. Lembretes e calendário no dashboard
+## 6. Lembretes, calendário e wiki no dashboard
 
 | Capacidade | Detalhe |
 |------------|---------|
-| Lembretes flutuantes | Painel arrastável; adicionar/concluir/ocultar; posição e itens em `localStorage` |
-| Aba Calendário | Gaveta deslizante à direita (ou botão no cabeçalho) |
-| Google / Microsoft | Iframe via URL pública de incorporação (allowlist https) |
-| Ergonomia | Backdrop, Esc para fechar, tabs claras Google · Microsoft · Configurar |
+| Lembretes / anotações | Painel arrastável; adicionar/concluir/ocultar; posição e itens em `localStorage` |
+| Aba Calendário | Gaveta deslizante à direita (agenda compartilhada Google/Microsoft) |
+| Aba Wiki | Gaveta deslizante à esquerda; Markdown colaborativo dos serviços (`config/wiki.yaml`) |
+| Ergonomia | Backdrop, Esc para fechar, abas laterais opostas, uma gaveta por vez |
 
 **Documentação:** [PORTAL.md](PORTAL.md), [MANUAL_USER.md](MANUAL_USER.md)
 
 ## Papéis em uma frase
 
-- **admin** — configura LDAP, usuários, módulos e IA; inicia sessões Guacamole (navegador ou nova aba); usa lembretes e calendário  
-- **observer** — monitora alarmes, histórico, análise; usa Navegador, lembretes e calendário; (se ativo) insights de IA  
+- **admin** — configura LDAP, usuários, módulos e IA; inicia sessões Guacamole; usa lembretes, calendário e wiki (pode excluir páginas)  
+- **observer** — monitora alarmes, histórico, análise; usa Navegador, lembretes, calendário e wiki; (se ativo) insights de IA  
 
 ## Arquivos YAML envolvidos
 
@@ -82,5 +82,6 @@ Resumo das capacidades adicionadas ao CIEM para operação pelo portal (administ
 | `config/auth.yaml` | Admin (usuários + LDAP) |
 | `config/modules.yaml` | Admin (switch + opções) |
 | `config/ai.yaml` | Admin (provedor de IA) |
+| `config/wiki.yaml` | Todos autenticados (conteúdo); admin remove páginas |
 | `config/main.yaml` | Em geral via repositório / ConfigMap |
 | `config/targets.yaml` | Em geral via repositório / ConfigMap |

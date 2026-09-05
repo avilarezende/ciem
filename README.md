@@ -4,11 +4,11 @@
 
 Plataforma **ZTNA** para manutenção de redes: agrega Zabbix, Cacti, Nagios, TOPdesk, inventário e syslog em um portal unificado, com **Navegador HTML5** embutido, Grafana, sessões remotas auditadas via Guacamole, autenticação local/LDAP e insights opcionais de IA.
 
-> **Versão atual (`main`):** portal ergonômico + **Navegador HTML5** para todos os papéis (Grafana, URLs e, para admin, Guacamole/SSO).
+> **Versão atual (`main`):** portal ergonômico + **Navegador HTML5**, **Lembretes/Anotações**, **Calendário** compartilhado e **Wiki** de serviços.
 
-![Navegador HTML5 do portal CIEM](docs/assets/ciem-portal-browser.jpg)
+![Visão geral com lembretes, Wiki e Calendário](docs/assets/ciem-portal-dashboard.jpg)
 
-![Visão geral (dashboard)](docs/assets/ciem-portal-dashboard.jpg)
+![Wiki · Calendário · Lembretes](docs/assets/ciem-portal-wiki.jpg)
 
 ## Funções do portal (administração)
 
@@ -17,6 +17,9 @@ Plataforma **ZTNA** para manutenção de redes: agrega Zabbix, Cacti, Nagios, TO
 | **Usuários locais** + admin padrão | Admin | Todos (login) |
 | **LDAP / Active Directory** (opcional) | Admin | Usuários do diretório |
 | **Navegador HTML5** (Grafana, URLs, SSO) | — (disponível a todos) | Todos; admin também Guacamole/módulos |
+| **Lembretes / Anotações** (painel arrastável) | — (local no navegador) | Todos |
+| **Calendário** (aba deslizante Google/Microsoft) | Usuário (URL de incorporação) | Todos |
+| **Wiki de serviços** (Markdown colaborativo) | Todos editam; admin exclui | Todos |
 | **Módulos coletores** (switch + URL/credenciais) | Admin | Todos (alarmes/dashboards) |
 | **Insights de IA** (URL, API key, modelo) | Admin | Todos, quando habilitado |
 | **Sessões Guacamole** + auditoria | Admin | Admin (navegador ou nova aba) |
@@ -76,7 +79,10 @@ Referência visual em `docs/assets/` para alinhar produto, UX e desenvolvimento:
 | Imagem | Tela |
 |--------|------|
 | [login](docs/assets/ciem-portal-login.jpg) | Autenticação (brand-first) |
-| [dashboard](docs/assets/ciem-portal-dashboard.jpg) | Visão geral (KPIs + gráfico + insights) |
+| [dashboard](docs/assets/ciem-portal-dashboard.jpg) | Visão geral com **Lembretes**, abas **Wiki** e **Calendário** |
+| [lembretes](docs/assets/ciem-portal-reminders.jpg) | **Lembretes / Anotações** flutuantes (arrastáveis) |
+| [calendário](docs/assets/ciem-portal-calendar.jpg) | **Calendário** deslizante (Google/Microsoft) |
+| [wiki](docs/assets/ciem-portal-wiki.jpg) | **Wiki** deslizante de serviços da instituição |
 | [navegador](docs/assets/ciem-portal-browser.jpg) | Navegador HTML5 (Grafana/URLs embutidos) |
 | [alarmes](docs/assets/ciem-portal-alarms.jpg) | Alarmes ativos |
 | [análise](docs/assets/ciem-portal-analysis.jpg) | Análise (abas + gráfico) |

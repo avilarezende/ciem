@@ -1,0 +1,72 @@
+# =============================================================================
+# CIEM — Wiki colaborativa de serviços da instituição
+# Editável pelo portal (qualquer usuário autenticado). Persistido neste arquivo.
+# Documentação: docs/PORTAL.md · docs/MANUAL_USER.md
+# =============================================================================
+wiki:
+  title: "Wiki de serviços"
+  pages:
+    - id: rede
+      title: "Rede e conectividade"
+      body: |
+        ## Rede institucional
+
+        - **Gateway padrão:** documente o IP/ASN aqui
+        - **DNS interno:** ex. `dns1.instituicao.local`
+        - **VPN / ZTNA:** acesso via portal CIEM
+
+        ### Contatos
+        - NOC Rede — plantão 24×7
+        - Abertura de mudança: janela acordada com mudança
+      updated_by: system
+      updated_at: "2026-01-01T00:00:00Z"
+    - id: monitoramento
+      title: "Monitoramento (Zabbix / Cacti / Nagios)"
+      body: |
+        ## Monitoramento
+
+        Consoles também disponíveis no **Navegador** do portal.
+
+        | Sistema | Uso |
+        |---------|-----|
+        | Zabbix | Alarmes e hosts |
+        | Cacti | Tráfego e gráficos |
+        | Nagios | Checagens de serviço |
+
+        ### Boas práticas
+        1. Priorize `critical` / `high` no painel Alarmes
+        2. Registre a causa raiz nesta wiki após o incidente
+      updated_by: system
+      updated_at: "2026-01-01T00:00:00Z"
+    - id: helpdesk
+      title: "Helpdesk / TOPdesk"
+      body: |
+        ## Atendimento
+
+        - Fila prioritária NOC
+        - SLA interno: registrar número do chamado no lembrete do turno
+        - Escalation: coordenação de infraestrutura
+      updated_by: system
+      updated_at: "2026-01-01T00:00:00Z"
+    - id: backup
+      title: "Backup e recuperação"
+      body: |
+        ## Backup
+
+        Documente aqui:
+        - Janelas de backup
+        - Retenção
+        - Contato do storage
+        - Procedimento de restore (passos curtos)
+      updated_by: system
+      updated_at: "2026-01-01T00:00:00Z"
+    - id: acessos
+      title: "Acessos e sessões remotas"
+      body: |
+        ## Acessos
+
+        - Sessões SSH/RDP/VNC: painel **Sessões** (admin) ou **Navegador** com SSO Guacamole
+        - Toda sessão é auditada
+        - Não compartilhe senhas — use alvos provisionados
+      updated_by: system
+      updated_at: "2026-01-01T00:00:00Z"

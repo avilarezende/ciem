@@ -646,12 +646,165 @@ def update_module_config(
     return load_modules_config().modules[module_name]
 
 
+class WikiPage(BaseModel):
+    """Página da wiki colaborativa de serviços."""
+
+    id: str = Field(description="Identificador estável (slug)")
+    title: str = Field(description="Título exibido")
+    body: str = Field(default="", description="Conteúdo em Markdown")
+    updated_by: str = Field(default="system", description="Último editor")
+    updated_at: str = Field(default="", description="ISO-8601 da última edição")
+
+
+class WikiConfig(BaseModel):
+    """Wiki colaborativa persistida em ``config/wiki.yaml``."""
+
+    title: str = Field(default="Wiki de serviços")
+    pages: list[WikiPage] = Field(default_factory=list)
+
+
+def _default_wiki_pages() -> list[WikiPage]:
+    return [
+        WikiPage(
+            id="rede",
+            title="Rede e conectividade",
+            body=(
+                "## Rede institucional\n\n"
+                "- Documente gateway, DNS e VPN/ZTNA aqui\n"
+                "- Consoles também no **Navegador** do portal\n"
+            ),
+            updated_by="system",
+            updated_at="2026-01-01T00:00:00Z",
+        ),
+        WikiPage(
+            id="monitoramento",
+            title="Monitoramento",
+            body=(
+                "## Monitoramento\n\n"
+                "| Sistema | Uso |\n|---------|-----|\n"
+                "| Zabbix | Alarmes e hosts |\n"
+                "| Cacti | Tráfego |\n"
+                "| Nagios | Checagens |\n"
+            ),
+            updated_by="system",
+            updated_at="2026-01-01T00:00:00Z",
+        ),
+        WikiPage(
+            id="acessos",
+            title="Acessos e sessões",
+            body=(
+                "## Acessos\n\n"
+                "- Sessões via **Sessões** / Guacamole (admin)\n"
+                "- Auditoria completa de comandos\n"
+            ),
+            updated_by="system",
+            updated_at="2026-01-01T00:00:00Z",
+        ),
+    ]
+
+
+@lru_cache(maxsize=1)
+def load_wiki_config() -> WikiConfig:
+    """Carrega ``config/wiki.yaml`` (cria estrutura padrão se vazio)."""
+    raw = _read_yaml("wiki.yaml")
+    wiki_raw = raw.get("wiki", raw) if isinstance(raw, dict) else {}
+    if not isinstance(wiki_raw, dict):
+        wiki_raw = {}
+    pages_raw = wiki_raw.get("pages") or []
+    pages: list[WikiPage] = []
+    if isinstance(pages_raw, list):
+        for item in pages_raw:
+            if isinstance(item, dict) and item.get("id") and item.get("title"):
+                pages.append(WikiPage.model_validate(item))
+    if not pages:
+        pages = _default_wiki_pages()
+    return WikiConfig(
+        title=str(wiki_raw.get("title") or "Wiki de serviços"),
+        pages=pages,
+    )
+
+
+def save_wiki_config(config: WikiConfig) -> None:
+    """Persiste a wiki em ``config/wiki.yaml``."""
+    path = _config_dir() / "wiki.yaml"
+    payload = {
+        "wiki": {
+            "title": config.title,
+            "pages": [p.model_dump() for p in config.pages],
+        }
+    }
+    header = (
+        "# =============================================================================\n"
+        "# CIEM — Wiki colaborativa de serviços da instituição\n"
+        "# Editável pelo portal (usuários autenticados). Documentação: docs/PORTAL.md\n"
+        "# =============================================================================\n"
+    )
+    dumped = yaml.safe_dump(payload, allow_unicode=True, default_flow_style=False, sort_keys=False)
+    path.write_text(header + "\n" + dumped, encoding="utf-8")
+    load_wiki_config.cache_clear()
+
+
+def upsert_wiki_page(
+    page_id: str,
+    *,
+    title: str,
+    body: str,
+    updated_by: str,
+    updated_at: str,
+) -> WikiPage:
+    """Cria ou atualiza uma página da wiki e persiste."""
+    slug = re.sub(r"[^a-z0-9\-]+", "-", page_id.strip().lower()).strip("-")[:64]
+    if not slug:
+        raise ValueError("id inválido")
+    clean_title = title.strip()[:120] or slug
+    clean_body = body[:20000]
+    cfg = load_wiki_config()
+    pages = list(cfg.pages)
+    found = False
+    for idx, page in enumerate(pages):
+        if page.id == slug:
+            pages[idx] = WikiPage(
+                id=slug,
+                title=clean_title,
+                body=clean_body,
+                updated_by=updated_by,
+                updated_at=updated_at,
+            )
+            found = True
+            break
+    if not found:
+        pages.append(
+            WikiPage(
+                id=slug,
+                title=clean_title,
+                body=clean_body,
+                updated_by=updated_by,
+                updated_at=updated_at,
+            )
+        )
+    save_wiki_config(WikiConfig(title=cfg.title, pages=pages))
+    return next(p for p in load_wiki_config().pages if p.id == slug)
+
+
+def delete_wiki_page(page_id: str) -> bool:
+    """Remove página da wiki. Retorna True se removeu."""
+    cfg = load_wiki_config()
+    pages = [p for p in cfg.pages if p.id != page_id]
+    if len(pages) == len(cfg.pages):
+        return False
+    if not pages:
+        pages = _default_wiki_pages()
+    save_wiki_config(WikiConfig(title=cfg.title, pages=pages))
+    return True
+
+
 def clear_config_cache() -> None:
     """Limpa o cache interno; útil em testes após alterar ``CONFIG_PATH``."""
     load_main_config.cache_clear()
     load_modules_config.cache_clear()
     load_auth_config.cache_clear()
     load_ai_config.cache_clear()
+    load_wiki_config.cache_clear()
     from ciem_common.targets_loader import clear_targets_cache
 
     clear_targets_cache()
