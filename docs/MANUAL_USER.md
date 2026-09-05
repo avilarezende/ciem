@@ -42,21 +42,24 @@ Os itens **Sessões** e **Configuração** ficam ocultos para o papel observer.
 
 ```
 1. Login
-2. Visão geral → conferir KPIs, coletores e chip de alarmes
+2. Visão geral → KPIs, coletores, chip de alarmes e lembretes do turno
 3. Alarmes → triagem (critical primeiro)
 4. Análise → Insights IA (se ativo) ou abas de detalhe
 5. Navegador → Grafana embutido (ou /grafana/ em nova aba)
+6. Wiki / Calendário → serviços da instituição ou agenda compartilhada
 ```
 
-![Visão geral](assets/ciem-portal-dashboard.jpg)
+![Visão geral com lembretes e abas laterais](assets/ciem-portal-dashboard.jpg)
 
 ## Visão geral
 
 - **Chip de alarmes** no topo: atalho para a lista de alarmes  
+- Botões **Wiki** e **Calendário** no cabeçalho (ou abas laterais)  
 - **KPIs**: críticos, warnings, total, módulos online  
 - **Gráfico de severidade** e legenda  
 - **Insights**: resumo curto; botão para abrir a Análise completa  
 - **Coletores**: online / indisponível / desabilitado  
+- **Lembretes / Anotações** flutuantes sobre o workspace  
 
 ## Alarmes e histórico
 
@@ -84,11 +87,29 @@ Se Insights estiverem desabilitados, a aba informa que um administrador precisa 
 
 ## Lembretes, calendário e wiki
 
-- **Lembretes / Anotações**: painel flutuante arrastável — tarefas e notas rápidas do turno; arraste pelo título; recolher/ocultar  
-- **Calendário**: aba vertical à direita (ou botão **Calendário**) com agenda compartilhada Google/Outlook  
-- **Wiki**: aba vertical à esquerda (ou botão **Wiki**) com páginas Markdown dos serviços da instituição — todos autenticados podem editar; só admin exclui  
+### Lembretes / Anotações
 
-![Wiki](assets/ciem-portal-wiki.jpg)
+![Lembretes flutuantes](assets/ciem-portal-reminders.jpg)
+
+- Painel flutuante arrastável — tarefas e notas rápidas do turno  
+- Arraste pelo título; recolha (–) ou oculte (×); o botão **Lembretes** reabre  
+- Dados ficam só neste navegador  
+
+### Calendário
+
+![Calendário compartilhado](assets/ciem-portal-calendar.jpg)
+
+- Aba vertical à direita ou botão **Calendário** no topo  
+- Agenda compartilhada Google ou Microsoft (URL de incorporação em **Configurar**)  
+
+### Wiki de serviços
+
+![Wiki de serviços](assets/ciem-portal-wiki.jpg)
+
+- Aba vertical à esquerda ou botão **Wiki**  
+- Páginas Markdown dos serviços da instituição  
+- Todos autenticados podem editar; só admin exclui páginas  
+
 
 ## Navegador HTML5
 

@@ -31,10 +31,14 @@ Layout com **sidebar** à esquerda e **workspace** à direita:
 - Grade de **coletores** com status online/indisponível/desabilitado  
 - Dados: `GET /api/modules/status`, `GET /api/alarms/active`, `GET /api/insights`  
 - Atalho **Abrir navegador** (Grafana embutido)
-- **Lembretes** flutuantes (arrastáveis, persistidos no navegador)
-- Aba lateral **Calendário** (deslizante) com Google Calendar e/ou Microsoft Outlook via URL de incorporação
+- Botões **Wiki** e **Calendário** no cabeçalho + abas laterais deslizantes
+- Painel flutuante **Lembretes / Anotações** (arrastável)
+
+O mockup da visão geral mostra as três funções ao mesmo tempo: aba Wiki à esquerda, aba Calendário à direita e o painel de lembretes flutuante.
 
 ### Lembretes / Anotações (flutuante, arrastável)
+
+![Lembretes flutuantes](assets/ciem-portal-reminders.jpg)
 
 Painel compacto sobre o workspace (visível após o login):
 
@@ -44,6 +48,8 @@ Painel compacto sobre o workspace (visível após o login):
 - Dados locais ao navegador — não vão para o servidor
 
 ### Calendário (aba deslizante à direita)
+
+![Calendário compartilhado](assets/ciem-portal-calendar.jpg)
 
 Aba vertical **Calendário** ou botão no cabeçalho:
 
@@ -55,6 +61,8 @@ Aba vertical **Calendário** ou botão no cabeçalho:
 
 ### Wiki de serviços (aba deslizante à esquerda)
 
+![Wiki de serviços](assets/ciem-portal-wiki.jpg)
+
 Aba vertical **Wiki** ou botão **Wiki** no cabeçalho:
 
 - Documentação colaborativa dos serviços da instituição (Markdown)
@@ -62,8 +70,6 @@ Aba vertical **Wiki** ou botão **Wiki** no cabeçalho:
 - Persistência em `config/wiki.yaml` via `GET/PUT/POST/DELETE /api/wiki…`
 - Lista de páginas + visualização / edição sem sair do dashboard
 - Esc ou **Fechar** fecha a gaveta (não abre junto com o calendário)
-
-![Wiki de serviços](assets/ciem-portal-wiki.jpg)
 ### Navegador HTML5 (todos os papéis)
 
 ![Navegador HTML5](assets/ciem-portal-browser.jpg)
