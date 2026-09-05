@@ -20,7 +20,7 @@ Resumo das capacidades adicionadas ao CIEM para operação pelo portal (administ
 | Switch ON/OFF | Admin ativa/desativa cada coletor em **Configuração** |
 | Formulário de opções | Com o módulo ativo, aparecem URL, credenciais e opções específicas |
 | Persistência | Valores gravados em `config/modules.yaml` |
-| Grafana embutido | Aba Grafana no portal com visão NOC via API |
+| Consoles no Navegador | Com o módulo ativo, `options.url` aparece como atalho no **Navegador HTML5** (admin) |
 
 **Documentação:** [MODULES.md](MODULES.md), [PORTAL.md](PORTAL.md)
 

@@ -76,6 +76,8 @@ Além do Grafana e URLs, o admin usa o **Navegador** para:
 
 ![Navegador HTML5](assets/ciem-portal-browser.jpg)
 
+O mockup mostra o item **Navegador** na sidebar (sem restrição de papel), chrome completo e atalhos Grafana / Guacamole / módulos.
+
 ## Sessões de manutenção
 
 ![Sessões](assets/ciem-portal-sessions.jpg)

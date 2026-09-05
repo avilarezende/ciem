@@ -2,6 +2,8 @@
 
 O CIEM provisiona **13 dashboards** na pasta **CIEM** do Grafana (`grafana/dashboards/`).
 
+No dia a dia do NOC, abra-os pelo **Navegador HTML5** do portal (sidebar **Navegador** → atalho Grafana), sem sair do CIEM. Detalhes: [GRAFANA.md](GRAFANA.md) · [PORTAL.md](PORTAL.md).
+
 ## Visão geral dos dashboards
 
 ### Plataforma (6)

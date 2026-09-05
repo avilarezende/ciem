@@ -67,6 +67,8 @@ Imagens em `docs/assets/` para alinhar times de produto, UX e desenvolvimento:
 | [ciem-architecture-diagram.jpg](assets/ciem-architecture-diagram.jpg) | Arquitetura ZTNA (Portal + Navegador HTML5) |
 
 > Ao alterar o portal (`services/portal/`), atualize o mockup correspondente (incl. `ciem-portal-browser.jpg`) e referencie o PR na descrição da mudança.
+>
+> Regenerar: `python3 scripts/generate_portal_mockups.py` · `python3 scripts/generate_architecture_diagram.py`
 
 ## Manifests Kubernetes
 

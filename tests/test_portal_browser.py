@@ -163,3 +163,13 @@ def test_docs_and_assets_mention_browser():
     assert "ciem-portal-browser" in portal_md
     assert (ROOT / "docs" / "assets" / "ciem-portal-browser.jpg").is_file()
     assert (ROOT / "docs" / "assets" / "ciem-architecture-diagram.png").is_file()
+    assert (ROOT / "scripts" / "generate_portal_mockups.py").is_file()
+    assert (ROOT / "scripts" / "generate_architecture_diagram.py").is_file()
+    grafana_md = (ROOT / "docs" / "GRAFANA.md").read_text(encoding="utf-8")
+    assert "Navegador" in grafana_md
+    processes_md = (ROOT / "docs" / "PROCESSES.md").read_text(encoding="utf-8")
+    assert "ciem-portal-browser.jpg" in processes_md
+    manual_user = (ROOT / "docs" / "MANUAL_USER.md").read_text(encoding="utf-8")
+    assert "Navegador HTML5" in manual_user
+    manual_admin = (ROOT / "docs" / "MANUAL_ADMIN.md").read_text(encoding="utf-8")
+    assert "Navegador" in manual_admin

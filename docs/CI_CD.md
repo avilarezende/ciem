@@ -31,6 +31,15 @@ CONFIG_PATH=./config PYTHONPATH=shared:services/core pytest tests -v
 docker compose -f deploy/docker/docker-compose.yml config --quiet
 ```
 
+Testes do portal cobrem o **Navegador HTML5** (`tests/test_portal_browser.py`: sidebar para todos, chrome, normalização de URL, assets/docs) e lembretes/calendário (`tests/test_portal_reminders_calendar.py`).
+
+Regenerar diagrama e mockups (incl. tela do Navegador):
+
+```bash
+python3 scripts/generate_architecture_diagram.py
+python3 scripts/generate_portal_mockups.py
+```
+
 ## Releases versionadas
 
 ```bash

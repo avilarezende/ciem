@@ -38,6 +38,7 @@ Valores são persistidos em `config/ai.yaml`.
 | Superfície | Detalhe |
 |------------|---------|
 | Portal → **Análise → Insights IA** (e preview na Visão geral) | Resumo, lista de insights e gráficos sugeridos |
+| Portal → **Navegador** → Grafana (`ciem-insights`) | Mesma pasta de insights no Grafana embutido |
 | Portal → Visão Geral | Linha de status dos insights |
 | Grafana → dashboard `ciem-insights` | Tabelas via Infinity (`/grafana/insights/table` e `/charts`) |
 | Grafana → Visão Geral NOC | Painel “Insights de IA” |
