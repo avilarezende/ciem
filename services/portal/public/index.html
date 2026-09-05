@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=7">
+  <link rel="stylesheet" href="/css/style.css?v=8">
 </head>
 <body>
   <!-- Login -->
@@ -16,7 +16,7 @@
       <div class="login-brand">
         <p class="brand-mark">CIEM</p>
         <h1>Centro Integrado de Estatística e Manutenção</h1>
-        <p class="brand-lead">Visão NOC unificada: alarmes, coletores, sessões auditadas e insights de análise.</p>
+        <p class="brand-lead">Visão NOC unificada: alarmes, navegador HTML5, coletores, sessões auditadas e insights.</p>
       </div>
       <form id="login-form" class="login-form" autocomplete="on">
         <h2>Entrar</h2>
@@ -40,6 +40,9 @@
       <nav class="sidebar-nav">
         <button type="button" class="nav-btn active" data-panel="dashboard">
           <span class="nav-label">Visão geral</span>
+        </button>
+        <button type="button" class="nav-btn" data-panel="browser">
+          <span class="nav-label">Navegador</span>
         </button>
         <button type="button" class="nav-btn" data-panel="alarms">
           <span class="nav-label">Alarmes</span>
@@ -100,12 +103,48 @@
             </article>
           </div>
           <article class="surface">
-            <header class="surface-head">
-              <h2>Coletores</h2>
-              <p>Saúde dos módulos habilitados</p>
+            <header class="surface-head row">
+              <div>
+                <h2>Coletores</h2>
+                <p>Saúde dos módulos habilitados</p>
+              </div>
+              <button type="button" class="btn-secondary" data-goto="browser" data-browser-url="/grafana/">Abrir navegador</button>
             </header>
             <div id="modules-grid" class="modules-grid"></div>
           </article>
+        </section>
+
+        <!-- Navegador HTML5 (todos) -->
+        <section id="panel-browser" class="panel panel-browser" aria-label="Navegador HTML5">
+          <div class="browser-chrome">
+            <div class="browser-toolbar" role="toolbar" aria-label="Controles do navegador">
+              <button type="button" id="browser-back" class="browser-icon-btn" title="Voltar" aria-label="Voltar">←</button>
+              <button type="button" id="browser-forward" class="browser-icon-btn" title="Avançar" aria-label="Avançar">→</button>
+              <button type="button" id="browser-reload" class="browser-icon-btn" title="Recarregar" aria-label="Recarregar">↻</button>
+              <button type="button" id="browser-home" class="browser-icon-btn" title="Início" aria-label="Início">⌂</button>
+              <form id="browser-url-form" class="browser-url-form" autocomplete="off">
+                <label class="sr-only" for="browser-url">Endereço</label>
+                <input type="text" id="browser-url" name="url" spellcheck="false" placeholder="Digite uma URL ou caminho (/grafana/)" inputmode="url">
+                <button type="submit" class="btn-primary browser-go">Ir</button>
+              </form>
+              <button type="button" id="browser-open-ext" class="btn-ghost browser-ext" title="Abrir em nova aba">↗</button>
+            </div>
+            <div id="browser-presets" class="browser-presets" role="group" aria-label="Atalhos"></div>
+          </div>
+          <div class="browser-stage">
+            <div id="browser-home-view" class="browser-home">
+              <p class="browser-home-kicker">Navegador integrado</p>
+              <h2>Acesse Grafana, consoles e URLs sem sair do CIEM</h2>
+              <p class="browser-home-lead">Use a barra de endereço ou os atalhos. Sites que bloqueiam iframe abrem com um clique em nova aba.</p>
+              <div id="browser-home-cards" class="browser-home-cards"></div>
+            </div>
+            <iframe id="browser-frame" class="browser-frame hidden" title="Conteúdo do navegador CIEM" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            <div id="browser-blocked" class="browser-blocked hidden" role="status">
+              <p><strong>Não foi possível embutir esta página</strong></p>
+              <p class="browser-blocked-lead">O destino pode enviar cabeçalhos que impedem iframe (X-Frame-Options / CSP). Abra em nova aba para continuar.</p>
+              <button type="button" id="browser-blocked-open" class="btn-primary">Abrir em nova aba</button>
+            </div>
+          </div>
         </section>
 
         <!-- Alarmes -->
@@ -143,7 +182,10 @@
               <button type="button" class="seg-tab" data-aview="history">Histórico</button>
               <button type="button" class="seg-tab admin-only" data-aview="sessions">Sessões</button>
             </div>
-            <a class="btn-ghost" href="/grafana/" target="_blank" rel="noopener">Abrir Grafana ↗</a>
+            <div class="form-actions">
+              <button type="button" class="btn-secondary" data-goto="browser" data-browser-url="/grafana/">No navegador</button>
+              <a class="btn-ghost" href="/grafana/" target="_blank" rel="noopener">Grafana ↗</a>
+            </div>
           </div>
           <div id="analysis-kpis" class="kpi-row compact"></div>
           <div class="analysis-grid">
@@ -174,7 +216,10 @@
                 <h2>Sessões de manutenção</h2>
                 <p>SSO Guacamole — sem novo login; sessões auditadas</p>
               </div>
-              <button type="button" id="btn-guacamole-full" class="btn-primary">Abrir Guacamole</button>
+              <div class="form-actions">
+                <button type="button" id="btn-guacamole-browser" class="btn-secondary">No navegador</button>
+                <button type="button" id="btn-guacamole-full" class="btn-primary">Abrir Guacamole ↗</button>
+              </div>
             </header>
             <h3 class="section-label">Alvos</h3>
             <div id="targets-list" class="stack-list"></div>
@@ -263,6 +308,6 @@
     </div>
   </div>
 
-  <script src="/js/portal.js?v=7"></script>
+  <script src="/js/portal.js?v=8"></script>
 </body>
 </html>

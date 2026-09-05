@@ -23,12 +23,23 @@ function showScreen(id) {
 
 const PAGE_META = {
   dashboard: { title: 'Visão geral', subtitle: 'Estado operacional e espaço para análise' },
+  browser: { title: 'Navegador', subtitle: 'Grafana, consoles e URLs embutidos no portal' },
   alarms: { title: 'Alarmes', subtitle: 'Priorize critical e high antes de warning/info' },
   history: { title: 'Histórico', subtitle: 'Últimos eventos agregados dos módulos' },
   analysis: { title: 'Análise', subtitle: 'Gráficos, insights e detalhe filtrado' },
   sessions: { title: 'Sessões', subtitle: 'SSO Guacamole e auditoria de manutenção' },
   config: { title: 'Configuração', subtitle: 'Usuários, LDAP, IA e módulos coletores' },
 };
+
+const BROWSER_HOME = 'ciem://home';
+const BROWSER_STORAGE_KEY = 'ciem_browser_last';
+const BROWSER_RECENTS_KEY = 'ciem_browser_recents';
+
+let browserHistory = [];
+let browserIndex = -1;
+let browserCurrent = BROWSER_HOME;
+let browserPresetsCache = [];
+let browserLoadTimer = null;
 
 function showPanel(name) {
   $$('.panel').forEach(p => p.classList.remove('active'));
@@ -38,6 +49,11 @@ function showPanel(name) {
   const meta = PAGE_META[name] || { title: name, subtitle: '' };
   if ($('#page-title')) $('#page-title').textContent = meta.title;
   if ($('#page-subtitle')) $('#page-subtitle').textContent = meta.subtitle;
+  $('.workspace')?.classList.toggle('browser-focus', name === 'browser');
+  if (name === 'browser') {
+    refreshBrowserPresets();
+    updateBrowserChrome();
+  }
 }
 
 function showConfigSection(name) {
@@ -851,13 +867,21 @@ async function loadTargets() {
           <strong>${t.name}</strong>
           <div class="meta">${t.protocol.toUpperCase()} — ${t.hostname}:${t.port} · ${t.description || ''}</div>
         </div>
-        <button type="button" class="btn-primary btn-sm" data-connect="${t.id}" ${t.enabled ? '' : 'disabled'}>
-          ${t.enabled ? 'Conectar' : 'Desabilitado'}
-        </button>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary btn-sm" data-connect-browser="${t.id}" ${t.enabled ? '' : 'disabled'}>
+            No navegador
+          </button>
+          <button type="button" class="btn-primary btn-sm" data-connect="${t.id}" ${t.enabled ? '' : 'disabled'}>
+            ${t.enabled ? 'Nova aba ↗' : 'Desabilitado'}
+          </button>
+        </div>
       </div>`).join('')
     : '<p class="list-empty">Nenhum alvo configurado em config/targets.yaml</p>';
   $('#targets-list')?.querySelectorAll('[data-connect]').forEach(btn => {
-    btn.addEventListener('click', () => connectTarget(btn.dataset.connect));
+    btn.addEventListener('click', () => connectTarget(btn.dataset.connect, { inBrowser: false }));
+  });
+  $('#targets-list')?.querySelectorAll('[data-connect-browser]').forEach(btn => {
+    btn.addEventListener('click', () => connectTarget(btn.dataset.connectBrowser, { inBrowser: true }));
   });
 }
 
@@ -883,27 +907,315 @@ function ssoOpenUrl(loginUrl) {
   return `${API_BASE}/${loginUrl}`;
 }
 
-async function connectTarget(targetId) {
-  const resp = await api('/sso/guacamole', {
-    method: 'POST',
-    body: JSON.stringify({ target_id: targetId }),
+function normalizeBrowserUrl(raw) {
+  const value = String(raw || '').trim();
+  if (!value || value === BROWSER_HOME || value === 'about:blank') return BROWSER_HOME;
+  if (/^https?:\/\//i.test(value)) return value;
+  if (value.startsWith('/')) return value;
+  if (value.startsWith('ciem://')) return value;
+  return `https://${value}`;
+}
+
+function displayBrowserUrl(url) {
+  if (!url || url === BROWSER_HOME) return '';
+  return url;
+}
+
+function isLikelyEmbeddable(url) {
+  if (!url || url === BROWSER_HOME) return true;
+  if (url.startsWith('/')) return true;
+  try {
+    const u = new URL(url, window.location.origin);
+    return u.origin === window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
+function readBrowserRecents() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(BROWSER_RECENTS_KEY) || '[]');
+    return Array.isArray(raw) ? raw.filter(Boolean).slice(0, 6) : [];
+  } catch {
+    return [];
+  }
+}
+
+function pushBrowserRecent(url) {
+  if (!url || url === BROWSER_HOME) return;
+  const next = [url, ...readBrowserRecents().filter(u => u !== url)].slice(0, 6);
+  localStorage.setItem(BROWSER_RECENTS_KEY, JSON.stringify(next));
+}
+
+function updateBrowserChrome() {
+  const back = $('#browser-back');
+  const forward = $('#browser-forward');
+  if (back) back.disabled = browserIndex <= 0;
+  if (forward) forward.disabled = browserIndex < 0 || browserIndex >= browserHistory.length - 1;
+  const input = $('#browser-url');
+  if (input && document.activeElement !== input) {
+    input.value = displayBrowserUrl(browserCurrent);
+  }
+  $$('.browser-chip').forEach(chip => {
+    chip.classList.toggle('active', chip.dataset.url === browserCurrent);
   });
+}
+
+function showBrowserHome() {
+  browserCurrent = BROWSER_HOME;
+  $('#browser-home-view')?.classList.remove('hidden');
+  $('#browser-frame')?.classList.add('hidden');
+  $('#browser-blocked')?.classList.add('hidden');
+  const frame = $('#browser-frame');
+  if (frame) frame.removeAttribute('src');
+  renderBrowserHomeCards();
+  updateBrowserChrome();
+}
+
+function showBrowserBlocked(url) {
+  $('#browser-home-view')?.classList.add('hidden');
+  $('#browser-frame')?.classList.add('hidden');
+  const blocked = $('#browser-blocked');
+  if (blocked) {
+    blocked.classList.remove('hidden');
+    blocked.dataset.url = url || '';
+  }
+}
+
+function browserNavigate(rawUrl, { push = true } = {}) {
+  const url = normalizeBrowserUrl(rawUrl);
+  if (url === BROWSER_HOME) {
+    if (push) {
+      browserHistory = browserHistory.slice(0, browserIndex + 1);
+      browserHistory.push(BROWSER_HOME);
+      browserIndex = browserHistory.length - 1;
+    }
+    showBrowserHome();
+    return;
+  }
+
+  browserCurrent = url;
+  if (push) {
+    browserHistory = browserHistory.slice(0, browserIndex + 1);
+    browserHistory.push(url);
+    browserIndex = browserHistory.length - 1;
+  }
+
+  localStorage.setItem(BROWSER_STORAGE_KEY, url);
+  pushBrowserRecent(url);
+
+  $('#browser-home-view')?.classList.add('hidden');
+  $('#browser-blocked')?.classList.add('hidden');
+  const frame = $('#browser-frame');
+  if (frame) {
+    frame.classList.remove('hidden');
+    frame.src = url;
+  }
+  updateBrowserChrome();
+
+  if (browserLoadTimer) clearTimeout(browserLoadTimer);
+  // Destinos externos costumam bloquear iframe — oferecer fallback após um tempo curto
+  if (!isLikelyEmbeddable(url)) {
+    browserLoadTimer = setTimeout(() => {
+      if (browserCurrent === url) {
+        // Mantém o iframe; só destaca o atalho externo se ainda estiver na mesma URL
+        $('#browser-open-ext')?.classList.add('pulse-hint');
+      }
+    }, 2500);
+  }
+}
+
+function browserBack() {
+  if (browserIndex <= 0) return;
+  browserIndex -= 1;
+  const url = browserHistory[browserIndex];
+  if (url === BROWSER_HOME) showBrowserHome();
+  else browserNavigate(url, { push: false });
+}
+
+function browserForward() {
+  if (browserIndex >= browserHistory.length - 1) return;
+  browserIndex += 1;
+  const url = browserHistory[browserIndex];
+  if (url === BROWSER_HOME) showBrowserHome();
+  else browserNavigate(url, { push: false });
+}
+
+function browserReload() {
+  if (browserCurrent === BROWSER_HOME) {
+    showBrowserHome();
+    return;
+  }
+  const frame = $('#browser-frame');
+  if (frame?.src) {
+    frame.src = frame.src;
+  } else {
+    browserNavigate(browserCurrent, { push: false });
+  }
+}
+
+function openBrowserExternal(url = browserCurrent) {
+  const target = normalizeBrowserUrl(url);
+  if (!target || target === BROWSER_HOME) {
+    window.open(window.location.origin + '/', '_blank', 'noopener');
+    return;
+  }
+  const href = target.startsWith('/') ? `${window.location.origin}${target}` : target;
+  window.open(href, '_blank', 'noopener');
+}
+
+function openBrowserPanel(url) {
+  showPanel('browser');
+  if (url) browserNavigate(url);
+  else if (browserCurrent === BROWSER_HOME) showBrowserHome();
+  $('#browser-url')?.focus();
+}
+
+async function buildBrowserPresets() {
+  const presets = [
+    { label: 'Início', url: BROWSER_HOME, kind: 'home' },
+    { label: 'Grafana', url: '/grafana/', kind: 'app' },
+  ];
+  if (currentUser?.role === 'admin') {
+    presets.push({ label: 'Guacamole', url: '__guacamole__', kind: 'sso' });
+  }
+  if (currentUser?.role === 'admin') {
+    try {
+      const resp = await api('/config/modules');
+      if (resp.ok) {
+        const modules = await resp.json();
+        Object.entries(modules || {}).forEach(([name, cfg]) => {
+          const uiUrl = cfg?.options?.url;
+          if (cfg?.enabled && uiUrl && /^https?:\/\//i.test(uiUrl)) {
+            presets.push({
+              label: name,
+              url: uiUrl,
+              kind: 'module',
+            });
+          }
+        });
+      }
+    } catch {
+      /* presets básicos bastam */
+    }
+  }
+  readBrowserRecents().forEach((url) => {
+    if (!presets.some(p => p.url === url)) {
+      let label = url;
+      try {
+        label = url.startsWith('/') ? url : new URL(url).hostname;
+      } catch { /* keep */ }
+      presets.push({ label, url, kind: 'recent' });
+    }
+  });
+  return presets;
+}
+
+async function refreshBrowserPresets() {
+  browserPresetsCache = await buildBrowserPresets();
+  const host = $('#browser-presets');
+  if (!host) return;
+  host.innerHTML = browserPresetsCache.map(p => `
+    <button type="button" class="browser-chip" data-url="${escapeAttr(p.url)}" data-kind="${escapeAttr(p.kind || '')}">
+      ${escapeAttr(p.label)}
+    </button>`).join('');
+  host.querySelectorAll('.browser-chip').forEach((chip) => {
+    chip.addEventListener('click', () => activateBrowserPreset(chip.dataset.url, chip.dataset.kind));
+  });
+  renderBrowserHomeCards();
+  updateBrowserChrome();
+}
+
+function renderBrowserHomeCards() {
+  const host = $('#browser-home-cards');
+  if (!host) return;
+  const cards = browserPresetsCache.filter(p => p.kind !== 'home' && p.kind !== 'recent').slice(0, 8);
+  const extras = cards.length ? cards : [
+    { label: 'Grafana', url: '/grafana/', kind: 'app' },
+  ];
+  host.innerHTML = extras.map(p => `
+    <button type="button" class="browser-home-card" data-url="${escapeAttr(p.url)}" data-kind="${escapeAttr(p.kind || '')}">
+      <strong>${escapeAttr(p.label)}</strong>
+      <span>${escapeAttr(p.kind === 'sso' ? 'SSO no portal' : p.url)}</span>
+    </button>`).join('');
+  host.querySelectorAll('.browser-home-card').forEach((card) => {
+    card.addEventListener('click', () => activateBrowserPreset(card.dataset.url, card.dataset.kind));
+  });
+}
+
+async function activateBrowserPreset(url, kind) {
+  if (kind === 'sso' || url === '__guacamole__') {
+    await openGuacamoleInBrowser();
+    return;
+  }
+  browserNavigate(url);
+}
+
+async function fetchGuacamoleSsoUrl(targetId) {
+  const body = targetId ? JSON.stringify({ target_id: targetId }) : '{}';
+  const resp = await api('/sso/guacamole', { method: 'POST', body });
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({}));
-    alert(typeof err.detail === 'string' ? err.detail : 'Falha no SSO');
-    return;
+    throw new Error(typeof err.detail === 'string' ? err.detail : 'Falha no SSO');
   }
   const data = await resp.json();
   const url = ssoOpenUrl(data.login_url);
-  if (url) window.open(url, '_blank', 'noopener');
+  if (!url) throw new Error('URL SSO vazia');
+  return url;
+}
+
+async function openGuacamoleInBrowser(targetId) {
+  try {
+    const url = await fetchGuacamoleSsoUrl(targetId);
+    openBrowserPanel(url);
+  } catch (err) {
+    alert(err.message || 'Falha no SSO Guacamole');
+  }
+}
+
+async function connectTarget(targetId, { inBrowser = false } = {}) {
+  try {
+    const url = await fetchGuacamoleSsoUrl(targetId);
+    if (inBrowser) openBrowserPanel(url);
+    else window.open(url, '_blank', 'noopener');
+  } catch (err) {
+    alert(err.message || 'Falha no SSO');
+  }
 }
 
 async function openGuacamoleFull() {
-  const resp = await api('/sso/guacamole', { method: 'POST', body: '{}' });
-  if (!resp.ok) return;
-  const data = await resp.json();
-  const url = ssoOpenUrl(data.login_url);
-  if (url) window.open(url, '_blank', 'noopener');
+  try {
+    const url = await fetchGuacamoleSsoUrl();
+    window.open(url, '_blank', 'noopener');
+  } catch {
+    /* silencioso se Guacamole indisponível */
+  }
+}
+
+function bindBrowserControls() {
+  $('#browser-url-form')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    browserNavigate($('#browser-url')?.value || '');
+  });
+  $('#browser-back')?.addEventListener('click', browserBack);
+  $('#browser-forward')?.addEventListener('click', browserForward);
+  $('#browser-reload')?.addEventListener('click', browserReload);
+  $('#browser-home')?.addEventListener('click', () => browserNavigate(BROWSER_HOME));
+  $('#browser-open-ext')?.addEventListener('click', () => openBrowserExternal());
+  $('#browser-blocked-open')?.addEventListener('click', () => {
+    openBrowserExternal($('#browser-blocked')?.dataset.url || browserCurrent);
+  });
+  $('#browser-frame')?.addEventListener('load', () => {
+    $('#browser-open-ext')?.classList.remove('pulse-hint');
+  });
+  document.addEventListener('keydown', (e) => {
+    if (!$('#panel-browser')?.classList.contains('active')) return;
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'l') {
+      e.preventDefault();
+      $('#browser-url')?.focus();
+      $('#browser-url')?.select();
+    }
+  });
 }
 
 function initPortal() {
@@ -914,6 +1226,7 @@ function initPortal() {
   loadModules();
   loadAlarms();
   loadHistory();
+  refreshBrowserPresets();
   if (currentUser?.role === 'admin') {
     loadConfig();
     loadTargets();
@@ -955,10 +1268,20 @@ $$('.nav-btn[data-panel]').forEach(btn => {
     }
     if (btn.dataset.panel === 'alarms') loadAlarms();
     if (btn.dataset.panel === 'history') loadHistory();
+    if (btn.dataset.panel === 'browser') {
+      if (browserHistory.length === 0) {
+        browserHistory = [BROWSER_HOME];
+        browserIndex = 0;
+        showBrowserHome();
+      }
+    }
   });
 });
 
 $('#btn-guacamole-full')?.addEventListener('click', openGuacamoleFull);
+$('#btn-guacamole-browser')?.addEventListener('click', () => openGuacamoleInBrowser());
+
+bindBrowserControls();
 
 $('#form-ldap')?.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -1013,7 +1336,15 @@ $('#form-create-user')?.addEventListener('submit', async (e) => {
 });
 
 document.addEventListener('click', (e) => {
-  if (e.target.dataset?.goto) showPanel(e.target.dataset.goto);
+  const goto = e.target.closest?.('[data-goto]');
+  if (goto?.dataset.goto) {
+    const panel = goto.dataset.goto;
+    if (panel === 'browser') {
+      openBrowserPanel(goto.dataset.browserUrl || null);
+    } else {
+      showPanel(panel);
+    }
+  }
 
   const stab = e.target.closest?.('.seg-tab');
   if (stab) {

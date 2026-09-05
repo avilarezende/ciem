@@ -28,6 +28,7 @@ A barra lateral organiza o trabalho:
 | Item | Papel | Uso |
 |------|-------|-----|
 | **Visão geral** | Todos | KPIs, gráfico de severidade, preview de insights, status dos coletores |
+| **Navegador** | Todos | Browser HTML5: Grafana embutido, URLs; admin também Guacamole/módulos |
 | **Alarmes** | Todos | Triagem dos problemas ativos |
 | **Histórico** | Todos | Últimos eventos agregados |
 | **Análise** | Todos | Gráficos + detalhe por aba (resumo, insights IA, alarmes, módulos, histórico) |
@@ -40,10 +41,11 @@ A barra lateral organiza o trabalho:
 1. Login no portal
 2. Visão geral → KPIs, gráfico, coletores e chip de alarmes
 3. Alarmes → triagem (critical / high primeiro)
-4. Análise → insights IA (se ativo) e detalhe filtrado; ou Grafana em /grafana/
-5. (Admin) Sessões → conectar no alvo e executar manutenção
-6. (Admin) Auditoria na mesma tela → confirmar registro
-7. (Admin) Configuração → usuários/LDAP, módulos ou provedor de IA conforme necessário
+4. Análise → insights IA (se ativo) e detalhe filtrado
+5. Navegador → Grafana (ou URL) sem sair do portal
+6. (Admin) Sessões → conectar no alvo (navegador ou nova aba)
+7. (Admin) Auditoria na mesma tela → confirmar registro
+8. (Admin) Configuração → usuários/LDAP, módulos ou provedor de IA conforme necessário
 ```
 
 ## Por papel
@@ -53,13 +55,13 @@ A barra lateral organiza o trabalho:
 - Monitorar visão geral e alarmes  
 - Consultar histórico  
 - Usar **Análise** (gráficos e insights, se a IA estiver habilitada)  
-- Abrir Grafana  
+- Usar o **Navegador** (Grafana / URLs)  
 - **Não** inicia sessões remotas nem altera configuração  
 
 ### Admin (operação e configuração)
 
 - Tudo do observer  
-- **Sessões** — Guacamole (todos os alvos ou por alvo) + auditoria  
+- **Sessões** — Guacamole no navegador do portal ou em nova aba + auditoria  
 - **Configuração** em seções:
   - Usuários locais (criar, alterar senha, desabilitar, excluir)
   - LDAP / AD (servidor, porta, SSL, domínio, UID, bind, certificados)

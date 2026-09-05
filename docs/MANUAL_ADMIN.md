@@ -15,7 +15,8 @@ Além de tudo que o observer vê, o admin acessa:
 
 | Item da sidebar | Função |
 |-----------------|--------|
-| **Sessões** | SSO Guacamole + auditoria |
+| **Navegador** | Igual ao observer + Guacamole SSO embutido e URLs dos módulos |
+| **Sessões** | SSO Guacamole + auditoria (abrir no navegador ou em nova aba) |
 | **Configuração** | Usuários · LDAP · IA · Módulos |
 
 ## Login e alteração de senha

@@ -30,6 +30,16 @@ Layout com **sidebar** à esquerda e **workspace** à direita:
 - **Insights** (preview; abre Análise completa)  
 - Grade de **coletores** com status online/indisponível/desabilitado  
 - Dados: `GET /api/modules/status`, `GET /api/alarms/active`, `GET /api/insights`  
+- Atalho **Abrir navegador** (Grafana embutido)
+
+### Navegador HTML5 (todos os papéis)
+
+Painel full-bleed com chrome de browser:
+
+- Controles: voltar, avançar, recarregar, início, barra de URL, abrir em nova aba  
+- Atalhos (chips): Início, Grafana; admin: Guacamole (SSO) e `options.url` dos módulos habilitados  
+- Página inicial com cartões de destino; histórico recente em `localStorage`  
+- Destinos same-origin (`/grafana/`, SSO Guacamole) embutem no iframe; externos podem exigir nova aba  
 
 ### Alarmes ativos
 
@@ -54,14 +64,15 @@ Painel com abas segmentadas e área ampla para gráfico + detalhe:
 | Histórico | Volume por fonte + eventos |
 | Sessões | Auditoria (somente admin) |
 
-Link externo para Grafana: `/grafana/`.
+Link Grafana: preferir o painel **Navegador**; também há atalho **No navegador** / **Grafana ↗** nesta toolbar.
 
 ### Sessões de manutenção (admin)
 
 ![Sessões](assets/ciem-portal-sessions.jpg)
 
-- Botão **Abrir Guacamole** — SSO sem novo login (`POST /api/sso/guacamole`)  
-- Lista de alvos de `config/targets.yaml` com **Conectar** por alvo  
+- Botão **No navegador** — SSO Guacamole no iframe do portal  
+- Botão **Abrir Guacamole ↗** — SSO em nova aba (`POST /api/sso/guacamole`)  
+- Lista de alvos com **No navegador** e **Nova aba ↗**  
 - Auditoria: `GET /api/sessions/audit`  
 
 ### Configuração (admin)
@@ -80,6 +91,7 @@ Persistência: `config/auth.yaml`, `config/ai.yaml`, `config/modules.yaml`.
 | Item da sidebar | Papel | Função |
 |-----------------|-------|--------|
 | Visão geral | Todos | KPIs, gráfico, insights, coletores |
+| Navegador | Todos | Browser HTML5 (Grafana, URLs; admin: Guacamole/módulos) |
 | Alarmes | Todos | Problemas em andamento |
 | Histórico | Todos | Últimos eventos agregados |
 | Análise | Todos | Gráficos + detalhe filtrado + insights |
@@ -91,7 +103,7 @@ Persistência: `config/auth.yaml`, `config/ai.yaml`, `config/modules.yaml`.
 
 | Papel | O que vê |
 |-------|----------|
-| **observer** | Visão geral, Alarmes, Histórico, Análise (incl. insights se ativos) |
+| **observer** | Visão geral, Navegador, Alarmes, Histórico, Análise (incl. insights se ativos) |
 | **admin** | Tudo + Sessões + Configuração completa |
 
 ## Estrutura do código

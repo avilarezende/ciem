@@ -162,6 +162,7 @@ O portal CIEM (`https://seu-dominio/`) usa **sidebar + workspace**:
 | Área | Quem vê | Conteúdo |
 |------|---------|----------|
 | Visão geral | Todos | KPIs, gráfico de severidade, preview de insights, coletores |
+| Navegador | Todos | Browser HTML5 (Grafana embutido; admin: Guacamole SSO e URLs de módulos) |
 | Alarmes / Histórico | Todos | Triagem e eventos recentes |
 | Análise | Todos | Abas (resumo, insights IA, alarmes, módulos, histórico) + gráfico |
 | Sessões | Admin | SSO Guacamole + auditoria |

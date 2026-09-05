@@ -13,9 +13,9 @@ Admin padrão (referência): `admin` / `admin123` — ver [MANUAL_ADMIN.md](MANU
 
 | Pode | Não pode |
 |------|----------|
-| Ver Visão geral, Alarmes, Histórico e Análise | Abrir Sessões / Guacamole |
+| Ver Visão geral, **Navegador**, Alarmes, Histórico e Análise | Abrir Sessões / Guacamole |
 | Ver insights de IA **quando habilitados pelo admin** | Configurar LDAP, usuários, módulos ou IA |
-| Abrir Grafana (`/grafana/`) | Criar ou excluir usuários |
+| Abrir Grafana no navegador integrado ou em `/grafana/` | Criar ou excluir usuários |
 
 ## Login
 
@@ -30,6 +30,7 @@ Admin padrão (referência): `admin` / `admin123` — ver [MANUAL_ADMIN.md](MANU
 | Item | Função |
 |------|--------|
 | **Visão geral** | KPIs, gráfico de severidade, preview de insights e status dos coletores |
+| **Navegador** | Browser HTML5 no portal: Grafana, URLs e atalhos (Ctrl/Cmd+L foca a barra) |
 | **Alarmes** | Lista de problemas ativos (priorize critical / high) |
 | **Histórico** | Últimos eventos agregados dos módulos |
 | **Análise** | Gráficos + detalhe por aba (resumo, insights IA, alarmes, módulos, histórico) |
@@ -43,7 +44,7 @@ Os itens **Sessões** e **Configuração** ficam ocultos para o papel observer.
 2. Visão geral → conferir KPIs, coletores e chip de alarmes
 3. Alarmes → triagem (critical primeiro)
 4. Análise → Insights IA (se ativo) ou abas de detalhe
-5. Grafana (link na Análise ou /grafana/) para tendências
+5. Navegador → Grafana embutido (ou /grafana/ em nova aba)
 ```
 
 ![Visão geral](assets/ciem-portal-dashboard.jpg)
@@ -80,9 +81,19 @@ Abas disponíveis ao observer:
 
 Se Insights estiverem desabilitados, a aba informa que um administrador precisa ativar o provedor em Configuração.
 
+## Navegador HTML5
+
+Disponível para **todos** os papéis desde o login:
+
+- Sidebar **Navegador** (barra de endereço, voltar/avançar, recarregar, início)
+- Atalhos: Grafana (`/grafana/`), URLs recentes; admin também vê Guacamole (SSO) e consoles dos módulos com `options.url`
+- Sites que bloqueiam iframe: use **↗** (nova aba) ou o aviso na área de conteúdo
+- Atalhos também na Visão geral e em Análise → **No navegador**
+
 ## Grafana
 
-- Link **Abrir Grafana** no painel Análise, ou URL `/grafana/`  
+- Preferência: painel **Navegador** → atalho Grafana  
+- Alternativa: link **Grafana ↗** na Análise, ou URL `/grafana/` em nova aba  
 - Dashboards NOC e, se provisionado, painel de Insights IA  
 
 ## Problemas comuns
@@ -90,6 +101,7 @@ Se Insights estiverem desabilitados, a aba informa que um administrador precisa 
 | Sintoma | O que fazer |
 |---------|-------------|
 | Não vejo Sessões/Configuração | Esperado para observer — peça a um admin |
+| Página em branco no Navegador | Destino bloqueia iframe — use Abrir em nova aba (↗) |
 | Insights “desabilitados” | Admin precisa ativar IA |
 | Módulo “desabilitado” | Admin precisa ligar o coletor |
 | Sem alarmes | Ambiente saudável ou coletor off — confirme na Visão geral |
