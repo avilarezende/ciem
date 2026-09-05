@@ -8,7 +8,9 @@ Manual para operadores de NOC e administradores no dia a dia do portal.
 2. Entre com usuário local (`config/auth.yaml`) ou LDAP (se o admin tiver habilitado)  
 3. O token permanece no navegador até **Sair** ou expiração da sessão  
 
-Credenciais padrão de desenvolvimento: `admin` / `admin123` (altere em produção — ver [AUTH.md](AUTH.md)).
+Credenciais padrão de desenvolvimento: `admin` / `admin123` e `observador` / `observer123` (altere em produção — ver [AUTH.md](AUTH.md)).
+
+Manuais dedicados: [MANUAL_USER.md](MANUAL_USER.md) (observer) · [MANUAL_ADMIN.md](MANUAL_ADMIN.md) (administrador).
 
 ### URLs dos serviços
 

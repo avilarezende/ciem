@@ -41,6 +41,8 @@ Layout com **sidebar** à esquerda e **workspace** à direita:
 
 ### Análise (todos os papéis)
 
+![Análise](assets/ciem-portal-analysis.jpg)
+
 Painel com abas segmentadas e área ampla para gráfico + detalhe:
 
 | Aba | Conteúdo |

@@ -45,7 +45,7 @@ Resumo das capacidades adicionadas ao CIEM para operação pelo portal (administ
 | Configuração por seções | Usuários · LDAP · IA · Módulos — uma tarefa por vez |
 | Tipografia / tema | DM Sans + IBM Plex Mono; tema escuro NOC com accent teal |
 
-**Documentação:** [PORTAL.md](PORTAL.md), [USAGE.md](USAGE.md)
+**Documentação:** [PORTAL.md](PORTAL.md), [MANUAL_USER.md](MANUAL_USER.md), [MANUAL_ADMIN.md](MANUAL_ADMIN.md), [USAGE.md](USAGE.md)
 
 ## Papéis em uma frase
 

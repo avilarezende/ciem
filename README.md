@@ -23,7 +23,9 @@ Resumo das novidades: [docs/CHANGELOG_FEATURES.md](docs/CHANGELOG_FEATURES.md) �
 | Eu quero… | Documento |
 |-----------|-----------|
 | **Subir pela primeira vez** | [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) |
-| **Usar o portal no dia a dia** | [docs/USAGE.md](docs/USAGE.md) |
+| **Usar o portal (observer)** | [docs/MANUAL_USER.md](docs/MANUAL_USER.md) |
+| **Administrar o portal** | [docs/MANUAL_ADMIN.md](docs/MANUAL_ADMIN.md) |
+| **Fluxo diário NOC** | [docs/USAGE.md](docs/USAGE.md) |
 | **Configurar LDAP / usuários** | [docs/AUTH.md](docs/AUTH.md) |
 | **Ativar insights de IA** | [docs/AI.md](docs/AI.md) |
 | **Deploy em Kubernetes** | [docs/KUBERNETES.md](docs/KUBERNETES.md) → [`deploy/kubernetes/`](deploy/kubernetes/README.md) |
@@ -71,6 +73,7 @@ Referência visual em `docs/assets/` para alinhar produto, UX e desenvolvimento:
 | [login](docs/assets/ciem-portal-login.jpg) | Autenticação (brand-first) |
 | [dashboard](docs/assets/ciem-portal-dashboard.jpg) | Visão geral (KPIs + gráfico + insights) |
 | [alarmes](docs/assets/ciem-portal-alarms.jpg) | Alarmes ativos |
+| [análise](docs/assets/ciem-portal-analysis.jpg) | Análise (abas + gráfico) |
 | [sessões](docs/assets/ciem-portal-sessions.jpg) | Guacamole + auditoria |
 | [configuração](docs/assets/ciem-config-interface.png) | Configuração por seções (admin) |
 | [arquitetura](docs/assets/ciem-architecture-diagram.jpg) | Fluxo ZTNA |
