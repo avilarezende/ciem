@@ -94,13 +94,14 @@ Detalhes: [KUBERNETES.md](KUBERNETES.md) e [deploy/kubernetes/README.md](../depl
 |-------------|----------------|
 | API saudável | `curl -k https://ciem.exemplo.local/api/health` |
 | Portal | `https://ciem.exemplo.local/` |
-| Grafana | `https://ciem.exemplo.local/grafana/` |
-| Módulos | Login → Dashboard → cards **ONLINE** |
+| Navegador HTML5 | Login → sidebar **Navegador** → atalho Grafana |
+| Grafana | `https://ciem.exemplo.local/grafana/` (ou via Navegador) |
+| Módulos | Login → Visão geral → cards **ONLINE** |
 
 ## 6. Próximos passos
 
 1. Login como `admin` → sidebar **Configuração**: alterar senha; (opcional) LDAP, módulos e IA  
-2. [USAGE.md](USAGE.md) — uso diário (Visão geral, Análise, papéis)  
+2. [USAGE.md](USAGE.md) — uso diário (Visão geral, **Navegador**, Análise, papéis)  
 3. [AUTH.md](AUTH.md) — usuários locais, LDAP, exclusão do admin  
 4. [AI.md](AI.md) — insights de IA (se for usar)  
 5. [DASHBOARDS.md](DASHBOARDS.md) — painéis Grafana  

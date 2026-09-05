@@ -12,9 +12,10 @@ Plataforma **ZTNA** para manutenção de redes: agrega Zabbix, Cacti, Nagios, TO
 |--------|----------------|--------------|
 | **Usuários locais** + admin padrão | Admin | Todos (login) |
 | **LDAP / Active Directory** (opcional) | Admin | Usuários do diretório |
+| **Navegador HTML5** (Grafana, URLs, SSO) | — (disponível a todos) | Todos; admin também Guacamole/módulos |
 | **Módulos coletores** (switch + URL/credenciais) | Admin | Todos (alarmes/dashboards) |
 | **Insights de IA** (URL, API key, modelo) | Admin | Todos, quando habilitado |
-| **Sessões Guacamole** + auditoria | Admin | — |
+| **Sessões Guacamole** + auditoria | Admin | Admin (navegador ou nova aba) |
 
 Resumo das novidades: [docs/CHANGELOG_FEATURES.md](docs/CHANGELOG_FEATURES.md) · Auth: [docs/AUTH.md](docs/AUTH.md) · IA: [docs/AI.md](docs/AI.md)
 
@@ -52,7 +53,7 @@ docker compose -f deploy/docker/docker-compose.yml --profile core --profile modu
 | Grafana | `https://localhost/grafana/` | `admin` / `admin` |
 | API | `https://localhost/api/health` | — |
 
-Após o login admin: sidebar **Configuração** (seções Usuários, LDAP, IA e Módulos). Operadores usam **Visão geral** e **Análise** para KPIs, gráficos e insights.
+Após o login: sidebar **Navegador** (Grafana/URLs embutidos). Admin também usa **Configuração** (Usuários, LDAP, IA, Módulos) e **Sessões** (Guacamole no navegador ou nova aba). Operadores usam **Visão geral** e **Análise** para KPIs, gráficos e insights.
 
 ## Início rápido (Kubernetes)
 
@@ -72,11 +73,12 @@ Referência visual em `docs/assets/` para alinhar produto, UX e desenvolvimento:
 |--------|------|
 | [login](docs/assets/ciem-portal-login.jpg) | Autenticação (brand-first) |
 | [dashboard](docs/assets/ciem-portal-dashboard.jpg) | Visão geral (KPIs + gráfico + insights) |
+| [navegador](docs/assets/ciem-portal-browser.jpg) | Navegador HTML5 (Grafana/URLs embutidos) |
 | [alarmes](docs/assets/ciem-portal-alarms.jpg) | Alarmes ativos |
 | [análise](docs/assets/ciem-portal-analysis.jpg) | Análise (abas + gráfico) |
-| [sessões](docs/assets/ciem-portal-sessions.jpg) | Guacamole + auditoria |
+| [sessões](docs/assets/ciem-portal-sessions.jpg) | Guacamole no navegador ou nova aba |
 | [configuração](docs/assets/ciem-config-interface.png) | Configuração por seções (admin) |
-| [arquitetura](docs/assets/ciem-architecture-diagram.jpg) | Fluxo ZTNA |
+| [arquitetura](docs/assets/ciem-architecture-diagram.jpg) | Fluxo ZTNA (Portal + Navegador) |
 
 ## Arquitetura
 

@@ -83,12 +83,15 @@ Se Insights estiverem desabilitados, a aba informa que um administrador precisa 
 
 ## Navegador HTML5
 
+![Navegador HTML5](assets/ciem-portal-browser.jpg)
+
 Disponível para **todos** os papéis desde o login:
 
 - Sidebar **Navegador** (barra de endereço, voltar/avançar, recarregar, início)
-- Atalhos: Grafana (`/grafana/`), URLs recentes; admin também vê Guacamole (SSO) e consoles dos módulos com `options.url`
+- Atalhos: Grafana (`/grafana/`), URLs recentes
+- Teclado: **Ctrl/Cmd+L** foca a barra de endereço
 - Sites que bloqueiam iframe: use **↗** (nova aba) ou o aviso na área de conteúdo
-- Atalhos também na Visão geral e em Análise → **No navegador**
+- Atalhos também na Visão geral (**Abrir navegador**) e em Análise → **No navegador**
 
 ## Grafana
 

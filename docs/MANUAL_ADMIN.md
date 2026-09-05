@@ -67,20 +67,29 @@ Guia: [AI.md](AI.md).
 
 Guia: [MODULES.md](MODULES.md).
 
+## Navegador HTML5 (admin)
+
+Além do Grafana e URLs, o admin usa o **Navegador** para:
+
+- **Guacamole** via SSO (chip Guacamole ou Sessões → **No navegador**)  
+- Consoles dos módulos com `options.url` preenchida  
+
+![Navegador HTML5](assets/ciem-portal-browser.jpg)
+
 ## Sessões de manutenção
 
 ![Sessões](assets/ciem-portal-sessions.jpg)
 
 1. Sidebar **Sessões**  
-2. **Conectar** em um alvo de `config/targets.yaml`, ou **Abrir Guacamole**  
-3. SSO abre a sessão **sem novo login**  
-4. A auditoria registra usuário, alvo, protocolo e horários  
+2. Em cada alvo: **No navegador** (iframe do portal) ou **Nova aba ↗**  
+3. Ou **Abrir Guacamole ↗** / **No navegador** no cabeçalho  
+4. SSO abre a sessão **sem novo login**; a auditoria registra usuário, alvo, protocolo e horários  
 
 Guia técnico: [GUACAMOLE.md](GUACAMOLE.md) · [MAINTENANCE.md](MAINTENANCE.md).
 
 ## Visão operacional
 
-Use **Visão geral**, **Alarmes**, **Histórico** e **Análise** para operar o NOC — o mesmo fluxo do observer, com acesso total.
+Use **Visão geral**, **Navegador**, **Alarmes**, **Histórico** e **Análise** para operar o NOC — o mesmo fluxo do observer, com acesso total.
 
 ![Visão geral](assets/ciem-portal-dashboard.jpg)
 
@@ -93,8 +102,8 @@ Use **Visão geral**, **Alarmes**, **Histórico** e **Análise** para operar o N
 - [ ] (Opcional) Configurar LDAP  
 - [ ] Ativar módulos e validar cards “online”  
 - [ ] (Opcional) Ativar IA e gerar insights  
-- [ ] Validar um alvo em Sessões / Guacamole  
-- [ ] Conferir Grafana em `/grafana/`  
+- [ ] Validar Grafana no **Navegador** e em `/grafana/`  
+- [ ] Validar um alvo em Sessões (**No navegador** e nova aba)  
 
 ## APIs úteis
 

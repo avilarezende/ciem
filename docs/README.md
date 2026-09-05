@@ -58,14 +58,15 @@ Imagens em `docs/assets/` para alinhar times de produto, UX e desenvolvimento:
 | Arquivo | Tela |
 |---------|------|
 | [ciem-portal-login.jpg](assets/ciem-portal-login.jpg) | Login (brand-first) |
-| [ciem-portal-dashboard.jpg](assets/ciem-portal-dashboard.jpg) | Visão geral (KPIs + gráfico + insights) |
+| [ciem-portal-dashboard.jpg](assets/ciem-portal-dashboard.jpg) | Visão geral (KPIs + gráfico + insights + atalho Navegador) |
+| [ciem-portal-browser.jpg](assets/ciem-portal-browser.jpg) | **Navegador HTML5** (Grafana/URLs embutidos) |
 | [ciem-portal-alarms.jpg](assets/ciem-portal-alarms.jpg) | Alarmes ativos |
 | [ciem-portal-analysis.jpg](assets/ciem-portal-analysis.jpg) | Análise (abas + gráfico) |
-| [ciem-portal-sessions.jpg](assets/ciem-portal-sessions.jpg) | Sessões e Guacamole |
+| [ciem-portal-sessions.jpg](assets/ciem-portal-sessions.jpg) | Sessões (No navegador / nova aba) |
 | [ciem-config-interface.png](assets/ciem-config-interface.png) | Configuração (seções admin) |
-| [ciem-architecture-diagram.jpg](assets/ciem-architecture-diagram.jpg) | Arquitetura ZTNA |
+| [ciem-architecture-diagram.jpg](assets/ciem-architecture-diagram.jpg) | Arquitetura ZTNA (Portal + Navegador HTML5) |
 
-> Ao alterar o portal (`services/portal/`), atualize o mockup correspondente e referencie o PR na descrição da mudança.
+> Ao alterar o portal (`services/portal/`), atualize o mockup correspondente (incl. `ciem-portal-browser.jpg`) e referencie o PR na descrição da mudança.
 
 ## Manifests Kubernetes
 

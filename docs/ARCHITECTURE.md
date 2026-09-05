@@ -5,11 +5,11 @@
 O **CIEM** (Centro Integrado de Estatística e Manutenção) é uma plataforma ZTNA que combina:
 
 1. **Coleta** — dados de sistemas de monitoramento existentes (sem dependência do CIEM)
-2. **Portal** — interface web para admin e observer (KPIs, Análise, configuração por seções)
-3. **Visualização** — Grafana com alarmes ativos em destaque, histórico e Insights de IA
+2. **Portal** — interface web para admin e observer (KPIs, Análise, **Navegador HTML5**, configuração por seções)
+3. **Visualização** — Grafana (também embutido no Navegador do portal), alarmes, histórico e Insights de IA
 4. **Autenticação** — usuários locais (prioritários) + LDAP/AD opcional
 5. **Insights de IA** — provedor OpenAI-compatible opcional (config só admin; resultados para todos)
-6. **Manutenção** — sessões SSH/RDP/VNC via Guacamole com auditoria completa
+6. **Manutenção** — sessões SSH/RDP/VNC via Guacamole (iframe do Navegador ou nova aba) com auditoria completa
 
 ## Princípio de isolamento
 
@@ -20,7 +20,7 @@ Isso garante:
 - **Segurança** — credenciais de cada sistema ficam isoladas
 - **Flexibilidade** — ative apenas os módulos necessários
 
-![Arquitetura](../assets/ciem-architecture-diagram.png)
+![Arquitetura](assets/ciem-architecture-diagram.png)
 
 ## Componentes
 
@@ -44,7 +44,7 @@ graph TB
     end
 
     subgraph "CIEM — Core e Portal (isolados)"
-        PORTAL[Portal Web]
+        PORTAL[Portal Web + Navegador HTML5]
         CORE[Core API]
     end
 
@@ -102,9 +102,10 @@ Sistema externo → Módulo coletor → POST /collect → Core API → Grafana
 
 ### 2. Visualização (Portal + Grafana)
 
-- **Portal** — Visão geral (KPIs/gráfico), Alarmes, Histórico e Análise
+- **Portal** — Visão geral (KPIs/gráfico), **Navegador HTML5**, Alarmes, Histórico e Análise
+- **Navegador HTML5** — iframe same-origin para `/grafana/` e (admin) SSO Guacamole / URLs de módulos; fallback ↗ se o destino bloquear embedding
 - **Insights de IA** — quando habilitados pelo admin, visíveis a todos no portal e no Grafana
-- **Grafana** — dashboards NOC provisionados em `grafana/dashboards/`
+- **Grafana** — dashboards NOC provisionados em `grafana/dashboards/` (também via Navegador)
 
 ### 3. Autenticação
 
@@ -118,10 +119,12 @@ Login → usuários locais (prioridade) → LDAP/AD (se habilitado)
 ### 4. Manutenção (Guacamole → alvos)
 
 ```
-Admin → Portal → Core API → Guacamole → guacd → Equipamento
-                                    ↓
-                              audit.jsonl (sessão registrada)
+Admin → Portal (Navegador ou Sessões) → Core API SSO → Guacamole → guacd → Equipamento
+                                                         ↓
+                                                   audit.jsonl (sessão registrada)
 ```
+
+O admin pode abrir o Guacamole **no Navegador HTML5** do portal ou em **nova aba**.
 
 Cada sessão registra:
 - Quem acessou (usuário)

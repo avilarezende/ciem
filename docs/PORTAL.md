@@ -34,12 +34,15 @@ Layout com **sidebar** à esquerda e **workspace** à direita:
 
 ### Navegador HTML5 (todos os papéis)
 
-Painel full-bleed com chrome de browser:
+![Navegador HTML5](assets/ciem-portal-browser.jpg)
 
-- Controles: voltar, avançar, recarregar, início, barra de URL, abrir em nova aba  
+Painel full-bleed com chrome de browser, disponível **desde o login** para observer e admin:
+
+- Controles: voltar, avançar, recarregar, início, barra de URL, abrir em nova aba (↗)  
 - Atalhos (chips): Início, Grafana; admin: Guacamole (SSO) e `options.url` dos módulos habilitados  
-- Página inicial com cartões de destino; histórico recente em `localStorage`  
+- Página inicial com cartões de destino; URLs recentes em `localStorage`  
 - Destinos same-origin (`/grafana/`, SSO Guacamole) embutem no iframe; externos podem exigir nova aba  
+- Atalho de teclado: Ctrl/Cmd+L foca a barra de endereço  
 
 ### Alarmes ativos
 
@@ -125,13 +128,14 @@ services/portal/public/
 ### Checklist de PR (portal)
 
 - [ ] Login e logout funcionam  
-- [ ] Observer não vê Sessões nem Configuração  
+- [ ] Observer vê **Navegador** e não vê Sessões nem Configuração  
+- [ ] Navegador: Grafana embute; ↗ abre externa; Ctrl/Cmd+L foca URL  
 - [ ] Chip de alarmes reflete contagem real  
 - [ ] Análise: abas e gráfico renderizam  
-- [ ] SSO Guacamole abre sem duplicar `/api` na URL  
+- [ ] SSO Guacamole abre no navegador ou em nova aba sem duplicar `/api`  
 - [ ] Configuração: usuários, LDAP, módulos (switch+opções), IA  
 - [ ] Insights visíveis ao observer quando IA habilitada  
-- [ ] Mockup atualizado em `docs/assets/` (se aplicável)  
+- [ ] Mockups atualizados em `docs/assets/` (incl. `ciem-portal-browser.jpg` se UI do browser mudar)  
 
 ## Customização
 

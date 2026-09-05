@@ -13,12 +13,14 @@ GET /api/sso/guacamole/login?token=... → Cookie ciem_sso
 Proxy nginx (auth_request) → Header X-CIEM-User → Guacamole
 ```
 
-1. Admin clica **Conectar** em um alvo no portal
+1. Admin clica **No navegador** ou **Nova aba ↗** em um alvo (ou Guacamole no cabeçalho / chip no Navegador)
 2. CIEM gera token SSO assinado (5 min)
-3. Nova aba abre `/api/sso/guacamole/login?token=...`
+3. Portal embute ou abre `/api/sso/guacamole/login?token=...` (iframe do Navegador ou nova aba)
 4. Cookie `ciem_sso` é definido e usuário é redirecionado à conexão
 5. Proxy valida cookie via `/sso/validate` e passa `X-CIEM-User` ao Guacamole
 6. Guacamole autentica via **auth-header** e carrega conexões do `user-mapping.xml`
+
+O **Navegador HTML5** do portal é o caminho preferido para manter o contexto NOC; use nova aba quando o destino bloquear iframe.
 
 ### API SSO
 
