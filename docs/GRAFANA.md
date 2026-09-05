@@ -2,6 +2,19 @@
 
 O CIEM provisiona automaticamente **13 dashboards** (6 da plataforma incluindo Insights IA + 6 por módulo + visão de módulos).
 
+## Acesso recomendado: Navegador HTML5 do portal
+
+Preferência operacional (observer e admin):
+
+1. Login no portal → sidebar **Navegador**
+2. Atalho **Grafana** (ou digite `/grafana/` na barra)
+3. Dashboards embutidos no iframe same-origin; use **↗** se precisar de tela cheia em nova aba
+
+Atalhos equivalentes: Visão geral → **Abrir navegador**; Análise → **No navegador**.  
+URL direta: `https://seu-dominio/grafana/` (via proxy ZTNA).
+
+![Navegador com Grafana](assets/ciem-portal-browser.jpg)
+
 ## Dashboards por módulo
 
 Cada sistema de monitoramento tem um dashboard dedicado:
@@ -43,7 +56,7 @@ python3 scripts/generate-grafana-dashboards.py
 | **Módulos Coletores** | `ciem-modules` | Saúde de Zabbix, Cacti, Nagios, etc. |
 | **Sessões e Auditoria** | `ciem-sessions` | Alvos de manutenção + log de sessões |
 
-Acesse: `https://seu-dominio/grafana/` → pasta **CIEM**
+Acesse pelo **Navegador** do portal ou em `https://seu-dominio/grafana/` → pasta **CIEM**
 
 ## Fontes de dados provisionadas
 

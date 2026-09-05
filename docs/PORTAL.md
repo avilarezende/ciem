@@ -142,6 +142,7 @@ services/portal/public/
 
 1. **Branch** — `cursor/portal-<descricao>` ou fluxo do time  
 2. **Mockup** — se a UI mudar de forma visível, atualize o JPG em `docs/assets/`  
+   (`python3 scripts/generate_portal_mockups.py` regenera login, dashboard, **navegador**, alarmes, análise, sessões e config; `python3 scripts/generate_architecture_diagram.py` regenera o diagrama)  
 3. **PR** — inclua screenshot ou diff do mockup  
 4. **Teste manual** — login com `admin` / `admin123`  
 

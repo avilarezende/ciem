@@ -92,7 +92,7 @@ Se Insights estiverem desabilitados, a aba informa que um administrador precisa 
 
 ![Navegador HTML5](assets/ciem-portal-browser.jpg)
 
-Disponível para **todos** os papéis desde o login:
+Disponível para **todos** os papéis desde o login (mockup acima: sidebar com **Navegador** ativo, chrome e Grafana embutido):
 
 - Sidebar **Navegador** (barra de endereço, voltar/avançar, recarregar, início)
 - Atalhos: Grafana (`/grafana/`), URLs recentes

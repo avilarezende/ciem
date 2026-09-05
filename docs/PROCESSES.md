@@ -6,6 +6,8 @@ Descrição dos processos de ponta a ponta: coleta, alarmes, visualização e ma
 
 ![Arquitetura e fluxos](assets/ciem-architecture-diagram.jpg)
 
+O diagrama destaca o **Portal Web + Navegador HTML5** (Grafana / URLs / SSO Guacamole) atrás do proxy ZTNA. Mockup da tela: [ciem-portal-browser.jpg](assets/ciem-portal-browser.jpg).
+
 ## 1. Autenticação no portal
 
 ```
