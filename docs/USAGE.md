@@ -27,11 +27,13 @@ A barra lateral organiza o trabalho:
 
 | Item | Papel | Uso |
 |------|-------|-----|
-| **Visão geral** | Todos | KPIs, gráfico de severidade, preview de insights, status dos coletores |
+| **Visão geral** | Todos | KPIs, gráfico, insights, coletores; lembretes flutuantes |
 | **Navegador** | Todos | Browser HTML5: Grafana embutido, URLs; admin também Guacamole/módulos |
 | **Alarmes** | Todos | Triagem dos problemas ativos |
 | **Histórico** | Todos | Últimos eventos agregados |
 | **Análise** | Todos | Gráficos + detalhe por aba (resumo, insights IA, alarmes, módulos, histórico) |
+| **Wiki** (aba lateral) | Todos | Documentação colaborativa dos serviços (Markdown) |
+| **Calendário** (aba lateral) | Todos | Agenda compartilhada Google/Microsoft |
 | **Sessões** | Admin | Guacamole SSO + auditoria |
 | **Configuração** | Admin | Usuários, LDAP, IA e módulos (seções) |
 
@@ -39,12 +41,12 @@ A barra lateral organiza o trabalho:
 
 ```
 1. Login no portal
-2. Visão geral → KPIs, gráfico, coletores e chip de alarmes
+2. Visão geral → KPIs, gráfico, coletores, chip de alarmes e lembretes do turno
 3. Alarmes → triagem (critical / high primeiro)
 4. Análise → insights IA (se ativo) e detalhe filtrado
 5. Navegador → Grafana (ou URL) sem sair do portal
-6. (Admin) Sessões → conectar no alvo (navegador ou nova aba)
-7. (Admin) Auditoria na mesma tela → confirmar registro
+6. Wiki / Calendário → consultar serviços ou agenda compartilhada
+7. (Admin) Sessões → conectar no alvo (navegador ou nova aba)
 8. (Admin) Configuração → usuários/LDAP, módulos ou provedor de IA conforme necessário
 ```
 
@@ -55,13 +57,14 @@ A barra lateral organiza o trabalho:
 - Monitorar visão geral e alarmes  
 - Consultar histórico  
 - Usar **Análise** (gráficos e insights, se a IA estiver habilitada)  
-- Usar o **Navegador** (Grafana / URLs)  
+- Usar o **Navegador**, **Wiki**, **Calendário** e **Lembretes**  
 - **Não** inicia sessões remotas nem altera configuração  
 
 ### Admin (operação e configuração)
 
 - Tudo do observer  
 - **Sessões** — Guacamole no navegador do portal ou em nova aba + auditoria  
+- Excluir páginas da **Wiki** quando necessário  
 - **Configuração** em seções:
   - Usuários locais (criar, alterar senha, desabilitar, excluir)
   - LDAP / AD (servidor, porta, SSL, domínio, UID, bind, certificados)

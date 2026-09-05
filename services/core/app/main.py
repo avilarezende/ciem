@@ -1,5 +1,6 @@
 """Aplicação FastAPI principal do CIEM Core."""
 
+import re
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import Any
@@ -25,15 +26,18 @@ from ciem_common.config_loader import (
     clear_config_cache,
     create_local_user,
     delete_local_user,
+    delete_wiki_page,
     is_module_enabled,
     load_ai_config,
     load_auth_config,
     load_main_config,
     load_modules_config,
+    load_wiki_config,
     update_ai_config,
     update_ldap_config,
     update_local_user,
     update_module_config,
+    upsert_wiki_page,
 )
 from ciem_common.interfaces import SessionRecord
 from ciem_common.sso import guacamole_client_id
@@ -62,6 +66,12 @@ class SessionStartRequest(BaseModel):
 class SessionEndRequest(BaseModel):
     session_id: str
     commands: list[str] = Field(default_factory=list)
+
+
+class WikiPageUpsert(BaseModel):
+    title: str = Field(min_length=1, max_length=120)
+    body: str = Field(default="", max_length=20000)
+    id: str | None = Field(default=None, max_length=64)
 
 
 @asynccontextmanager
@@ -467,6 +477,69 @@ async def end_session(
 @app.get("/sessions/audit")
 async def audit_log(user: User = Depends(require_admin), limit: int = 50) -> list[dict[str, Any]]:
     return read_sessions(limit=limit)
+
+
+@app.get("/wiki")
+async def get_wiki(user: User = Depends(require_user)) -> dict[str, Any]:
+    """Wiki colaborativa de serviços — leitura para qualquer autenticado."""
+    cfg = load_wiki_config()
+    return {
+        "title": cfg.title,
+        "pages": [p.model_dump() for p in cfg.pages],
+    }
+
+
+@app.put("/wiki/pages/{page_id}")
+async def put_wiki_page(
+    page_id: str,
+    body: WikiPageUpsert,
+    user: User = Depends(require_user),
+) -> dict[str, Any]:
+    """Cria/atualiza página da wiki (colaborativo: qualquer autenticado)."""
+    try:
+        page = upsert_wiki_page(
+            body.id or page_id,
+            title=body.title,
+            body=body.body,
+            updated_by=user.username,
+            updated_at=datetime.now(UTC).isoformat(),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    return page.model_dump()
+
+
+@app.post("/wiki/pages")
+async def create_wiki_page(
+    body: WikiPageUpsert,
+    user: User = Depends(require_user),
+) -> dict[str, Any]:
+    """Cria página nova na wiki."""
+    page_id = body.id or re.sub(r"[^a-z0-9\-]+", "-", body.title.lower()).strip("-")[:64]
+    if not page_id:
+        raise HTTPException(status_code=400, detail="Informe id ou título válido")
+    existing = {p.id for p in load_wiki_config().pages}
+    if page_id in existing:
+        raise HTTPException(status_code=409, detail="Já existe página com este id")
+    try:
+        page = upsert_wiki_page(
+            page_id,
+            title=body.title,
+            body=body.body,
+            updated_by=user.username,
+            updated_at=datetime.now(UTC).isoformat(),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return page.model_dump()
+
+
+@app.delete("/wiki/pages/{page_id}")
+async def remove_wiki_page(page_id: str, user: User = Depends(require_admin)) -> dict[str, str]:
+    """Remove página (somente admin)."""
+    if not delete_wiki_page(page_id):
+        raise HTTPException(status_code=404, detail="Página não encontrada")
+    return {"status": "deleted", "id": page_id}
 
 
 @app.get("/metrics")

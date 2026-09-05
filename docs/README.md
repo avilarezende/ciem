@@ -60,6 +60,7 @@ Imagens em `docs/assets/` para alinhar times de produto, UX e desenvolvimento:
 | [ciem-portal-login.jpg](assets/ciem-portal-login.jpg) | Login (brand-first) |
 | [ciem-portal-dashboard.jpg](assets/ciem-portal-dashboard.jpg) | Visão geral (KPIs + gráfico + insights + atalho Navegador) |
 | [ciem-portal-browser.jpg](assets/ciem-portal-browser.jpg) | **Navegador HTML5** (Grafana/URLs embutidos) |
+| [ciem-portal-wiki.jpg](assets/ciem-portal-wiki.jpg) | **Wiki** deslizante de serviços + lembretes |
 | [ciem-portal-alarms.jpg](assets/ciem-portal-alarms.jpg) | Alarmes ativos |
 | [ciem-portal-analysis.jpg](assets/ciem-portal-analysis.jpg) | Análise (abas + gráfico) |
 | [ciem-portal-sessions.jpg](assets/ciem-portal-sessions.jpg) | Sessões (No navegador / nova aba) |

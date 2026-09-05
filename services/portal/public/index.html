@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=10">
+  <link rel="stylesheet" href="/css/style.css?v=11">
 </head>
 <body>
   <!-- Login -->
@@ -73,6 +73,7 @@
           <p id="page-subtitle" class="page-subtitle">Estado operacional e espaço para análise</p>
         </div>
         <div class="workspace-header-actions">
+          <button type="button" id="btn-open-wiki" class="btn-ghost" title="Abrir wiki de serviços">Wiki</button>
           <button type="button" id="btn-open-calendar" class="btn-ghost" title="Abrir calendário">Calendário</button>
           <div id="alarm-banner" class="alarm-chip hidden">
             <strong id="alarm-count">0</strong> alarmes ativos
@@ -310,10 +311,10 @@
       </main>
     </div>
 
-    <!-- Lembretes flutuantes (arrastável) -->
-    <div id="reminder-widget" class="reminder-widget" role="complementary" aria-label="Lembretes" hidden>
+    <!-- Lembretes / anotações flutuantes (arrastável) -->
+    <div id="reminder-widget" class="reminder-widget" role="complementary" aria-label="Lembretes e anotações" hidden>
       <header class="reminder-widget-head" id="reminder-drag-handle" title="Arraste para mover">
-        <span class="reminder-widget-title">Lembretes</span>
+        <span class="reminder-widget-title">Lembretes / Anotações</span>
         <div class="reminder-widget-actions">
           <button type="button" id="reminder-minimize" class="reminder-icon-btn" title="Recolher" aria-label="Recolher">–</button>
           <button type="button" id="reminder-close" class="reminder-icon-btn" title="Ocultar" aria-label="Ocultar">×</button>
@@ -322,16 +323,51 @@
       <div class="reminder-widget-body">
         <ul id="reminder-list" class="reminder-list" aria-live="polite"></ul>
         <form id="reminder-form" class="reminder-form" autocomplete="off">
-          <label class="sr-only" for="reminder-input">Novo lembrete</label>
-          <input type="text" id="reminder-input" maxlength="160" placeholder="Novo lembrete…" required>
+          <label class="sr-only" for="reminder-input">Novo lembrete ou anotação</label>
+          <input type="text" id="reminder-input" maxlength="280" placeholder="Lembrete ou anotação do turno…" required>
           <button type="submit" class="btn-primary reminder-add" title="Adicionar">+</button>
         </form>
-        <p class="reminder-hint">Arraste pelo título · local neste navegador</p>
+        <p class="reminder-hint">Arraste pelo título · fica só neste navegador</p>
       </div>
     </div>
     <button type="button" id="reminder-reopen" class="reminder-reopen hidden" title="Mostrar lembretes" aria-label="Mostrar lembretes">
       Lembretes
     </button>
+
+    <!-- Aba deslizante Wiki (esquerda) -->
+    <button type="button" id="wiki-tab" class="wiki-edge-tab" aria-expanded="false" aria-controls="wiki-drawer">
+      <span class="wiki-edge-label">Wiki</span>
+    </button>
+    <div id="wiki-backdrop" class="wiki-backdrop hidden" aria-hidden="true"></div>
+    <aside id="wiki-drawer" class="wiki-drawer" aria-hidden="true" aria-label="Wiki de serviços">
+      <header class="wiki-drawer-head">
+        <div>
+          <h2 id="wiki-title">Wiki de serviços</h2>
+          <p>Documentação colaborativa da instituição</p>
+        </div>
+        <button type="button" id="wiki-close" class="btn-ghost" aria-label="Fechar wiki">Fechar</button>
+      </header>
+      <div class="wiki-layout">
+        <nav class="wiki-nav" aria-label="Páginas da wiki">
+          <div id="wiki-page-list" class="wiki-page-list"></div>
+          <button type="button" id="wiki-new-page" class="btn-secondary btn-block">Nova página</button>
+        </nav>
+        <div class="wiki-content">
+          <div class="wiki-toolbar">
+            <input type="text" id="wiki-page-title" class="wiki-page-title" maxlength="120" placeholder="Título do serviço" aria-label="Título da página">
+            <div class="wiki-toolbar-actions">
+              <button type="button" id="wiki-edit-toggle" class="btn-ghost">Editar</button>
+              <button type="button" id="wiki-save" class="btn-primary hidden">Salvar</button>
+              <button type="button" id="wiki-delete" class="btn-ghost admin-only hidden" title="Excluir página">Excluir</button>
+            </div>
+          </div>
+          <p id="wiki-meta" class="wiki-meta"></p>
+          <div id="wiki-view" class="wiki-view" tabindex="0"></div>
+          <textarea id="wiki-editor" class="wiki-editor hidden" maxlength="20000" aria-label="Editor Markdown" placeholder="Escreva em Markdown: títulos, listas, tabelas simples…"></textarea>
+          <p id="wiki-feedback" class="toast hidden" role="status"></p>
+        </div>
+      </div>
+    </aside>
 
     <!-- Aba deslizante de calendário (Google / Microsoft) -->
     <button type="button" id="calendar-tab" class="calendar-edge-tab" aria-expanded="false" aria-controls="calendar-drawer">
@@ -342,7 +378,7 @@
       <header class="calendar-drawer-head">
         <div>
           <h2>Calendário</h2>
-          <p>Agenda embutida · Google ou Microsoft</p>
+          <p>Agenda compartilhada · Google ou Microsoft</p>
         </div>
         <button type="button" id="calendar-close" class="btn-ghost" aria-label="Fechar calendário">Fechar</button>
       </header>
@@ -353,7 +389,7 @@
       </div>
       <div id="calendar-view" class="calendar-view">
         <div id="calendar-empty" class="calendar-empty">
-          <p><strong>Conecte sua agenda</strong></p>
+          <p><strong>Conecte a agenda compartilhada</strong></p>
           <p>Abra <em>Configurar</em>, cole a URL pública de incorporação do Google Calendar ou Outlook e salve. A agenda aparece neste painel sem sair do CIEM.</p>
           <button type="button" class="btn-secondary" data-cal-provider="setup">Abrir configuração</button>
         </div>
@@ -375,6 +411,6 @@
     </aside>
   </div>
 
-  <script src="/js/portal.js?v=10"></script>
+  <script src="/js/portal.js?v=11"></script>
 </body>
 </html>

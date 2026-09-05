@@ -13,9 +13,10 @@ Guia para quem **configura e opera** o CIEM: usuários, LDAP, módulos, IA, sess
 
 Além de tudo que o observer vê, o admin acessa:
 
-| Item da sidebar | Função |
-|-----------------|--------|
+| Item da sidebar / UI | Função |
+|----------------------|--------|
 | **Navegador** | Igual ao observer + Guacamole SSO embutido e URLs dos módulos |
+| **Wiki** | Edita páginas como todos; **exclui** páginas da wiki de serviços |
 | **Sessões** | SSO Guacamole + auditoria (abrir no navegador ou em nova aba) |
 | **Configuração** | Usuários · LDAP · IA · Módulos |
 

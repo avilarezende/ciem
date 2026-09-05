@@ -14,7 +14,7 @@ Admin padrão (referência): `admin` / `admin123` — ver [MANUAL_ADMIN.md](MANU
 | Pode | Não pode |
 |------|----------|
 | Ver Visão geral, **Navegador**, Alarmes, Histórico e Análise | Abrir Sessões / Guacamole |
-| Usar **Lembretes** flutuantes e a aba **Calendário** (Google/Microsoft) | Configurar LDAP, usuários, módulos ou IA |
+| Usar **Lembretes / Anotações** flutuantes, aba **Calendário** e **Wiki** de serviços | Configurar LDAP, usuários, módulos ou IA |
 | Ver insights de IA **quando habilitados pelo admin** | Criar ou excluir usuários |
 | Abrir Grafana no navegador integrado ou em `/grafana/` | — |
 
@@ -82,11 +82,13 @@ Abas disponíveis ao observer:
 
 Se Insights estiverem desabilitados, a aba informa que um administrador precisa ativar o provedor em Configuração.
 
-## Lembretes e calendário
+## Lembretes, calendário e wiki
 
-- **Lembretes**: painel flutuante arrastável — adicione tarefas rápidas do turno; arraste pelo título; recolher/ocultar conforme o espaço  
-- **Calendário**: aba vertical à direita (ou botão **Calendário** no topo) desliza um painel com Google Calendar ou Outlook  
-- Em **Configurar**, cole a URL de incorporação pública da agenda; salva só neste navegador  
+- **Lembretes / Anotações**: painel flutuante arrastável — tarefas e notas rápidas do turno; arraste pelo título; recolher/ocultar  
+- **Calendário**: aba vertical à direita (ou botão **Calendário**) com agenda compartilhada Google/Outlook  
+- **Wiki**: aba vertical à esquerda (ou botão **Wiki**) com páginas Markdown dos serviços da instituição — todos autenticados podem editar; só admin exclui  
+
+![Wiki](assets/ciem-portal-wiki.jpg)
 
 ## Navegador HTML5
 

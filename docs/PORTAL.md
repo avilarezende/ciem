@@ -34,24 +34,36 @@ Layout com **sidebar** à esquerda e **workspace** à direita:
 - **Lembretes** flutuantes (arrastáveis, persistidos no navegador)
 - Aba lateral **Calendário** (deslizante) com Google Calendar e/ou Microsoft Outlook via URL de incorporação
 
-### Lembretes (flutuante, arrastável)
+### Lembretes / Anotações (flutuante, arrastável)
 
 Painel compacto sobre o workspace (visível após o login):
 
 - Arraste pelo título para reposicionar; posição salva em `localStorage`
-- Adicionar, concluir e remover itens; recolher ou ocultar (botão **Lembretes** reabre)
+- Adicionar, concluir e remover itens (lembretes ou anotações curtas do turno)
+- Recolher ou ocultar (botão **Lembretes** reabre)
 - Dados locais ao navegador — não vão para o servidor
 
-### Calendário (aba deslizante)
+### Calendário (aba deslizante à direita)
 
-Aba vertical à direita (**Calendário**) ou botão no cabeçalho:
+Aba vertical **Calendário** ou botão no cabeçalho:
 
 - Abre gaveta deslizante com transição suave e backdrop
-- Provedores: **Google** e **Microsoft** (iframe de calendário publicado)
-- Aba **Configurar**: cole a URL pública de incorporação (Google Agenda → Integrar agenda; Outlook → Publicar calendário)
+- Provedores: **Google** e **Microsoft** (iframe de calendário publicado/compartilhado)
+- Aba **Configurar**: cole a URL pública de incorporação
 - Apenas URLs `https` de domínios Google/Outlook são aceitas
 - Esc ou **Fechar** fecha a gaveta
 
+### Wiki de serviços (aba deslizante à esquerda)
+
+Aba vertical **Wiki** ou botão **Wiki** no cabeçalho:
+
+- Documentação colaborativa dos serviços da instituição (Markdown)
+- Qualquer usuário autenticado lê e edita; exclusão de páginas é só admin
+- Persistência em `config/wiki.yaml` via `GET/PUT/POST/DELETE /api/wiki…`
+- Lista de páginas + visualização / edição sem sair do dashboard
+- Esc ou **Fechar** fecha a gaveta (não abre junto com o calendário)
+
+![Wiki de serviços](assets/ciem-portal-wiki.jpg)
 ### Navegador HTML5 (todos os papéis)
 
 ![Navegador HTML5](assets/ciem-portal-browser.jpg)

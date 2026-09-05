@@ -1233,6 +1233,7 @@ function initPortal() {
   refreshBrowserPresets();
   initReminders();
   initCalendarDrawer();
+  initWikiDrawer();
   if (currentUser?.role === 'admin') {
     loadConfig();
     loadTargets();
@@ -1295,7 +1296,7 @@ function addReminder(text) {
   const items = loadReminders();
   items.unshift({
     id: `r_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
-    text: value.slice(0, 160),
+    text: value.slice(0, 280),
     done: false,
     createdAt: new Date().toISOString(),
   });
@@ -1515,6 +1516,7 @@ function setCalendarOpen(open) {
   const backdrop = $('#calendar-backdrop');
   const tab = $('#calendar-tab');
   if (!drawer) return;
+  if (open) setWikiOpen(false);
   drawer.classList.toggle('is-open', open);
   drawer.setAttribute('aria-hidden', open ? 'false' : 'true');
   tab?.setAttribute('aria-expanded', open ? 'true' : 'false');
@@ -1640,6 +1642,269 @@ function initCalendarDrawer() {
       feedback.classList.add('ok');
     }
     setCalendarProvider('setup');
+  });
+}
+
+/* —— Wiki colaborativa (gaveta esquerda) —— */
+let wikiPages = [];
+let wikiCurrentId = null;
+let wikiEditing = false;
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function renderSimpleMarkdown(src) {
+  const lines = String(src || '').replace(/\r\n/g, '\n').split('\n');
+  const out = [];
+  let inUl = false;
+  let inOl = false;
+  let inTable = false;
+
+  const closeLists = () => {
+    if (inUl) { out.push('</ul>'); inUl = false; }
+    if (inOl) { out.push('</ol>'); inOl = false; }
+  };
+  const closeTable = () => {
+    if (inTable) { out.push('</tbody></table>'); inTable = false; }
+  };
+
+  const inline = (text) => escapeHtml(text)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+    if (!line.trim()) {
+      closeLists();
+      closeTable();
+      continue;
+    }
+    if (/^\|/.test(line) && line.includes('|')) {
+      closeLists();
+      const cells = line.split('|').slice(1, -1).map((c) => c.trim());
+      if (cells.every((c) => /^:?-+:?$/.test(c))) continue;
+      if (!inTable) {
+        out.push('<table class="wiki-md-table"><tbody>');
+        inTable = true;
+        out.push(`<tr>${cells.map((c) => `<th>${inline(c)}</th>`).join('')}</tr>`);
+      } else {
+        out.push(`<tr>${cells.map((c) => `<td>${inline(c)}</td>`).join('')}</tr>`);
+      }
+      continue;
+    }
+    closeTable();
+    if (/^###\s+/.test(line)) {
+      closeLists();
+      out.push(`<h4>${inline(line.replace(/^###\s+/, ''))}</h4>`);
+      continue;
+    }
+    if (/^##\s+/.test(line)) {
+      closeLists();
+      out.push(`<h3>${inline(line.replace(/^##\s+/, ''))}</h3>`);
+      continue;
+    }
+    if (/^#\s+/.test(line)) {
+      closeLists();
+      out.push(`<h2>${inline(line.replace(/^#\s+/, ''))}</h2>`);
+      continue;
+    }
+    if (/^[-*]\s+/.test(line)) {
+      if (inOl) { out.push('</ol>'); inOl = false; }
+      if (!inUl) { out.push('<ul>'); inUl = true; }
+      out.push(`<li>${inline(line.replace(/^[-*]\s+/, ''))}</li>`);
+      continue;
+    }
+    if (/^\d+\.\s+/.test(line)) {
+      if (inUl) { out.push('</ul>'); inUl = false; }
+      if (!inOl) { out.push('<ol>'); inOl = true; }
+      out.push(`<li>${inline(line.replace(/^\d+\.\s+/, ''))}</li>`);
+      continue;
+    }
+    closeLists();
+    out.push(`<p>${inline(line)}</p>`);
+  }
+  closeLists();
+  closeTable();
+  return out.join('\n') || '<p class="wiki-empty-body">Página vazia — clique em Editar para documentar o serviço.</p>';
+}
+
+function showWikiFeedback(message, isError = false) {
+  const el = $('#wiki-feedback');
+  if (!el) return;
+  el.textContent = message;
+  el.classList.remove('hidden', 'ok', 'err');
+  el.classList.add(isError ? 'err' : 'ok');
+}
+
+function setWikiOpen(open) {
+  const drawer = $('#wiki-drawer');
+  const backdrop = $('#wiki-backdrop');
+  const tab = $('#wiki-tab');
+  if (!drawer) return;
+  if (open) setCalendarOpen(false);
+  drawer.classList.toggle('is-open', open);
+  drawer.setAttribute('aria-hidden', open ? 'false' : 'true');
+  tab?.setAttribute('aria-expanded', open ? 'true' : 'false');
+  backdrop?.classList.toggle('hidden', !open);
+  document.body.classList.toggle('wiki-open', open);
+  if (open) loadWiki().catch((err) => showWikiFeedback(err.message || 'Falha ao carregar wiki', true));
+}
+
+function renderWikiNav() {
+  const host = $('#wiki-page-list');
+  if (!host) return;
+  host.innerHTML = wikiPages.map((p) => `
+    <button type="button" class="wiki-nav-item ${p.id === wikiCurrentId ? 'active' : ''}" data-wiki-id="${escapeAttr(p.id)}">
+      ${escapeAttr(p.title)}
+    </button>
+  `).join('') || '<p class="hint">Nenhuma página ainda.</p>';
+}
+
+function selectWikiPage(pageId, { editing = false } = {}) {
+  const page = wikiPages.find((p) => p.id === pageId) || wikiPages[0];
+  if (!page) {
+    wikiCurrentId = null;
+    if ($('#wiki-page-title')) $('#wiki-page-title').value = '';
+    if ($('#wiki-view')) $('#wiki-view').innerHTML = '<p class="wiki-empty-body">Crie a primeira página de serviço.</p>';
+    if ($('#wiki-editor')) $('#wiki-editor').value = '';
+    if ($('#wiki-meta')) $('#wiki-meta').textContent = '';
+    setWikiEditing(false);
+    renderWikiNav();
+    return;
+  }
+  wikiCurrentId = page.id;
+  if ($('#wiki-page-title')) $('#wiki-page-title').value = page.title;
+  if ($('#wiki-editor')) $('#wiki-editor').value = page.body || '';
+  if ($('#wiki-view')) $('#wiki-view').innerHTML = renderSimpleMarkdown(page.body || '');
+  if ($('#wiki-meta')) {
+    const when = page.updated_at ? new Date(page.updated_at).toLocaleString('pt-BR') : '—';
+    $('#wiki-meta').textContent = `Atualizado por ${page.updated_by || '—'} · ${when}`;
+  }
+  setWikiEditing(editing);
+  renderWikiNav();
+}
+
+function setWikiEditing(editing) {
+  wikiEditing = Boolean(editing);
+  $('#wiki-view')?.classList.toggle('hidden', wikiEditing);
+  $('#wiki-editor')?.classList.toggle('hidden', !wikiEditing);
+  $('#wiki-save')?.classList.toggle('hidden', !wikiEditing);
+  const toggle = $('#wiki-edit-toggle');
+  if (toggle) toggle.textContent = wikiEditing ? 'Visualizar' : 'Editar';
+  const del = $('#wiki-delete');
+  if (del) del.classList.toggle('hidden', !(currentUser?.role === 'admin' && wikiCurrentId));
+  if ($('#wiki-page-title')) $('#wiki-page-title').readOnly = !wikiEditing;
+}
+
+async function loadWiki() {
+  const resp = await api('/wiki');
+  if (!resp.ok) throw new Error('Não foi possível carregar a wiki');
+  const data = await resp.json();
+  if ($('#wiki-title')) $('#wiki-title').textContent = data.title || 'Wiki de serviços';
+  wikiPages = Array.isArray(data.pages) ? data.pages : [];
+  selectWikiPage(wikiCurrentId || wikiPages[0]?.id);
+}
+
+async function saveWikiPage() {
+  if (!wikiCurrentId) return;
+  const title = ($('#wiki-page-title')?.value || '').trim();
+  const body = $('#wiki-editor')?.value || '';
+  if (!title) {
+    showWikiFeedback('Informe um título.', true);
+    return;
+  }
+  const resp = await api(`/wiki/pages/${encodeURIComponent(wikiCurrentId)}`, {
+    method: 'PUT',
+    body: JSON.stringify({ title, body }),
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(typeof err.detail === 'string' ? err.detail : 'Falha ao salvar');
+  }
+  const page = await resp.json();
+  wikiPages = wikiPages.map((p) => (p.id === page.id ? page : p));
+  if (!wikiPages.some((p) => p.id === page.id)) wikiPages.push(page);
+  showWikiFeedback('Página salva na wiki compartilhada.');
+  selectWikiPage(page.id, { editing: false });
+}
+
+async function createWikiPage() {
+  const title = window.prompt('Título do serviço / página');
+  if (!title || !title.trim()) return;
+  const resp = await api('/wiki/pages', {
+    method: 'POST',
+    body: JSON.stringify({ title: title.trim(), body: `## ${title.trim()}\n\nDescreva o serviço, contatos e procedimentos.\n` }),
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(typeof err.detail === 'string' ? err.detail : 'Falha ao criar página');
+  }
+  const page = await resp.json();
+  wikiPages.push(page);
+  showWikiFeedback('Página criada.');
+  selectWikiPage(page.id, { editing: true });
+}
+
+async function deleteCurrentWikiPage() {
+  if (!wikiCurrentId || currentUser?.role !== 'admin') return;
+  if (!window.confirm('Excluir esta página da wiki?')) return;
+  const resp = await api(`/wiki/pages/${encodeURIComponent(wikiCurrentId)}`, { method: 'DELETE' });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(typeof err.detail === 'string' ? err.detail : 'Falha ao excluir');
+  }
+  wikiPages = wikiPages.filter((p) => p.id !== wikiCurrentId);
+  wikiCurrentId = wikiPages[0]?.id || null;
+  showWikiFeedback('Página excluída.');
+  selectWikiPage(wikiCurrentId);
+}
+
+function initWikiDrawer() {
+  if (!$('#wiki-drawer')) return;
+
+  const open = () => setWikiOpen(true);
+  const close = () => setWikiOpen(false);
+
+  $('#wiki-tab')?.addEventListener('click', () => {
+    const expanded = $('#wiki-tab')?.getAttribute('aria-expanded') === 'true';
+    setWikiOpen(!expanded);
+  });
+  $('#btn-open-wiki')?.addEventListener('click', open);
+  $('#wiki-close')?.addEventListener('click', close);
+  $('#wiki-backdrop')?.addEventListener('click', close);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.body.classList.contains('wiki-open')) close();
+  });
+
+  $('#wiki-page-list')?.addEventListener('click', (e) => {
+    const btn = e.target.closest?.('[data-wiki-id]');
+    if (btn?.dataset.wikiId) selectWikiPage(btn.dataset.wikiId);
+  });
+
+  $('#wiki-edit-toggle')?.addEventListener('click', () => {
+    if (!wikiCurrentId) return;
+    if (wikiEditing) {
+      selectWikiPage(wikiCurrentId, { editing: false });
+    } else {
+      setWikiEditing(true);
+      $('#wiki-editor')?.focus();
+    }
+  });
+
+  $('#wiki-save')?.addEventListener('click', () => {
+    saveWikiPage().catch((err) => showWikiFeedback(err.message || 'Erro ao salvar', true));
+  });
+  $('#wiki-new-page')?.addEventListener('click', () => {
+    createWikiPage().catch((err) => showWikiFeedback(err.message || 'Erro ao criar', true));
+  });
+  $('#wiki-delete')?.addEventListener('click', () => {
+    deleteCurrentWikiPage().catch((err) => showWikiFeedback(err.message || 'Erro ao excluir', true));
   });
 }
 
