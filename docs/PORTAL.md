@@ -31,6 +31,26 @@ Layout com **sidebar** à esquerda e **workspace** à direita:
 - Grade de **coletores** com status online/indisponível/desabilitado  
 - Dados: `GET /api/modules/status`, `GET /api/alarms/active`, `GET /api/insights`  
 - Atalho **Abrir navegador** (Grafana embutido)
+- **Lembretes** flutuantes (arrastáveis, persistidos no navegador)
+- Aba lateral **Calendário** (deslizante) com Google Calendar e/ou Microsoft Outlook via URL de incorporação
+
+### Lembretes (flutuante, arrastável)
+
+Painel compacto sobre o workspace (visível após o login):
+
+- Arraste pelo título para reposicionar; posição salva em `localStorage`
+- Adicionar, concluir e remover itens; recolher ou ocultar (botão **Lembretes** reabre)
+- Dados locais ao navegador — não vão para o servidor
+
+### Calendário (aba deslizante)
+
+Aba vertical à direita (**Calendário**) ou botão no cabeçalho:
+
+- Abre gaveta deslizante com transição suave e backdrop
+- Provedores: **Google** e **Microsoft** (iframe de calendário publicado)
+- Aba **Configurar**: cole a URL pública de incorporação (Google Agenda → Integrar agenda; Outlook → Publicar calendário)
+- Apenas URLs `https` de domínios Google/Outlook são aceitas
+- Esc ou **Fechar** fecha a gaveta
 
 ### Navegador HTML5 (todos os papéis)
 

@@ -976,3 +976,422 @@ body.is-admin .seg-tabs .admin-only { display: inline-flex !important; }
   cursor: pointer;
 }
 .stack-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+/* —— Header actions —— */
+.workspace-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* —— Lembretes flutuantes (arrastável) —— */
+.reminder-widget {
+  position: fixed;
+  z-index: 40;
+  width: min(300px, calc(100vw - 1.5rem));
+  max-height: min(420px, calc(100vh - 2rem));
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  animation: rise 0.35s var(--ease);
+}
+.reminder-widget.is-minimized {
+  max-height: none;
+}
+.reminder-widget.is-minimized .reminder-widget-body {
+  display: none;
+}
+.reminder-widget.is-dragging {
+  opacity: 0.92;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+  user-select: none;
+}
+.reminder-widget-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.55rem 0.65rem;
+  background: linear-gradient(180deg, rgba(46, 196, 182, 0.1), transparent);
+  border-bottom: 1px solid var(--line);
+  cursor: grab;
+  touch-action: none;
+}
+.reminder-widget-actions { display: flex; gap: 0.2rem; }
+.reminder-icon-btn {
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.reminder-icon-btn:hover {
+  border-color: var(--line);
+  color: var(--text);
+  background: var(--bg-hover);
+}
+.reminder-widget-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.65rem;
+  min-height: 0;
+  overflow: hidden;
+}
+.reminder-widget.is-minimized .reminder-widget-body { display: none; }
+
+.calendar-drawer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+.calendar-drawer-head h2 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.calendar-drawer-head p {
+  color: var(--text-faint);
+  font-size: 0.85rem;
+  margin-top: 0.2rem;
+}
+.calendar-provider-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.25rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  flex-shrink: 0;
+}
+.calendar-setup .form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+.toast.ok { color: var(--success); }
+.toast.err { color: var(--danger); }
+.reminder-widget-head:active { cursor: grabbing; }
+.reminder-widget-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.reminder-widget-actions { display: flex; gap: 0.2rem; }
+.reminder-icon-btn {
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 1rem;
+  line-height: 1;
+}
+.reminder-icon-btn:hover {
+  border-color: var(--line);
+  color: var(--text);
+  background: var(--bg-hover);
+}
+.reminder-widget-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.65rem;
+  min-height: 0;
+  overflow: hidden;
+}
+.reminder-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  overflow-y: auto;
+  max-height: 240px;
+  min-height: 2.5rem;
+}
+.reminder-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: 0.45rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+}
+.reminder-item.is-done .reminder-text {
+  text-decoration: line-through;
+  color: var(--text-faint);
+}
+.reminder-item input[type="checkbox"] {
+  margin-top: 0.2rem;
+  accent-color: var(--accent);
+}
+.reminder-text {
+  font-size: 0.86rem;
+  line-height: 1.35;
+  word-break: break-word;
+}
+.reminder-delete {
+  border: 0;
+  background: transparent;
+  color: var(--text-faint);
+  font-size: 0.9rem;
+  padding: 0 0.2rem;
+  line-height: 1;
+}
+.reminder-delete:hover { color: var(--danger); }
+.reminder-empty {
+  color: var(--text-faint);
+  font-size: 0.82rem;
+  padding: 0.35rem 0.15rem;
+}
+.reminder-form {
+  display: flex;
+  gap: 0.4rem;
+}
+.reminder-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.45rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text);
+}
+.reminder-form input:focus {
+  outline: 2px solid rgba(46, 196, 182, 0.35);
+  border-color: var(--accent);
+}
+.reminder-add {
+  width: 2.15rem;
+  padding: 0;
+  flex-shrink: 0;
+}
+.reminder-hint {
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  font-family: var(--mono);
+}
+.reminder-reopen {
+  position: fixed;
+  z-index: 39;
+  right: 1rem;
+  bottom: 1rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(46, 196, 182, 0.35);
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.85rem;
+  box-shadow: var(--shadow);
+  animation: rise 0.3s var(--ease);
+}
+.reminder-reopen:hover {
+  background: rgba(46, 196, 182, 0.22);
+}
+
+/* —— Calendário deslizante —— */
+.calendar-edge-tab {
+  position: fixed;
+  top: 50%;
+  right: 0;
+  z-index: 45;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  padding: 1rem 0.45rem;
+  border: 1px solid var(--line-strong);
+  border-right: 0;
+  border-radius: var(--radius) 0 0 var(--radius);
+  background: var(--bg-surface);
+  color: var(--text-soft);
+  font-weight: 600;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.2);
+  transition: color 0.2s var(--ease), background 0.2s var(--ease), transform 0.35s var(--ease);
+}
+.calendar-edge-tab:hover,
+.calendar-edge-tab[aria-expanded="true"] {
+  color: var(--accent);
+  background: #0f2a2a;
+}
+body.calendar-open .calendar-edge-tab {
+  transform: translateY(-50%) translateX(-min(440px, 92vw));
+}
+.calendar-edge-label { display: inline-block; }
+.calendar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 46;
+  background: rgba(6, 10, 14, 0.45);
+  backdrop-filter: blur(2px);
+  animation: rise 0.25s var(--ease);
+}
+.calendar-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 47;
+  width: min(440px, 92vw);
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem 1.25rem;
+  background:
+    linear-gradient(180deg, rgba(46, 196, 182, 0.06), transparent 120px),
+    var(--bg-elevated);
+  border-left: 1px solid var(--line-strong);
+  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.35);
+  transform: translateX(105%);
+  transition: transform 0.4s var(--ease);
+  overflow: hidden;
+}
+.calendar-drawer.is-open {
+  transform: translateX(0);
+}
+.calendar-drawer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+.calendar-drawer-head h2 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.calendar-drawer-head p {
+  color: var(--text-faint);
+  font-size: 0.85rem;
+  margin-top: 0.2rem;
+}
+.calendar-provider-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.25rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  flex-shrink: 0;
+}
+.calendar-provider-tab {
+  flex: 1;
+  min-width: 5.5rem;
+  border: 0;
+  background: transparent;
+  color: var(--text-soft);
+  padding: 0.45rem 0.55rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+.calendar-provider-tab:hover { color: var(--text); }
+.calendar-provider-tab.active {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+.calendar-view {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg);
+}
+.calendar-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+}
+.calendar-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  max-width: 36ch;
+}
+.calendar-empty p { color: var(--text-soft); font-size: 0.92rem; line-height: 1.45; }
+.calendar-empty strong { color: var(--text); }
+.calendar-setup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  flex-shrink: 0;
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-surface);
+  overflow-y: auto;
+  max-height: 45%;
+}
+.calendar-setup label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-top: 0.35rem;
+}
+.calendar-setup input {
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+}
+.calendar-setup .hint {
+  color: var(--text-faint);
+  font-size: 0.75rem;
+  line-height: 1.35;
+  margin-bottom: 0.35rem;
+}
+.calendar-setup .form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+@media (max-width: 860px) {
+  .reminder-widget {
+    width: min(280px, calc(100vw - 1rem));
+  }
+  .calendar-edge-tab {
+    padding: 0.75rem 0.35rem;
+    font-size: 0.75rem;
+  }
+  body.calendar-open .calendar-edge-tab {
+    transform: translateY(-50%) translateX(-min(100vw, 100%));
+  }
+  .calendar-drawer {
+    width: min(100vw, 100%);
+  }
+}
