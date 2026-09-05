@@ -12,9 +12,10 @@ Plataforma **ZTNA** para manutenção de redes: agrega Zabbix, Cacti, Nagios, TO
 |--------|----------------|--------------|
 | **Usuários locais** + admin padrão | Admin | Todos (login) |
 | **LDAP / Active Directory** (opcional) | Admin | Usuários do diretório |
+| **Navegador HTML5** (Grafana, URLs, SSO) | — (disponível a todos) | Todos; admin também Guacamole/módulos |
 | **Módulos coletores** (switch + URL/credenciais) | Admin | Todos (alarmes/dashboards) |
 | **Insights de IA** (URL, API key, modelo) | Admin | Todos, quando habilitado |
-| **Sessões Guacamole** + auditoria | Admin | — |
+| **Sessões Guacamole** + auditoria | Admin | Admin (navegador ou nova aba) |
 
 Resumo das novidades: [docs/CHANGELOG_FEATURES.md](docs/CHANGELOG_FEATURES.md) · Auth: [docs/AUTH.md](docs/AUTH.md) · IA: [docs/AI.md](docs/AI.md)
 
@@ -23,7 +24,9 @@ Resumo das novidades: [docs/CHANGELOG_FEATURES.md](docs/CHANGELOG_FEATURES.md) �
 | Eu quero… | Documento |
 |-----------|-----------|
 | **Subir pela primeira vez** | [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) |
-| **Usar o portal no dia a dia** | [docs/USAGE.md](docs/USAGE.md) |
+| **Usar o portal (observer)** | [docs/MANUAL_USER.md](docs/MANUAL_USER.md) |
+| **Administrar o portal** | [docs/MANUAL_ADMIN.md](docs/MANUAL_ADMIN.md) |
+| **Fluxo diário NOC** | [docs/USAGE.md](docs/USAGE.md) |
 | **Configurar LDAP / usuários** | [docs/AUTH.md](docs/AUTH.md) |
 | **Ativar insights de IA** | [docs/AI.md](docs/AI.md) |
 | **Deploy em Kubernetes** | [docs/KUBERNETES.md](docs/KUBERNETES.md) → [`deploy/kubernetes/`](deploy/kubernetes/README.md) |
@@ -50,7 +53,7 @@ docker compose -f deploy/docker/docker-compose.yml --profile core --profile modu
 | Grafana | `https://localhost/grafana/` | `admin` / `admin` |
 | API | `https://localhost/api/health` | — |
 
-Após o login admin: **Configuração** → usuários/LDAP, switches de módulos (com formulário de opções) e provedor de IA.
+Após o login: sidebar **Navegador** (Grafana/URLs embutidos). Admin também usa **Configuração** (Usuários, LDAP, IA, Módulos) e **Sessões** (Guacamole no navegador ou nova aba). Operadores usam **Visão geral** e **Análise** para KPIs, gráficos e insights.
 
 ## Início rápido (Kubernetes)
 
@@ -68,11 +71,14 @@ Referência visual em `docs/assets/` para alinhar produto, UX e desenvolvimento:
 
 | Imagem | Tela |
 |--------|------|
-| [login](docs/assets/ciem-portal-login.jpg) | Autenticação |
-| [dashboard](docs/assets/ciem-portal-dashboard.jpg) | Visão geral NOC |
+| [login](docs/assets/ciem-portal-login.jpg) | Autenticação (brand-first) |
+| [dashboard](docs/assets/ciem-portal-dashboard.jpg) | Visão geral (KPIs + gráfico + insights) |
+| [navegador](docs/assets/ciem-portal-browser.jpg) | Navegador HTML5 (Grafana/URLs embutidos) |
 | [alarmes](docs/assets/ciem-portal-alarms.jpg) | Alarmes ativos |
-| [sessões](docs/assets/ciem-portal-sessions.jpg) | Guacamole + auditoria |
-| [arquitetura](docs/assets/ciem-architecture-diagram.jpg) | Fluxo ZTNA |
+| [análise](docs/assets/ciem-portal-analysis.jpg) | Análise (abas + gráfico) |
+| [sessões](docs/assets/ciem-portal-sessions.jpg) | Guacamole no navegador ou nova aba |
+| [configuração](docs/assets/ciem-config-interface.png) | Configuração por seções (admin) |
+| [arquitetura](docs/assets/ciem-architecture-diagram.jpg) | Fluxo ZTNA (Portal + Navegador) |
 
 ## Arquitetura
 

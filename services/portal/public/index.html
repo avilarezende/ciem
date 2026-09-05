@@ -4,153 +4,310 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CIEM — Centro Integrado de Estatística e Manutenção</title>
-  <link rel="stylesheet" href="/css/style.css?v=5">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=8">
 </head>
 <body>
-  <!-- Tela de login -->
+  <!-- Login -->
   <div id="login-screen" class="screen active">
-    <div class="login-card">
-      <div class="logo">
-        <h1>CIEM</h1>
-        <p>Centro Integrado de Estatística e Manutenção</p>
+    <div class="login-shell">
+      <div class="login-brand">
+        <p class="brand-mark">CIEM</p>
+        <h1>Centro Integrado de Estatística e Manutenção</h1>
+        <p class="brand-lead">Visão NOC unificada: alarmes, navegador HTML5, coletores, sessões auditadas e insights.</p>
       </div>
-      <form id="login-form">
+      <form id="login-form" class="login-form" autocomplete="on">
+        <h2>Entrar</h2>
         <label for="username">Usuário</label>
-        <input type="text" id="username" name="username" required autocomplete="username">
+        <input type="text" id="username" name="username" required autocomplete="username" placeholder="admin">
         <label for="password">Senha</label>
-        <input type="password" id="password" name="password" required autocomplete="current-password">
-        <button type="submit">Entrar</button>
-        <p id="login-error" class="error hidden"></p>
+        <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="••••••••">
+        <button type="submit" class="btn-primary btn-block">Acessar portal</button>
+        <p id="login-error" class="form-error hidden" role="alert"></p>
       </form>
     </div>
   </div>
 
-  <!-- Portal principal -->
+  <!-- App -->
   <div id="portal-screen" class="screen">
-    <header class="topbar">
-      <div class="topbar-brand">
-        <strong>CIEM</strong>
-        <span id="user-info"></span>
+    <aside class="sidebar" aria-label="Navegação principal">
+      <div class="sidebar-brand">
+        <span class="brand-mark">CIEM</span>
+        <span class="brand-sub">NOC</span>
       </div>
-      <nav class="topbar-nav">
-        <button class="nav-btn active" data-panel="dashboard">Dashboard</button>
-        <button class="nav-btn" data-panel="alarms">Alarmes</button>
-        <button class="nav-btn" data-panel="history">Histórico</button>
-        <button class="nav-btn admin-only" data-panel="sessions">Sessões</button>
-        <button class="nav-btn admin-only" data-panel="config">Configuração</button>
-        <button class="nav-btn" data-panel="grafana">Grafana</button>
-        <button id="logout-btn" class="nav-btn danger">Sair</button>
+      <nav class="sidebar-nav">
+        <button type="button" class="nav-btn active" data-panel="dashboard">
+          <span class="nav-label">Visão geral</span>
+        </button>
+        <button type="button" class="nav-btn" data-panel="browser">
+          <span class="nav-label">Navegador</span>
+        </button>
+        <button type="button" class="nav-btn" data-panel="alarms">
+          <span class="nav-label">Alarmes</span>
+        </button>
+        <button type="button" class="nav-btn" data-panel="history">
+          <span class="nav-label">Histórico</span>
+        </button>
+        <button type="button" class="nav-btn" data-panel="analysis">
+          <span class="nav-label">Análise</span>
+        </button>
+        <button type="button" class="nav-btn admin-only" data-panel="sessions">
+          <span class="nav-label">Sessões</span>
+        </button>
+        <button type="button" class="nav-btn admin-only" data-panel="config">
+          <span class="nav-label">Configuração</span>
+        </button>
       </nav>
-    </header>
+      <div class="sidebar-foot">
+        <div id="user-info" class="user-chip"></div>
+        <button type="button" id="logout-btn" class="btn-ghost btn-block">Sair</button>
+      </div>
+    </aside>
 
-    <main class="content">
-      <!-- Dashboard -->
-      <section id="panel-dashboard" class="panel active">
-        <h2>Visão Geral</h2>
-        <div id="alarm-banner" class="alarm-banner hidden">
-          <span id="alarm-count">0</span> alarme(s) ativo(s) — <a href="#" data-goto="alarms">ver detalhes</a>
+    <div class="workspace">
+      <header class="workspace-header">
+        <div>
+          <h1 id="page-title">Visão geral</h1>
+          <p id="page-subtitle" class="page-subtitle">Estado operacional e espaço para análise</p>
         </div>
-        <div id="modules-grid" class="modules-grid"></div>
-      </section>
-
-      <!-- Alarmes ativos -->
-      <section id="panel-alarms" class="panel">
-        <h2>Alarmes Ativos</h2>
-        <div id="alarms-list" class="data-list"></div>
-      </section>
-
-      <!-- Histórico -->
-      <section id="panel-history" class="panel">
-        <h2>Histórico de Eventos</h2>
-        <div id="history-list" class="data-list"></div>
-      </section>
-
-      <!-- Sessões de manutenção -->
-      <section id="panel-sessions" class="panel">
-        <h2>Sessões de Manutenção</h2>
-        <p class="hint">Conecte via SSO ao Guacamole — sem novo login. Sessões registradas e auditadas.</p>
-        <div class="session-actions">
-          <button id="btn-guacamole-full" class="btn-primary">Abrir Guacamole (todos os alvos)</button>
+        <div id="alarm-banner" class="alarm-chip hidden">
+          <strong id="alarm-count">0</strong> alarmes ativos
+          <button type="button" class="linkish" data-goto="alarms">Abrir</button>
         </div>
-        <h3>Alvos Configurados</h3>
-        <div id="targets-list" class="data-list"></div>
-        <h3>Auditoria de Sessões</h3>
-        <div id="audit-list" class="data-list"></div>
-      </section>
+      </header>
 
-      <!-- Configuração -->
-      <section id="panel-config" class="panel">
-        <h2>Configuração</h2>
-        <p id="config-feedback" class="hint hidden"></p>
-
-        <h3>Autenticação — usuários locais</h3>
-        <p class="hint">
-          Usuários locais funcionam <strong>independentemente do LDAP</strong>.
-          O usuário <code>admin</code> é o administrador padrão (senha inicial <code>admin123</code> — altere em produção).
-        </p>
-        <div id="local-users-list" class="data-list"></div>
-        <form id="form-create-user" class="auth-form">
-          <h4>Novo usuário local</h4>
-          <div class="opt-grid">
-            <label class="opt-field"><span>Usuário</span><input name="username" required autocomplete="off"></label>
-            <label class="opt-field"><span>Senha</span><input name="password" type="password" required autocomplete="new-password"></label>
-            <label class="opt-field"><span>Papel</span>
-              <select name="role">
-                <option value="observer">observer</option>
-                <option value="admin">admin</option>
-              </select>
-            </label>
+      <main class="workspace-main">
+        <!-- Dashboard -->
+        <section id="panel-dashboard" class="panel active">
+          <div id="kpi-row" class="kpi-row"></div>
+          <div class="analysis-grid">
+            <article class="surface chart-surface">
+              <header class="surface-head">
+                <h2>Distribuição de severidade</h2>
+                <p>Alarmes ativos agregados dos coletores</p>
+              </header>
+              <div class="chart-wrap">
+                <canvas id="severity-chart" width="640" height="280" aria-label="Gráfico de severidade"></canvas>
+                <div id="severity-legend" class="chart-legend"></div>
+              </div>
+            </article>
+            <article class="surface insights-surface">
+              <header class="surface-head">
+                <h2>Insights</h2>
+                <p id="insights-status">Carregando…</p>
+              </header>
+              <div id="insights-preview" class="insights-preview"></div>
+              <button type="button" class="btn-secondary" data-goto="analysis">Abrir análise completa</button>
+            </article>
           </div>
-          <button type="submit" class="btn-primary">Criar usuário</button>
-        </form>
+          <article class="surface">
+            <header class="surface-head row">
+              <div>
+                <h2>Coletores</h2>
+                <p>Saúde dos módulos habilitados</p>
+              </div>
+              <button type="button" class="btn-secondary" data-goto="browser" data-browser-url="/grafana/">Abrir navegador</button>
+            </header>
+            <div id="modules-grid" class="modules-grid"></div>
+          </article>
+        </section>
 
-        <h3>Autenticação — LDAP / Active Directory</h3>
-        <p class="hint">
-          Opcional. Se não configurar (ou deixar desabilitado), use apenas usuários locais.
-          Com LDAP ativo, o login tenta usuário local primeiro e depois o diretório.
-        </p>
-        <form id="form-ldap" class="auth-form module-options">
-          <div class="opt-grid" id="ldap-fields"></div>
-          <button type="submit" class="btn-primary">Salvar LDAP</button>
-        </form>
-
-        <h3>Inteligência Artificial — Insights</h3>
-        <p class="hint">
-          Somente administradores configuram o provedor. Quando <strong>habilitado</strong>,
-          os insights (resumo, recomendações e gráficos derivados de alarmes/logs) ficam
-          visíveis a <strong>todos</strong> os usuários no portal e no Grafana.
-        </p>
-        <form id="form-ai" class="auth-form module-options">
-          <div class="opt-grid" id="ai-fields"></div>
-          <div class="ai-actions">
-            <button type="submit" class="btn-primary">Salvar IA</button>
-            <button type="button" id="btn-ai-refresh" class="btn-secondary">Gerar insights agora</button>
+        <!-- Navegador HTML5 (todos) -->
+        <section id="panel-browser" class="panel panel-browser" aria-label="Navegador HTML5">
+          <div class="browser-chrome">
+            <div class="browser-toolbar" role="toolbar" aria-label="Controles do navegador">
+              <button type="button" id="browser-back" class="browser-icon-btn" title="Voltar" aria-label="Voltar">←</button>
+              <button type="button" id="browser-forward" class="browser-icon-btn" title="Avançar" aria-label="Avançar">→</button>
+              <button type="button" id="browser-reload" class="browser-icon-btn" title="Recarregar" aria-label="Recarregar">↻</button>
+              <button type="button" id="browser-home" class="browser-icon-btn" title="Início" aria-label="Início">⌂</button>
+              <form id="browser-url-form" class="browser-url-form" autocomplete="off">
+                <label class="sr-only" for="browser-url">Endereço</label>
+                <input type="text" id="browser-url" name="url" spellcheck="false" placeholder="Digite uma URL ou caminho (/grafana/)" inputmode="url">
+                <button type="submit" class="btn-primary browser-go">Ir</button>
+              </form>
+              <button type="button" id="browser-open-ext" class="btn-ghost browser-ext" title="Abrir em nova aba">↗</button>
+            </div>
+            <div id="browser-presets" class="browser-presets" role="group" aria-label="Atalhos"></div>
           </div>
-        </form>
+          <div class="browser-stage">
+            <div id="browser-home-view" class="browser-home">
+              <p class="browser-home-kicker">Navegador integrado</p>
+              <h2>Acesse Grafana, consoles e URLs sem sair do CIEM</h2>
+              <p class="browser-home-lead">Use a barra de endereço ou os atalhos. Sites que bloqueiam iframe abrem com um clique em nova aba.</p>
+              <div id="browser-home-cards" class="browser-home-cards"></div>
+            </div>
+            <iframe id="browser-frame" class="browser-frame hidden" title="Conteúdo do navegador CIEM" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            <div id="browser-blocked" class="browser-blocked hidden" role="status">
+              <p><strong>Não foi possível embutir esta página</strong></p>
+              <p class="browser-blocked-lead">O destino pode enviar cabeçalhos que impedem iframe (X-Frame-Options / CSP). Abra em nova aba para continuar.</p>
+              <button type="button" id="browser-blocked-open" class="btn-primary">Abrir em nova aba</button>
+            </div>
+          </div>
+        </section>
 
-        <h3>Módulos coletores</h3>
-        <p class="hint">Ative um módulo para exibir e editar URL, credenciais e opções. Os valores são salvos em <code>config/modules.yaml</code>.</p>
-        <div id="config-modules" class="config-modules"></div>
-      </section>
+        <!-- Alarmes -->
+        <section id="panel-alarms" class="panel">
+          <article class="surface">
+            <header class="surface-head row">
+              <div>
+                <h2>Alarmes ativos</h2>
+                <p>Priorize critical e high antes de warning/info</p>
+              </div>
+            </header>
+            <div id="alarms-list" class="stack-list"></div>
+          </article>
+        </section>
 
-      <!-- Grafana (dashboards embutidos via API CIEM) -->
-      <section id="panel-grafana" class="panel">
-        <h2>Dashboards Grafana</h2>
-        <p class="hint">Visão NOC baseada na API CIEM. Em produção com o serviço Grafana, use também <code>/grafana/</code>.</p>
-        <div class="grafana-tabs">
-          <button class="g-tab active" data-gview="overview">Visão Geral NOC</button>
-          <button class="g-tab" data-gview="insights">Insights IA</button>
-          <button class="g-tab" data-gview="alarms">Alarmes Ativos</button>
-          <button class="g-tab" data-gview="modules">Módulos</button>
-          <button class="g-tab" data-gview="history">Histórico</button>
-          <button class="g-tab" data-gview="sessions">Sessões</button>
-        </div>
-        <div id="grafana-stats" class="grafana-stats"></div>
-        <div id="grafana-content" class="data-list"></div>
-      </section>
-    </main>
+        <!-- Histórico -->
+        <section id="panel-history" class="panel">
+          <article class="surface">
+            <header class="surface-head">
+              <h2>Histórico de eventos</h2>
+              <p>Últimos eventos agregados dos módulos</p>
+            </header>
+            <div id="history-list" class="stack-list"></div>
+          </article>
+        </section>
+
+        <!-- Análise (todos) -->
+        <section id="panel-analysis" class="panel">
+          <div class="analysis-toolbar">
+            <div class="seg-tabs" role="tablist">
+              <button type="button" class="seg-tab active" data-aview="overview">Resumo</button>
+              <button type="button" class="seg-tab" data-aview="insights">Insights IA</button>
+              <button type="button" class="seg-tab" data-aview="alarms">Alarmes</button>
+              <button type="button" class="seg-tab" data-aview="modules">Módulos</button>
+              <button type="button" class="seg-tab" data-aview="history">Histórico</button>
+              <button type="button" class="seg-tab admin-only" data-aview="sessions">Sessões</button>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn-secondary" data-goto="browser" data-browser-url="/grafana/">No navegador</button>
+              <a class="btn-ghost" href="/grafana/" target="_blank" rel="noopener">Grafana ↗</a>
+            </div>
+          </div>
+          <div id="analysis-kpis" class="kpi-row compact"></div>
+          <div class="analysis-grid">
+            <article class="surface chart-surface">
+              <header class="surface-head">
+                <h2>Gráfico de análise</h2>
+                <p id="analysis-chart-caption">Severidade e fontes</p>
+              </header>
+              <div class="chart-wrap">
+                <canvas id="analysis-chart" width="720" height="300" aria-label="Gráfico de análise"></canvas>
+              </div>
+            </article>
+            <article class="surface">
+              <header class="surface-head">
+                <h2>Detalhe</h2>
+                <p>Lista filtrada pela aba selecionada</p>
+              </header>
+              <div id="analysis-content" class="stack-list"></div>
+            </article>
+          </div>
+        </section>
+
+        <!-- Sessões (admin) -->
+        <section id="panel-sessions" class="panel">
+          <article class="surface">
+            <header class="surface-head row">
+              <div>
+                <h2>Sessões de manutenção</h2>
+                <p>SSO Guacamole — sem novo login; sessões auditadas</p>
+              </div>
+              <div class="form-actions">
+                <button type="button" id="btn-guacamole-browser" class="btn-secondary">No navegador</button>
+                <button type="button" id="btn-guacamole-full" class="btn-primary">Abrir Guacamole ↗</button>
+              </div>
+            </header>
+            <h3 class="section-label">Alvos</h3>
+            <div id="targets-list" class="stack-list"></div>
+            <h3 class="section-label">Auditoria</h3>
+            <div id="audit-list" class="stack-list"></div>
+          </article>
+        </section>
+
+        <!-- Configuração (admin) -->
+        <section id="panel-config" class="panel">
+          <p id="config-feedback" class="toast hidden" role="status"></p>
+          <div class="config-layout">
+            <nav class="config-nav" aria-label="Seções de configuração">
+              <button type="button" class="config-nav-btn active" data-csec="users">Usuários</button>
+              <button type="button" class="config-nav-btn" data-csec="ldap">LDAP</button>
+              <button type="button" class="config-nav-btn" data-csec="ai">Inteligência Artificial</button>
+              <button type="button" class="config-nav-btn" data-csec="modules">Módulos</button>
+            </nav>
+            <div class="config-panes">
+              <div class="config-pane active" data-csec="users">
+                <article class="surface">
+                  <header class="surface-head">
+                    <h2>Usuários locais</h2>
+                    <p>Independentes do LDAP. Admin padrão: <code>admin</code> / <code>admin123</code> — altere em produção.</p>
+                  </header>
+                  <div id="local-users-list" class="stack-list"></div>
+                  <form id="form-create-user" class="inline-form">
+                    <h3 class="section-label">Novo usuário</h3>
+                    <div class="field-grid">
+                      <label class="field"><span>Usuário</span><input name="username" required autocomplete="off"></label>
+                      <label class="field"><span>Senha</span><input name="password" type="password" required autocomplete="new-password"></label>
+                      <label class="field"><span>Papel</span>
+                        <select name="role">
+                          <option value="observer">observer</option>
+                          <option value="admin">admin</option>
+                        </select>
+                      </label>
+                    </div>
+                    <button type="submit" class="btn-primary">Criar usuário</button>
+                  </form>
+                </article>
+              </div>
+
+              <div class="config-pane" data-csec="ldap">
+                <article class="surface">
+                  <header class="surface-head">
+                    <h2>LDAP / Active Directory</h2>
+                    <p>Opcional. Com LDAP ativo, o login tenta usuário local e depois o diretório.</p>
+                  </header>
+                  <form id="form-ldap" class="inline-form">
+                    <div class="field-grid" id="ldap-fields"></div>
+                    <button type="submit" class="btn-primary">Salvar LDAP</button>
+                  </form>
+                </article>
+              </div>
+
+              <div class="config-pane" data-csec="ai">
+                <article class="surface">
+                  <header class="surface-head">
+                    <h2>Insights de IA</h2>
+                    <p>Só admin configura. Com a função ativa, os resultados ficam visíveis a todos na Visão geral e em Análise.</p>
+                  </header>
+                  <form id="form-ai" class="inline-form">
+                    <div class="field-grid" id="ai-fields"></div>
+                    <div class="form-actions">
+                      <button type="submit" class="btn-primary">Salvar IA</button>
+                      <button type="button" id="btn-ai-refresh" class="btn-secondary">Gerar insights agora</button>
+                    </div>
+                  </form>
+                </article>
+              </div>
+
+              <div class="config-pane" data-csec="modules">
+                <article class="surface">
+                  <header class="surface-head">
+                    <h2>Módulos coletores</h2>
+                    <p>Ative o switch para editar URL, credenciais e opções. Persistido em <code>config/modules.yaml</code>.</p>
+                  </header>
+                  <div id="config-modules" class="config-modules"></div>
+                </article>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
   </div>
 
-  <script src="/js/portal.js?v=5"></script>
+  <script src="/js/portal.js?v=8"></script>
 </body>
 </html>

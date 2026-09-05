@@ -35,10 +35,34 @@ Resumo das capacidades adicionadas ao CIEM para operação pelo portal (administ
 
 **Documentação:** [AI.md](AI.md)
 
+## 4. Interface ergonômica (admin + observer)
+
+| Capacidade | Detalhe |
+|------------|---------|
+| Sidebar + workspace | Navegação clara; login com marca CIEM em destaque |
+| Visão geral analítica | KPIs, gráfico de severidade, preview de insights e grade de coletores |
+| Painel Análise | Abas (resumo, insights IA, alarmes, módulos, histórico, sessões) + área de gráfico |
+| Configuração por seções | Usuários · LDAP · IA · Módulos — uma tarefa por vez |
+| Tipografia / tema | DM Sans + IBM Plex Mono; tema escuro NOC com accent teal |
+
+**Documentação:** [PORTAL.md](PORTAL.md), [MANUAL_USER.md](MANUAL_USER.md), [MANUAL_ADMIN.md](MANUAL_ADMIN.md), [USAGE.md](USAGE.md)
+
+## 5. Navegador HTML5 no portal
+
+| Capacidade | Detalhe |
+|------------|---------|
+| Disponível a todos | Item **Navegador** na sidebar desde o login (observer e admin) |
+| Chrome ergonômico | Voltar/avançar/recarregar/início, barra de URL, abrir em nova aba |
+| Atalhos | Grafana; admin: Guacamole via SSO e URLs `options.url` dos módulos |
+| Sessões | Alvos e Guacamole podem abrir **no navegador** ou em nova aba |
+| Fallback | Destinos que bloqueiam iframe → aviso + abrir externamente |
+
+**Documentação:** [PORTAL.md](PORTAL.md), [MANUAL_USER.md](MANUAL_USER.md)
+
 ## Papéis em uma frase
 
-- **admin** — configura LDAP, usuários, módulos e IA; inicia sessões Guacamole  
-- **observer** — monitora alarmes, histórico, Grafana e (se ativo) insights de IA  
+- **admin** — configura LDAP, usuários, módulos e IA; inicia sessões Guacamole (navegador ou nova aba)  
+- **observer** — monitora alarmes, histórico, análise; usa o Navegador (Grafana/URLs) e (se ativo) insights de IA  
 
 ## Arquivos YAML envolvidos
 

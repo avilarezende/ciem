@@ -18,8 +18,8 @@ Usuário → POST /api/auth/login {username, password}
 
 | Papel | Escopo |
 |-------|--------|
-| observer | Leitura: módulos, alarmes, histórico, insights IA (se ativo) |
-| admin | + sessões, config (usuários, LDAP, módulos, IA), SSO Guacamole |
+| observer | Leitura: módulos, alarmes, histórico, **Navegador HTML5**, insights IA (se ativo) |
+| admin | + sessões, config (usuários, LDAP, módulos, IA), SSO Guacamole (navegador ou nova aba) |
 
 Admin padrão `admin` autentica **sempre** via usuário local, independente do LDAP. Detalhes: [AUTH.md](AUTH.md).
 

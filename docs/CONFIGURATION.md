@@ -1,6 +1,6 @@
 # Configuração do CIEM
 
-![Interface de configuração](../assets/ciem-config-interface.png)
+![Interface de configuração](assets/ciem-config-interface.png)
 
 O CIEM é configurado via arquivos YAML comentados em português, localizados em `config/`. Não há vínculo com organizações específicas — configure IPs, domínios e credenciais do seu ambiente.
 
@@ -157,22 +157,23 @@ credentials:
 
 ## Interface web
 
-O portal CIEM (`https://seu-dominio/`) oferece:
-- Dashboard com status dos módulos e indicação de Insights IA
-- Alarmes ativos em destaque
-- Histórico de eventos
-- Grafana embutido (visão NOC + Insights IA)
-- **Configuração (admin):**
-  - Usuários locais (criar, alterar senha, excluir — último admin protegido)
-  - LDAP / AD (servidor, porta, SSL, domínio, UID, bind, certificados)
-  - Módulos coletores (switch + formulário de URL/credenciais/opções)
-  - Provedor de IA (URL, API key, modelo); resultados visíveis a todos quando ativo
+O portal CIEM (`https://seu-dominio/`) usa **sidebar + workspace**:
+
+| Área | Quem vê | Conteúdo |
+|------|---------|----------|
+| Visão geral | Todos | KPIs, gráfico de severidade, preview de insights, coletores |
+| Navegador | Todos | Browser HTML5 (Grafana embutido; admin: Guacamole SSO e URLs de módulos) |
+| Alarmes / Histórico | Todos | Triagem e eventos recentes |
+| Análise | Todos | Abas (resumo, insights IA, alarmes, módulos, histórico) + gráfico |
+| Sessões | Admin | SSO Guacamole + auditoria |
+| Configuração | Admin | Seções: Usuários · LDAP · IA · Módulos |
 
 **Credenciais padrão de desenvolvimento:**
-- Admin: `admin` / `admin123` — altere em **Configuração → Usuários locais**
+- Admin: `admin` / `admin123` — altere em **Configuração → Usuários**
 - Observador: `observador` / `observer123`
 
-Ver também: [AUTH.md](AUTH.md), [AI.md](AI.md), [CHANGELOG_FEATURES.md](CHANGELOG_FEATURES.md).
+Manuais: [MANUAL_USER.md](MANUAL_USER.md) · [MANUAL_ADMIN.md](MANUAL_ADMIN.md)  
+Ver também: [AUTH.md](AUTH.md), [AI.md](AI.md), [PORTAL.md](PORTAL.md), [CHANGELOG_FEATURES.md](CHANGELOG_FEATURES.md).
 
 ## Checklist de implantação
 

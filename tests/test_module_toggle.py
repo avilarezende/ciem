@@ -13,7 +13,11 @@ REPO = Path(__file__).resolve().parents[1]
 os.environ["CONFIG_PATH"] = str(REPO / "config")
 
 from app.main import app  # noqa: E402
-from ciem_common.config_loader import clear_config_cache, is_module_enabled, set_module_enabled
+from ciem_common.config_loader import (  # noqa: E402
+    clear_config_cache,
+    is_module_enabled,
+    set_module_enabled,
+)
 
 
 @pytest.fixture
@@ -56,7 +60,9 @@ def test_set_module_enabled_roundtrip(modules_yaml_backup: Path) -> None:
     assert "# Zabbix" in text  # comentários preservados
 
 
-def test_toggle_module_api_admin(client: TestClient, admin_headers: dict[str, str], modules_yaml_backup: Path) -> None:
+def test_toggle_module_api_admin(
+    client: TestClient, admin_headers: dict[str, str], modules_yaml_backup: Path
+) -> None:
     before = client.get("/config/modules", headers=admin_headers).json()["zabbix"]["enabled"]
     resp = client.put(
         "/config/modules/zabbix",
@@ -80,7 +86,9 @@ def test_toggle_module_requires_admin(client: TestClient, observer_headers: dict
     assert resp.status_code == 403
 
 
-def test_update_module_options_api(client: TestClient, admin_headers: dict[str, str], modules_yaml_backup: Path) -> None:
+def test_update_module_options_api(
+    client: TestClient, admin_headers: dict[str, str], modules_yaml_backup: Path
+) -> None:
     resp = client.put(
         "/config/modules/zabbix",
         json={

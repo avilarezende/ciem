@@ -10,8 +10,8 @@ Resumo das funções adicionadas ao portal (LDAP, usuários locais, switches de 
 
 | Perfil | Leia primeiro |
 |--------|----------------|
-| **Operador / NOC** | [USAGE.md](USAGE.md) → [DASHBOARDS.md](DASHBOARDS.md) → [AI.md](AI.md) (se insights ativos) |
-| **Administrador** | [GETTING_STARTED.md](GETTING_STARTED.md) → [CONFIGURATION.md](CONFIGURATION.md) → [AUTH.md](AUTH.md) → [AI.md](AI.md) |
+| **Operador / NOC** | [MANUAL_USER.md](MANUAL_USER.md) → [USAGE.md](USAGE.md) → [DASHBOARDS.md](DASHBOARDS.md) |
+| **Administrador** | [MANUAL_ADMIN.md](MANUAL_ADMIN.md) → [GETTING_STARTED.md](GETTING_STARTED.md) → [AUTH.md](AUTH.md) → [AI.md](AI.md) |
 | **DevOps / SRE** | [KUBERNETES.md](KUBERNETES.md) ou [DEPLOYMENT.md](DEPLOYMENT.md) |
 | **Desenvolvedor** | [PORTAL.md](PORTAL.md) → [ARCHITECTURE.md](ARCHITECTURE.md) → [MODULES.md](MODULES.md) |
 
@@ -31,6 +31,8 @@ Resumo das funções adicionadas ao portal (LDAP, usuários locais, switches de 
 
 | Documento | Conteúdo |
 |-----------|----------|
+| [MANUAL_USER.md](MANUAL_USER.md) | Manual do observer (monitoramento) |
+| [MANUAL_ADMIN.md](MANUAL_ADMIN.md) | Manual do administrador (configuração + sessões) |
 | [USAGE.md](USAGE.md) | Login, papéis, fluxo diário, configuração pelo portal |
 | [PORTAL.md](PORTAL.md) | Telas do portal + mockups + checklist de PR |
 | [DASHBOARDS.md](DASHBOARDS.md) | Painéis Grafana (incl. Insights IA), métricas |
@@ -55,13 +57,16 @@ Imagens em `docs/assets/` para alinhar times de produto, UX e desenvolvimento:
 
 | Arquivo | Tela |
 |---------|------|
-| [ciem-portal-login.jpg](assets/ciem-portal-login.jpg) | Login |
-| [ciem-portal-dashboard.jpg](assets/ciem-portal-dashboard.jpg) | Dashboard / visão geral |
+| [ciem-portal-login.jpg](assets/ciem-portal-login.jpg) | Login (brand-first) |
+| [ciem-portal-dashboard.jpg](assets/ciem-portal-dashboard.jpg) | Visão geral (KPIs + gráfico + insights + atalho Navegador) |
+| [ciem-portal-browser.jpg](assets/ciem-portal-browser.jpg) | **Navegador HTML5** (Grafana/URLs embutidos) |
 | [ciem-portal-alarms.jpg](assets/ciem-portal-alarms.jpg) | Alarmes ativos |
-| [ciem-portal-sessions.jpg](assets/ciem-portal-sessions.jpg) | Sessões e Guacamole |
-| [ciem-architecture-diagram.jpg](assets/ciem-architecture-diagram.jpg) | Arquitetura ZTNA |
+| [ciem-portal-analysis.jpg](assets/ciem-portal-analysis.jpg) | Análise (abas + gráfico) |
+| [ciem-portal-sessions.jpg](assets/ciem-portal-sessions.jpg) | Sessões (No navegador / nova aba) |
+| [ciem-config-interface.png](assets/ciem-config-interface.png) | Configuração (seções admin) |
+| [ciem-architecture-diagram.jpg](assets/ciem-architecture-diagram.jpg) | Arquitetura ZTNA (Portal + Navegador HTML5) |
 
-> Ao alterar o portal (`services/portal/`), atualize o mockup correspondente e referencie o PR na descrição da mudança.
+> Ao alterar o portal (`services/portal/`), atualize o mockup correspondente (incl. `ciem-portal-browser.jpg`) e referencie o PR na descrição da mudança.
 
 ## Manifests Kubernetes
 

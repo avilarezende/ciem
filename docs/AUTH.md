@@ -30,7 +30,7 @@ O CIEM combina **usuários locais** (sempre disponíveis) e **LDAP/Active Direct
 **Pelo portal (recomendado):**
 
 1. Login como `admin`
-2. **Configuração** → seção **Usuários locais**
+2. Sidebar **Configuração** → seção **Usuários**
 3. Em `admin` → **Alterar senha**
 4. Informe a nova senha
 
@@ -119,7 +119,7 @@ curl -X DELETE -H "Authorization: Bearer ciem-admin" \
 
 ## LDAP / Active Directory
 
-Configure no portal (**Configuração → LDAP**) ou em `config/auth.yaml`.
+Configure no portal (**Configuração → LDAP**, na sidebar) ou em `config/auth.yaml`.
 
 ### Campos principais
 
