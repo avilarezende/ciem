@@ -13,8 +13,8 @@ REPO = Path(__file__).resolve().parents[1]
 os.environ["CONFIG_PATH"] = str(REPO / "config")
 
 from app.main import app  # noqa: E402
-from ciem_common.auth import authenticate, verify_password
-from ciem_common.config_loader import clear_config_cache, load_auth_config
+from ciem_common.auth import authenticate  # noqa: E402
+from ciem_common.config_loader import clear_config_cache  # noqa: E402
 
 
 @pytest.fixture
@@ -69,7 +69,9 @@ def test_get_auth_config(client: TestClient, admin_headers: dict[str, str]) -> N
     assert all("password_hash" not in u for u in data["local_users"])
 
 
-def test_change_admin_password(client: TestClient, admin_headers: dict[str, str], auth_yaml_backup: Path) -> None:
+def test_change_admin_password(
+    client: TestClient, admin_headers: dict[str, str], auth_yaml_backup: Path
+) -> None:
     resp = client.put(
         "/config/auth/users/admin",
         json={"password": "novaSenhaAdmin1"},
@@ -82,19 +84,23 @@ def test_change_admin_password(client: TestClient, admin_headers: dict[str, str]
     client.put(
         "/config/auth/users/admin",
         json={"password": "admin123"},
-        headers={"Authorization": f"Bearer ciem-admin"},
+        headers={"Authorization": "Bearer ciem-admin"},
     )
 
 
-def test_cannot_delete_last_admin(client: TestClient, admin_headers: dict[str, str], auth_yaml_backup: Path) -> None:
-    # remove observador ok
+def test_cannot_delete_last_admin(
+    client: TestClient, admin_headers: dict[str, str], auth_yaml_backup: Path
+) -> None:
     # tenta remover admin sem outro admin
     resp = client.delete("/config/auth/users/admin", headers=admin_headers)
     assert resp.status_code == 400
-    assert "último" in resp.json()["detail"].lower() or "ultimo" in resp.json()["detail"].lower() or "administrador" in resp.json()["detail"].lower()
+    detail = resp.json()["detail"].lower()
+    assert "último" in detail or "ultimo" in detail or "administrador" in detail
 
 
-def test_create_and_delete_user(client: TestClient, admin_headers: dict[str, str], auth_yaml_backup: Path) -> None:
+def test_create_and_delete_user(
+    client: TestClient, admin_headers: dict[str, str], auth_yaml_backup: Path
+) -> None:
     created = client.post(
         "/config/auth/users",
         json={"username": "ops1", "password": "ops-pass", "role": "observer"},
@@ -107,7 +113,9 @@ def test_create_and_delete_user(client: TestClient, admin_headers: dict[str, str
     assert authenticate("ops1", "ops-pass") is None
 
 
-def test_ldap_fields_persisted(client: TestClient, admin_headers: dict[str, str], auth_yaml_backup: Path) -> None:
+def test_ldap_fields_persisted(
+    client: TestClient, admin_headers: dict[str, str], auth_yaml_backup: Path
+) -> None:
     resp = client.put(
         "/config/auth/ldap",
         json={
