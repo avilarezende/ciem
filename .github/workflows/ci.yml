@@ -56,7 +56,8 @@ jobs:
       - name: pip-audit (OWASP A06 — componentes vulneráveis)
         run: |
           pip install pip-audit
-          pip-audit --progress-spinner off
+          # Audita apenas deps do projeto (não o ambiente do runner)
+          pip-audit -r requirements.txt -r requirements-dev.txt --progress-spinner off
 
       - name: Ruff (lint)
         run: ruff check shared services/core services/modules tests
