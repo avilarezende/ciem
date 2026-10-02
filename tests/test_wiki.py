@@ -6,6 +6,8 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from conftest import ADMIN_PASSWORD, _rewrite_auth_hashes
+
 ROOT = Path(__file__).resolve().parents[1]
 PORTAL = ROOT / "services" / "portal" / "public"
 
@@ -14,8 +16,8 @@ PORTAL = ROOT / "services" / "portal" / "public"
 def client(tmp_path, monkeypatch):
     import os
 
-    monkeypatch.setenv("CIEM_SECRET_KEY", "test-secret-key")
-    os.environ["CIEM_SECRET_KEY"] = "test-secret-key"
+    monkeypatch.setenv("CIEM_SECRET_KEY", "test-secret-key-for-ci-only")
+    os.environ["CIEM_SECRET_KEY"] = "test-secret-key-for-ci-only"
 
     cfg = tmp_path / "config"
     cfg.mkdir()
@@ -23,6 +25,8 @@ def client(tmp_path, monkeypatch):
         src = ROOT / "config" / name
         if src.is_file():
             (cfg / name).write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+    # aplica hashes das senhas de fixture (auth.yaml do repo não as contém em plaintext)
+    _rewrite_auth_hashes(cfg / "auth.yaml")
     (cfg / "wiki.yaml").write_text(
         (
             "wiki:\n"
@@ -48,7 +52,7 @@ def client(tmp_path, monkeypatch):
     return TestClient(app)
 
 
-def _login(client: TestClient, username: str = "admin", password: str = "f5VOt3nlUR7CkEYm") -> str:
+def _login(client: TestClient, username: str = "admin", password: str = ADMIN_PASSWORD) -> str:
     resp = client.post("/auth/login", json={"username": username, "password": password})
     assert resp.status_code == 200, resp.text
     return resp.json()["token"]

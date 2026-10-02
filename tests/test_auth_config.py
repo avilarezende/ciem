@@ -3,10 +3,16 @@
 import os
 from pathlib import Path
 
-os.environ["CONFIG_PATH"] = str(Path(__file__).resolve().parents[1] / "config")
+from conftest import ADMIN_PASSWORD, OBSERVER_PASSWORD, ensure_test_config
 
-from ciem_common.auth import authenticate, hash_password, verify_password
-from ciem_common.config_loader import is_module_enabled, load_main_config, load_modules_config
+ensure_test_config()
+
+from ciem_common.auth import authenticate, hash_password, verify_password  # noqa: E402
+from ciem_common.config_loader import (  # noqa: E402
+    is_module_enabled,
+    load_main_config,
+    load_modules_config,
+)
 
 
 def test_hash_and_verify_password() -> None:
@@ -16,13 +22,13 @@ def test_hash_and_verify_password() -> None:
 
 
 def test_authenticate_admin() -> None:
-    user = authenticate("admin", "f5VOt3nlUR7CkEYm")
+    user = authenticate("admin", ADMIN_PASSWORD)
     assert user is not None
     assert user.role.value == "admin"
 
 
 def test_authenticate_observer() -> None:
-    user = authenticate("observador", "1XaVVzaKZq2Sa6OR")
+    user = authenticate("observador", OBSERVER_PASSWORD)
     assert user is not None
     assert user.role.value == "observer"
 
@@ -43,3 +49,10 @@ def test_load_modules_config() -> None:
 
 def test_module_disabled_by_default() -> None:
     assert is_module_enabled("zabbix") is False
+
+
+def test_config_path_is_isolated() -> None:
+    """Garante que os testes não escrevem no config/ versionado."""
+    cfg = Path(os.environ["CONFIG_PATH"]).resolve()
+    repo_config = Path(__file__).resolve().parents[1] / "config"
+    assert cfg != repo_config.resolve()

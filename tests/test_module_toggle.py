@@ -9,9 +9,10 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-REPO = Path(__file__).resolve().parents[1]
-os.environ["CONFIG_PATH"] = str(REPO / "config")
-os.environ["CIEM_SECRET_KEY"] = "test-secret-key"
+from conftest import ADMIN_PASSWORD, OBSERVER_PASSWORD, ensure_test_config
+
+ensure_test_config()
+os.environ.setdefault("CIEM_SECRET_KEY", "test-secret-key-for-ci-only")
 
 from app.main import app  # noqa: E402
 from ciem_common.config_loader import (  # noqa: E402
@@ -21,6 +22,10 @@ from ciem_common.config_loader import (  # noqa: E402
 )
 
 
+def _config_dir() -> Path:
+    return Path(os.environ["CONFIG_PATH"])
+
+
 @pytest.fixture
 def client() -> TestClient:
     return TestClient(app)
@@ -28,7 +33,7 @@ def client() -> TestClient:
 
 @pytest.fixture
 def admin_headers(client: TestClient) -> dict[str, str]:
-    login = client.post("/auth/login", json={"username": "admin", "password": "f5VOt3nlUR7CkEYm"})
+    login = client.post("/auth/login", json={"username": "admin", "password": ADMIN_PASSWORD})
     return {"Authorization": f"Bearer {login.json()['token']}"}
 
 
@@ -36,7 +41,7 @@ def admin_headers(client: TestClient) -> dict[str, str]:
 def observer_headers(client: TestClient) -> dict[str, str]:
     login = client.post(
         "/auth/login",
-        json={"username": "observador", "password": "1XaVVzaKZq2Sa6OR"},
+        json={"username": "observador", "password": OBSERVER_PASSWORD},
     )
     return {"Authorization": f"Bearer {login.json()['token']}"}
 
@@ -44,7 +49,7 @@ def observer_headers(client: TestClient) -> dict[str, str]:
 @pytest.fixture
 def modules_yaml_backup(tmp_path: Path):
     """Copia modules.yaml e restaura após o teste."""
-    src = REPO / "config" / "modules.yaml"
+    src = _config_dir() / "modules.yaml"
     backup = tmp_path / "modules.yaml.bak"
     shutil.copy2(src, backup)
     clear_config_cache()
@@ -100,7 +105,7 @@ def test_update_module_options_api(
             "options": {
                 "url": "https://zabbix.lab.local",
                 "username": "ops",
-                "password": "s3cret",
+                "password": "lab-module-password",
                 "verify_ssl": False,
                 "problem_limit": "25",
             },
@@ -112,7 +117,7 @@ def test_update_module_options_api(
     assert data["enabled"] is True
     assert data["options"]["url"] == "https://zabbix.lab.local"
     assert data["options"]["username"] == "ops"
-    assert data["options"]["password"] == "s3cret"
+    assert data["options"]["password"] == "lab-module-password"
     assert data["options"]["verify_ssl"] is False
     assert data["options"]["problem_limit"] == 25
 

@@ -11,6 +11,8 @@ Resumo das capacidades adicionadas ao CIEM para operação pelo portal (administ
 | Token de sessão | Assinado **HMAC-SHA256**, válido por 8 h (`CIEM_SESSION_TTL`) — não há mais `ciem-{usuário}` |
 | Fail-fast | `CIEM_SECRET_KEY` obrigatória; sem ela (ou no padrão `change-me...`) o core não inicia |
 | Rate limiting | Login 5/min, sessões 30/min, escrita de config 20/min (slowapi); `CIEM_RATE_LIMIT_ENABLED=0` desativa |
+| Política de senha | Mín. 10 chars, letra+dígito, blocklist de senhas comuns (ASVS 2.1) |
+| Hardening OWASP | Cabeçalhos de segurança, CORS seguro, anti-SSRF em IA, logs de login, `/docs` off em production — ver [OWASP.md](OWASP.md) |
 | LDAP / AD | Admin configura servidor, porta, SSL, domínio, UID, filtros, bind e certificados |
 | Gestão no portal | Criar usuário, alterar senha, habilitar/desabilitar, excluir (último admin protegido) |
 

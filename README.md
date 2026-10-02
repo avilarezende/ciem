@@ -24,7 +24,7 @@ Plataforma **ZTNA** para manutenção de redes: agrega Zabbix, Cacti, Nagios, TO
 | **Insights de IA** (URL, API key, modelo) | Admin | Todos, quando habilitado |
 | **Sessões Guacamole** + auditoria | Admin | Admin (navegador ou nova aba) |
 
-Resumo das novidades: [docs/CHANGELOG_FEATURES.md](docs/CHANGELOG_FEATURES.md) · Auth: [docs/AUTH.md](docs/AUTH.md) · IA: [docs/AI.md](docs/AI.md)
+Resumo das novidades: [docs/CHANGELOG_FEATURES.md](docs/CHANGELOG_FEATURES.md) · Auth: [docs/AUTH.md](docs/AUTH.md) · Segurança OWASP: [docs/OWASP.md](docs/OWASP.md) · IA: [docs/AI.md](docs/AI.md)
 
 ## Comece aqui
 
@@ -110,7 +110,7 @@ Cada componente (core, portal, módulos, Grafana, Guacamole) roda em **container
 
 | Área | Documentos |
 |------|----------------|
-| **Configuração** | [CONFIGURATION.md](docs/CONFIGURATION.md), [AUTH.md](docs/AUTH.md), [AI.md](docs/AI.md) |
+| **Configuração** | [CONFIGURATION.md](docs/CONFIGURATION.md), [AUTH.md](docs/AUTH.md), [OWASP.md](docs/OWASP.md), [AI.md](docs/AI.md) |
 | **Deploy** | [DEPLOYMENT.md](docs/DEPLOYMENT.md), [KUBERNETES.md](docs/KUBERNETES.md), [CI_CD.md](docs/CI_CD.md) |
 | **Operação** | [USAGE.md](docs/USAGE.md), [PROCESSES.md](docs/PROCESSES.md), [MAINTENANCE.md](docs/MAINTENANCE.md) |
 | **Visualização** | [DASHBOARDS.md](docs/DASHBOARDS.md), [GRAFANA.md](docs/GRAFANA.md) |

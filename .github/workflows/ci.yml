@@ -5,10 +5,15 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
 
 jobs:
   security-scan:
@@ -22,6 +27,8 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Usa .gitleaks.toml na raiz (allowlist de fixtures históricas + .env local)
+          GITLEAKS_CONFIG: .gitleaks.toml
 
       - name: Bandit (SAST — Python)
         uses: actions/setup-python@v5
@@ -46,14 +53,23 @@ jobs:
       - name: Instalar dependências
         run: pip install -r requirements-dev.txt
 
+      - name: pip-audit (OWASP A06 — componentes vulneráveis)
+        run: |
+          pip install pip-audit
+          # Audita apenas deps do projeto (não o ambiente do runner)
+          pip-audit -r requirements.txt -r requirements-dev.txt --progress-spinner off
+
       - name: Ruff (lint)
         run: ruff check shared services/core services/modules tests
 
       - name: Pytest
         run: pytest tests -v
         env:
+          # CONFIG_PATH real é sobrescrito pelo conftest (dir temporário com senhas de fixture).
           CONFIG_PATH: ./config
           PYTHONPATH: shared:services/core
+          CIEM_SECRET_KEY: test-secret-key-for-ci-only
+          CIEM_RATE_LIMIT_ENABLED: "0"
 
   docker-build:
     runs-on: ubuntu-latest

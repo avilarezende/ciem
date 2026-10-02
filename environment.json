@@ -1,4 +1,4 @@
 {
-  "install": "pip install -r requirements-dev.txt",
-  "start": "export CONFIG_PATH=./config PYTHONPATH=shared:services/core && uvicorn app.main:app --host 0.0.0.0 --port 8000 --app-dir services/core"
+  "install": "pip install -r requirements-dev.txt\nmkdir -p \"$HOME/.local/bin\"\nln -sf \"$(python3 -c 'import shutil; print(shutil.which(\"uvicorn\") or \"\")')\" \"$HOME/.local/bin/uvicorn\" 2>/dev/null || true",
+  "start": "export PATH=\"$HOME/.local/bin:$PATH\" CONFIG_PATH=\"${CONFIG_PATH:-./config}\" PYTHONPATH=shared:services/core CIEM_ENV=\"${CIEM_ENV:-development}\"\nif [ -z \"${CIEM_SECRET_KEY:-}\" ] || [ \"$CIEM_SECRET_KEY\" = \"change-me-in-production\" ]; then echo \"CIEM_SECRET_KEY obrigatória (secret do ambiente)\"; exit 1; fi\nexec python3 scripts/dev_serve_portal.py"
 }
