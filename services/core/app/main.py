@@ -1,5 +1,6 @@
 """Aplicação FastAPI principal do CIEM Core."""
 
+import logging
 import re
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
@@ -12,6 +13,7 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, generate_latest
 from pydantic import BaseModel, Field
 from slowapi.errors import RateLimitExceeded
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.aggregators import MODULE_URLS, aggregate_alarms, aggregate_history, aggregate_modules
 from app.ai_insights import clear_insights_cache, get_insights_public
@@ -20,6 +22,7 @@ from app.deps import create_session_token, require_admin, require_user
 from app.grafana_routes import refresh_prometheus_metrics
 from app.grafana_routes import router as grafana_router
 from app.rate_limit import CONFIG_WRITE_LIMIT, LOGIN_LIMIT, SESSION_LIMIT, limiter
+from app.security_middleware import SecurityHeadersMiddleware
 from app.sessions_store import pop_session, start_session_record
 from app.sso_routes import router as sso_router
 from ciem_common.audit import log_session, read_sessions
@@ -42,6 +45,7 @@ from ciem_common.config_loader import (
     upsert_wiki_page,
 )
 from ciem_common.interfaces import SessionRecord
+from ciem_common.security_log import security_event
 from ciem_common.sso import guacamole_client_id
 from ciem_common.targets_loader import load_targets_config
 
@@ -49,8 +53,8 @@ REQUEST_COUNT = Counter("ciem_requests_total", "Requisições HTTP", ["method", 
 
 
 class LoginRequest(BaseModel):
-    username: str
-    password: str
+    username: str = Field(..., min_length=1, max_length=128)
+    password: str = Field(..., min_length=1, max_length=256)
 
 
 class LoginResponse(BaseModel):
@@ -61,8 +65,8 @@ class LoginResponse(BaseModel):
 
 
 class SessionStartRequest(BaseModel):
-    target_id: str
-    protocol: str = "ssh"
+    target_id: str = Field(..., min_length=1, max_length=128)
+    protocol: str = Field(default="ssh", pattern="^(ssh|rdp|vnc)$")
 
 
 class SessionEndRequest(BaseModel):
@@ -90,23 +94,39 @@ def _rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONRespons
     )
 
 
+_docs = "/docs" if settings.docs_enabled else None
+_redoc = "/redoc" if settings.docs_enabled else None
+
 app = FastAPI(
     title="CIEM Core",
     description="Centro Integrado de Estatística e Manutenção — API ZTNA",
     version=settings.version,
     lifespan=lifespan,
+    docs_url=_docs,
+    redoc_url=_redoc,
+    openapi_url="/openapi.json" if settings.docs_enabled else None,
 )
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_handler)
 
+# CORS: "*" + credentials é combinação insegura (OWASP A05) — desativa credentials.
+_cors_origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()] or ["*"]
+_cors_credentials = "*" not in _cors_origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins.split(","),
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_cors_origins,
+    allow_credentials=_cors_credentials,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID", "X-Grafana-Token"],
 )
+
+# Trusted hosts (opcional — CIEM_TRUSTED_HOSTS=ciem.exemplo.local,localhost)
+_trusted = [h.strip() for h in settings.trusted_hosts.split(",") if h.strip()]
+if _trusted:
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=_trusted)
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(grafana_router)
 app.include_router(sso_router)
@@ -117,6 +137,27 @@ async def count_requests(request, call_next):
     response = await call_next(request)
     REQUEST_COUNT.labels(method=request.method, endpoint=request.url.path).inc()
     return response
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    """Em produção não vaza stack/internals (OWASP A05)."""
+    security_event(
+        "unhandled_exception",
+        level=logging.ERROR,
+        path=str(request.url.path),
+        error_type=type(exc).__name__,
+        request_id=getattr(request.state, "request_id", None),
+    )
+    if settings.env.strip().lower() == "production":
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Erro interno do servidor"},
+        )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"{type(exc).__name__}: {exc}"},
+    )
 
 
 @app.get("/health")
@@ -138,12 +179,28 @@ async def info() -> dict[str, Any]:
 @app.post("/auth/login", response_model=LoginResponse)
 @limiter.limit(LOGIN_LIMIT)
 async def login(request: Request, body: LoginRequest) -> LoginResponse:
+    client_ip = request.client.host if request.client else None
     user = authenticate(body.username, body.password)
     if not user:
+        security_event(
+            "login_failure",
+            level=logging.WARNING,
+            username=body.username[:128],
+            ip=client_ip,
+            request_id=getattr(request.state, "request_id", None),
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciais inválidas",
         )
+    security_event(
+        "login_success",
+        username=user.username,
+        role=user.role.value,
+        auth_source=user.auth_source,
+        ip=client_ip,
+        request_id=getattr(request.state, "request_id", None),
+    )
     return LoginResponse(
         token=create_session_token(user),
         username=user.username,

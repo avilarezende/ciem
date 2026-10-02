@@ -109,14 +109,14 @@ def test_create_and_delete_user(
 ) -> None:
     created = client.post(
         "/config/auth/users",
-        json={"username": "ops1", "password": "ops-pass", "role": "observer"},
+        json={"username": "ops1", "password": "ops-pass1word", "role": "observer"},
         headers=admin_headers,
     )
     assert created.status_code == 200
-    assert authenticate("ops1", "ops-pass") is not None
+    assert authenticate("ops1", "ops-pass1word") is not None
     deleted = client.delete("/config/auth/users/ops1", headers=admin_headers)
     assert deleted.status_code == 200
-    assert authenticate("ops1", "ops-pass") is None
+    assert authenticate("ops1", "ops-pass1word") is None
 
 
 def test_ldap_fields_persisted(

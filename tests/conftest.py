@@ -24,9 +24,9 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "shared"))
 sys.path.insert(0, str(REPO / "services" / "core"))
 
-# Senhas de fixture (propositalmente simples — não usar em produção).
-ADMIN_PASSWORD = "test-admin-password"
-OBSERVER_PASSWORD = "test-observer-password"
+# Senhas de fixture (baixa entropia, com letra+dígito — não usar em produção).
+ADMIN_PASSWORD = "test-admin-pass1"
+OBSERVER_PASSWORD = "test-observer-pass1"
 
 _TEST_CONFIG: Path | None = None
 

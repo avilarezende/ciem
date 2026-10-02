@@ -192,7 +192,12 @@ def _extract_json(text: str) -> dict[str, Any]:
 
 
 async def _call_llm(cfg: AiConfig, messages: list[dict[str, str]]) -> dict[str, Any]:
-    base = cfg.base_url.rstrip("/")
+    from ciem_common.url_safety import UnsafeURLError, validate_outbound_url
+
+    try:
+        base = validate_outbound_url(cfg.base_url).rstrip("/")
+    except UnsafeURLError as exc:
+        raise ValueError(f"URL do provedor de IA bloqueada: {exc}") from exc
     path = cfg.chat_path if cfg.chat_path.startswith("/") else f"/{cfg.chat_path}"
     url = f"{base}{path}"
     headers = {

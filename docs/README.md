@@ -46,7 +46,7 @@ Resumo das funções adicionadas ao portal (LDAP, usuários locais, switches de 
 | [MODULES.md](MODULES.md) | Coletores + configuração via portal (switch e opções) |
 | [AUTH.md](AUTH.md) | Usuários locais, admin padrão, LDAP opcional, token assinado, rate limiting, senha/exclusão |
 | [AI.md](AI.md) | Provedores de IA, insights no Grafana/portal (config admin) |
-| [CHANGELOG_FEATURES.md](CHANGELOG_FEATURES.md) | Resumo das funções recentes do portal |
+| [OWASP.md](OWASP.md) | Controles OWASP Top 10 / ASVS aplicados ao CIEM |
 | [GRAFANA.md](GRAFANA.md) | Provisionamento técnico do Grafana |
 | [GUACAMOLE.md](GUACAMOLE.md) | SSO e provisionamento de conexões |
 | [MAINTENANCE.md](MAINTENANCE.md) | Sessões SSH/RDP e `targets.yaml` |

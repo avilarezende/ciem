@@ -99,13 +99,15 @@ async def guacamole_sso_login(
             redirect_url = f"/guacamole/#/client/{client_id}"
 
     redirect = RedirectResponse(url=redirect_url, status_code=302)
+    redirect.headers["Cache-Control"] = "no-store"
     redirect.set_cookie(
         key=SSO_COOKIE,
         value=token,
         httponly=True,
         secure=True,
-        samesite="lax",
+        samesite="strict",
         max_age=300,
+        # Escopo mínimo: Guacamole + validação interna do proxy.
         path="/",
     )
     return redirect

@@ -424,6 +424,7 @@ def create_local_user(
 ) -> LocalUserEntry:
     """Cria usuário local com senha hasheada."""
     from ciem_common.auth import hash_password
+    from ciem_common.password_policy import PasswordPolicyError, validate_password
 
     cfg = load_auth_config()
     if any(u.username == username for u in cfg.local_users):
@@ -432,6 +433,10 @@ def create_local_user(
         raise ValueError("Papel deve ser admin ou observer")
     if not password:
         raise ValueError("Senha obrigatória")
+    try:
+        validate_password(password, username=username)
+    except PasswordPolicyError as exc:
+        raise ValueError(str(exc)) from exc
     entry = LocalUserEntry(
         username=username,
         password_hash=hash_password(password),
@@ -461,6 +466,12 @@ def update_local_user(
         if password is not None:
             if not password:
                 raise ValueError("Senha não pode ser vazia")
+            from ciem_common.password_policy import PasswordPolicyError, validate_password
+
+            try:
+                validate_password(password, username=username)
+            except PasswordPolicyError as exc:
+                raise ValueError(str(exc)) from exc
             data["password_hash"] = hash_password(password)
         if role is not None:
             if role not in {"admin", "observer"}:
