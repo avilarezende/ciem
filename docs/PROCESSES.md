@@ -12,9 +12,11 @@ Descrição dos processos de ponta a ponta: coleta, alarmes, visualização e ma
 Usuário → POST /api/auth/login {username, password}
        → Core tenta usuários locais (config/auth.yaml, PBKDF2)
        → Se falhar e LDAP enabled → tenta diretório
-       → Retorna token Bearer
-       → Portal armazena e envia em Authorization
+       → Retorna token assinado (HMAC-SHA256, válido por 8 h)
+       → Portal armazena e envia em Authorization: Bearer <token>
 ```
+
+Login limitado a **5 requisições/minuto** por IP (rate limiting); sessões e escrita de config também são limitadas. Sem `CIEM_SECRET_KEY` configurada, o core não inicia (fail-fast). Detalhes: [AUTH.md](AUTH.md).
 
 | Papel | Escopo |
 |-------|--------|
@@ -69,6 +71,8 @@ Cliente (portal, Grafana, API)
 | `POST /api/modules/{nome}/collect` | Manual / automação |
 
 > `collection_interval_seconds` em `main.yaml` documenta o intervalo desejado para futuro agendador; hoje a coleta não é periódica em background.
+>
+> `use_mock_on_failure` usa o padrão `false` — falha de coleta **não** gera dados simulados silenciosos; o módulo responde com erro/status OFFLINE.
 
 ## 3. Exibição de alarmes
 
@@ -89,7 +93,7 @@ Admin clica "Conectar" no alvo
     → Core gera token HMAC + URL /api/sso/guacamole/login?token=...
     → Navegador define cookie ciem_sso
     → Redireciona para /guacamole/
-    → Nginx auth_request → GET /api/sso/validate
+    → Nginx auth_request → GET /api/sso/validate (confere se o usuário ainda está ATIVO)
     → Guacamole abre conexão provisionada em targets.yaml
 ```
 
@@ -139,7 +143,7 @@ Configuração apenas admin; resultados públicos quando habilitado. Detalhes: [
 
 ```
 git push main
-    → GitHub Actions CI: ruff + pytest + docker build
+    → GitHub Actions CI: security-scan (gitleaks + bandit) + ruff + pytest + docker build
     → GitHub Actions CD: push imagens ghcr.io/avilarezende/ciem-*
     → Kubernetes: kubectl set image ... ou ArgoCD/Flux
     → rollout restart se ConfigMap mudou

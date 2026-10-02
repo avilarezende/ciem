@@ -15,15 +15,39 @@ O CIEM combina **usuários locais** (sempre disponíveis) e **LDAP/Active Direct
 | **Observador** | `observer` | Visualiza dashboards, alarmes ativos, histórico de eventos |
 | **Administrador** | `admin` | Tudo do observador + configura módulos, LDAP, usuários, IA, sessões e auditoria |
 
+## Tokens de sessão assinados
+
+O login devolve um **token assinado (HMAC-SHA256)** com validade de **8 horas** (ajustável por `CIEM_SESSION_TTL`) — não existem mais tokens previsíveis no formato `ciem-{usuário}`.
+
+- **Formato:** `base64url(payload).base64url(assinatura)` — o payload contém usuário, papel e expiração.
+- **Assinatura:** HMAC-SHA256 com `CIEM_SECRET_KEY`; tokens adulterados ou expirados são rejeitados (`401`).
+- **Revogação:** o token é revalidado contra `config/auth.yaml` a cada requisição — se o usuário for **desabilitado**, o acesso é negado imediatamente.
+- **Fail-fast:** o core **não inicia** se `CIEM_SECRET_KEY` não estiver definida ou estiver no valor padrão (`change-me...`). Gere com `openssl rand -hex 32`.
+
+Após as 8 h, o token vence e o usuário faz login novamente.
+
+## Rate limiting
+
+Endpoints críticos são limitados por IP (slowapi) para conter força bruta e abuso:
+
+| Endpoint | Limite |
+|----------|--------|
+| `POST /auth/login` | 5/min |
+| `POST /sessions/start` | 30/min |
+| Escrita de configuração (`PUT/POST/DELETE` em `/config/*`) | 20/min |
+| Demais endpoints autenticados | 300/min |
+
+Ao exceder o limite, a API responde **`429 Too Many Requests`** (com `Retry-After`). Em testes/desenvolvimento, desative com `CIEM_RATE_LIMIT_ENABLED=0` (padrão já usado na suíte de testes).
+
 ## Usuário admin padrão
 
 | Campo | Valor padrão |
 |-------|----------------|
 | Usuário | `admin` |
-| Senha | `admin123` |
+| Senha | **Rotacionada** — defina com o CLI/portal; não há mais senha padrão conhecida |
 | Papel | `admin` |
 
-> **Altere a senha imediatamente em produção.**
+> **Defina a senha antes do primeiro login em produção.**
 
 ### Alterar a senha do admin
 
@@ -82,10 +106,17 @@ local_users:
 
 ### Credenciais padrão (desenvolvimento)
 
-| Usuário | Senha | Papel |
-|---------|-------|-------|
-| admin | admin123 | admin |
-| observador | observer123 | observer |
+As senhas padrão foram **rotacionadas** — `config/auth.yaml` guarda apenas hashes PBKDF2 de senhas definidas na primeira configuração. Defina a senha de cada usuário com o CLI:
+
+```bash
+export PYTHONPATH=shared
+python -c "from ciem_common.auth import hash_password; print(hash_password('nova_senha'))"
+```
+
+| Usuário | Papel |
+|---------|-------|
+| admin | admin |
+| observador | observer |
 
 ### Operações no portal
 
@@ -99,23 +130,31 @@ local_users:
 ### API
 
 ```bash
+# 1. Login → token assinado (HMAC-SHA256, válido por 8 h)
+TOKEN=$(curl -sk -X POST https://ciem.exemplo.local/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "sua_senha"}' \
+  | python -c "import sys,json; print(json.load(sys.stdin)['token'])")
+
 # Listar auth (admin)
-curl -H "Authorization: Bearer ciem-admin" https://ciem.exemplo.local/api/config/auth
+curl -H "Authorization: Bearer $TOKEN" https://ciem.exemplo.local/api/config/auth
 
 # Criar usuário
-curl -X POST -H "Authorization: Bearer ciem-admin" -H "Content-Type: application/json" \
+curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"username":"ops","password":"segredo","role":"observer"}' \
   https://ciem.exemplo.local/api/config/auth/users
 
 # Alterar senha
-curl -X PUT -H "Authorization: Bearer ciem-admin" -H "Content-Type: application/json" \
+curl -X PUT -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"password":"nova_senha"}' \
   https://ciem.exemplo.local/api/config/auth/users/admin
 
 # Excluir
-curl -X DELETE -H "Authorization: Bearer ciem-admin" \
+curl -X DELETE -H "Authorization: Bearer $TOKEN" \
   https://ciem.exemplo.local/api/config/auth/users/observador
 ```
+
+> `$TOKEN` é o valor do campo `token` retornado pelo login. Tokens expiram em 8 h — em automações, refaça o login ao receber `401`.
 
 ## LDAP / Active Directory
 
@@ -171,7 +210,7 @@ ldap:
 1. Usuário informa login/senha
 2. CIEM autentica em local_users (admin, observador, etc.)
 3. Se falhar e ldap.enabled=true → tenta LDAP
-4. Sucesso → token de sessão
+4. Sucesso → token assinado (HMAC-SHA256, 8 h)
 ```
 
 Se LDAP **não** estiver configurado ou estiver desabilitado, apenas usuários locais autenticam.
@@ -189,31 +228,39 @@ LDAP_BIND_PASSWORD=senha-do-servico
 ```bash
 curl -X POST https://ciem.exemplo.local/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username": "admin", "password": "admin123"}'
+  -d '{"username": "admin", "password": "sua_senha"}'
 ```
 
 ```json
 {
-  "token": "ciem-admin",
+  "token": "eyJ1c2VyIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJleHAiOjE3MzI4... .<assinatura HMAC-SHA256>",
   "username": "admin",
   "role": "admin",
   "display_name": "admin"
 }
 ```
 
+O `token` é assinado com `CIEM_SECRET_KEY`, embute usuário/papel/expiração e vence em **8 h** (`CIEM_SESSION_TTL`). Sem `CIEM_SECRET_KEY` configurada (fail-fast), o core nem inicia.
+
 ## Segurança
 
 - Senhas locais: PBKDF2-SHA256 (260.000 iterações)
+- Tokens de sessão: assinados HMAC-SHA256 com expiração (8 h) — nada de `ciem-{usuário}` forjável
+- Fail-fast: `CIEM_SECRET_KEY` obrigatória, sem valor padrão aceito
+- Rate limiting (slowapi): login 5/min, sessões 30/min, escrita de config 20/min
+- `/sso/validate` só emite `X-CIEM-User` para usuários **ativos** no `auth.yaml` (`enabled: true`)
 - HTTPS no proxy (certificado wildcard)
 - Último admin local protegido contra exclusão/desabilitação
 - Preferir `ldaps://` e `ca_cert_path` em produção
+
+SSO Guacamole (tokens e fluxo): [GUACAMOLE.md](GUACAMOLE.md).
 
 ## Proteção de endpoints
 
 | Endpoint | Papel mínimo |
 |----------|-------------|
 | `GET /health` | Público |
-| `POST /auth/login` | Público |
+| `POST /auth/login` | Público (rate limit 5/min) |
 | `GET /alarms/active` | observer |
 | `GET /config/modules` | observer |
 | `PUT /config/modules/{nome}` | admin |
@@ -223,4 +270,5 @@ curl -X POST https://ciem.exemplo.local/api/auth/login \
 | `GET/PUT /config/ai` | admin |
 | `GET /insights` | observer |
 | `POST /insights/refresh` | admin |
-| `POST /sessions/start` | admin |
+| `POST /sessions/start` | admin (rate limit 30/min) |
+| `GET /sso/validate` | Público (nginx auth_request; só responde `X-CIEM-User` para usuário **ativo**) |

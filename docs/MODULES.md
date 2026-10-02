@@ -171,6 +171,45 @@ docker compose --profile core --profile module-zabbix --profile module-nagios up
 
 Aplique apenas os Deployments dos módulos desejados em `deploy/kubernetes/`.
 
+## `CONFIG_PATH` nos coletores (arquivo ou diretório)
+
+Cada módulo lê a própria configuração via `CONFIG_PATH`, que aceita dois layouts:
+
+- **Arquivo** — `CONFIG_PATH=/app/config.yaml`: o YAML é lido diretamente, com as opções no topo (formato antigo de cada módulo):
+
+  ```yaml
+  # config.yaml (layout arquivo)
+  url: "https://zabbix.exemplo.local"
+  username: "ciem-collector"
+  verify_ssl: true
+  ```
+
+- **Diretório** — `CONFIG_PATH=/app/config`: procura `modules.yaml` e extrai a seção `modules.<nome>.options`:
+
+  ```yaml
+  # config/modules.yaml (layout diretório)
+  modules:
+    zabbix:
+      enabled: true
+      options:
+        url: "https://zabbix.exemplo.local"
+        username: "ciem-collector"
+  ```
+
+`modules.yaml` tem precedência; na ausência dele, o carregador aceita `config.yaml`/`config.yml` ou qualquer `*.yaml`/`*.yml` do diretório. No Compose, todos os coletores apontam para o mesmo diretório `/app/config`.
+
+## `use_mock_on_failure` (padrão: `false`)
+
+Dados simulados **não são mais** usados como fallback silencioso. Com o padrão, uma falha de coleta retorna erro/status **OFFLINE** (visível no dashboard). Para desenvolvimento, habilite explicitamente por módulo:
+
+```yaml
+zabbix:
+  enabled: true
+  options:
+    url: "https://zabbix.exemplo.local"
+    use_mock_on_failure: true     # ← só para desenvolvimento
+```
+
 ## Desenvolvimento de novos módulos
 
 1. Crie diretório em `services/modules/seu-modulo/`

@@ -5,9 +5,9 @@ Guia para operadores de NOC que **monitoram** o CIEM sem alterar a configuraçã
 | Credencial de desenvolvimento | Valor |
 |-------------------------------|-------|
 | Usuário | `observador` |
-| Senha | `observer123` |
+| Senha | **Rotacionada** — definida pela administração local (`config/auth.yaml`), sem padrão conhecido |
 
-Admin padrão (referência): `admin` / `admin123` — ver [MANUAL_ADMIN.md](MANUAL_ADMIN.md).
+Admin padrão (referência): `admin` — ver [MANUAL_ADMIN.md](MANUAL_ADMIN.md).
 
 ## O que o observer pode fazer
 

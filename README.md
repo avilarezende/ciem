@@ -4,7 +4,7 @@
 
 Plataforma **ZTNA** para manutenção de redes: agrega Zabbix, Cacti, Nagios, TOPdesk, inventário e syslog em um portal unificado, com **Navegador HTML5** embutido, Grafana, sessões remotas auditadas via Guacamole, autenticação local/LDAP e insights opcionais de IA.
 
-> **Versão atual (`main`):** portal ergonômico + **Navegador HTML5**, **Lembretes/Anotações**, **Calendário** compartilhado e **Wiki** de serviços.
+> **Versão atual (`main`):** portal ergonômico + **Navegador HTML5**, **Lembretes/Anotações**, **Calendário** compartilhado e **Wiki** de serviços, com **autenticação por token assinado (HMAC-SHA256)**, rate limiting na API e varredura de segurança na CI.
 
 ![Visão geral com lembretes, Wiki e Calendário](docs/assets/ciem-portal-dashboard.jpg)
 
@@ -48,6 +48,13 @@ Resumo das novidades: [docs/CHANGELOG_FEATURES.md](docs/CHANGELOG_FEATURES.md) �
 git clone https://github.com/avilarezende/ciem.git
 cd ciem
 cp .env.example .env
+
+# Gere e configure as chaves OBRIGATÓRIAS antes de subir (o core não inicia
+# sem CIEM_SECRET_KEY forte — fail-fast):
+openssl rand -hex 32          # CIEM_SECRET_KEY    (assina tokens de sessão/SSO)
+openssl rand -hex 32          # CIEM_GRAFANA_TOKEN (senha interna do Grafana)
+# edite o .env e preencha CIEM_SECRET_KEY e CIEM_GRAFANA_TOKEN com as chaves geradas
+
 # Opcional: edite config/*.yaml — ou configure pelo portal após o login admin
 # (módulos, LDAP, usuários locais, provedor de IA)
 
@@ -56,9 +63,11 @@ docker compose -f deploy/docker/docker-compose.yml --profile core --profile modu
 
 | Serviço | URL | Dev |
 |---------|-----|-----|
-| Portal | `https://localhost/` | `admin` / `admin123` (altere em produção) |
-| Grafana | `https://localhost/grafana/` | `admin` / `admin` |
+| Portal | `https://localhost/` | Senha do `admin` **rotacionada** — defina em `config/auth.yaml` ou no portal |
+| Grafana | `https://localhost/grafana/` | `admin` / `admin` (troque via `GRAFANA_ADMIN_PASSWORD`) |
 | API | `https://localhost/api/health` | — |
+
+> **Segurança:** o login devolve um **token assinado (HMAC-SHA256)** válido por 8 h (`CIEM_SESSION_TTL` para ajustar). O core **não inicia** (fail-fast) se `CIEM_SECRET_KEY` não estiver configurada ou estiver no valor padrão (`change-me...`). Mais em [docs/AUTH.md](docs/AUTH.md).
 
 Após o login: sidebar **Navegador** (Grafana/URLs embutidos). Admin também usa **Configuração** (Usuários, LDAP, IA, Módulos) e **Sessões** (Guacamole no navegador ou nova aba). Operadores usam **Visão geral** e **Análise** para KPIs, gráficos e insights.
 
@@ -66,7 +75,8 @@ Após o login: sidebar **Navegador** (Grafana/URLs embutidos). Admin também usa
 
 ```bash
 kubectl apply -f deploy/kubernetes/00-namespace.yaml
-# Configure ConfigMap e Secrets — ver docs/KUBERNETES.md
+# Configure ConfigMap e Secrets — ver docs/KUBERNETES.md.
+# Obrigatório nos Secrets: CIEM_SECRET_KEY e CIEM_GRAFANA_TOKEN (gere com openssl rand -hex 32)
 kubectl apply -f deploy/kubernetes/
 ```
 
@@ -120,11 +130,16 @@ Ative em `config/modules.yaml` **ou** no portal (**Configuração → Módulos c
 | inventory | API REST |
 | syslog | Arquivo / API |
 
+> Os módulos usam `use_mock_on_failure: false` por padrão — **dados simulados não são mais fallback silencioso**; falha de coleta vira erro/status OFFLINE. O `CONFIG_PATH` aceita **arquivo** (`config.yaml`) ou **diretório** (procura `modules.yaml` e extrai `modules.<nome>.options`). Detalhes: [docs/CONFIGURATION.md](docs/CONFIGURATION.md) e [docs/MODULES.md](docs/MODULES.md).
+
 ## Desenvolvimento
 
 ```bash
 pip install -r requirements-dev.txt
 export PYTHONPATH=shared:services/core CONFIG_PATH=./config
+export CIEM_SECRET_KEY="$(openssl rand -hex 32)"
+export CIEM_GRAFANA_TOKEN="$(openssl rand -hex 32)"
+# CIEM_RATE_LIMIT_ENABLED=0 desativa o rate limiting local (padrão usado nos testes)
 ruff check shared services/core services/modules tests
 pytest tests -v
 ```

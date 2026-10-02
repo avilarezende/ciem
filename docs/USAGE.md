@@ -6,9 +6,9 @@ Manual para operadores de NOC e administradores no dia a dia do portal.
 
 1. Abra `https://<seu-dominio>/`  
 2. Entre com usuário local (`config/auth.yaml`) ou LDAP (se o admin tiver habilitado)  
-3. O token permanece no navegador até **Sair** ou expiração da sessão  
+3. O token (assinado, 8 h de validade) permanece no navegador até **Sair** ou expirar  
 
-Credenciais padrão de desenvolvimento: `admin` / `admin123` e `observador` / `observer123` (altere em produção — ver [AUTH.md](AUTH.md)).
+As senhas padrão foram **rotacionadas** — não há mais credencial padrão no portal. Cada usuário tem senha definida via CLI (`PYTHONPATH=shared python -c "from ciem_common.auth import hash_password; print(hash_password('senha'))"`) ou em **Configuração → Usuários** ([AUTH.md](AUTH.md)). O login é limitado a 5 tentativas/minuto por IP.
 
 Manuais dedicados: [MANUAL_USER.md](MANUAL_USER.md) (observer) · [MANUAL_ADMIN.md](MANUAL_ADMIN.md) (administrador).
 
@@ -140,11 +140,11 @@ Guia: [AUTH.md](AUTH.md).
 
 | Sistema | Usuário | Senha |
 |---------|---------|-------|
-| Portal | `admin` | `admin123` |
-| Portal (observer) | `observador` | `observer123` |
-| Grafana | `admin` | `admin` |
+| Portal | `admin` | **Rotacionada** — defina via CLI/portal |
+| Portal (observer) | `observador` | **Rotacionada** — defina via CLI/portal |
+| Grafana | `admin` | definida por `GRAFANA_ADMIN_PASSWORD` (padrão dev: `admin`) |
 
-> Troque todas as senhas antes de expor à internet.
+> Não existem mais senhas padrão conhecidas no portal. Troque as senhas do Grafana antes de expor à internet.
 
 ## Problemas frequentes
 

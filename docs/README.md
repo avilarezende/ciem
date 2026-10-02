@@ -44,7 +44,7 @@ Resumo das funções adicionadas ao portal (LDAP, usuários locais, switches de 
 |-----------|----------|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Isolamento, redes e comunicação entre serviços |
 | [MODULES.md](MODULES.md) | Coletores + configuração via portal (switch e opções) |
-| [AUTH.md](AUTH.md) | Usuários locais, admin padrão, LDAP opcional, senha/exclusão |
+| [AUTH.md](AUTH.md) | Usuários locais, admin padrão, LDAP opcional, token assinado, rate limiting, senha/exclusão |
 | [AI.md](AI.md) | Provedores de IA, insights no Grafana/portal (config admin) |
 | [CHANGELOG_FEATURES.md](CHANGELOG_FEATURES.md) | Resumo das funções recentes do portal |
 | [GRAFANA.md](GRAFANA.md) | Provisionamento técnico do Grafana |

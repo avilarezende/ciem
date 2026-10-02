@@ -17,7 +17,7 @@ Proxy nginx (auth_request) → Header X-CIEM-User → Guacamole
 2. CIEM gera token SSO assinado (5 min)
 3. Portal embute ou abre `/api/sso/guacamole/login?token=...` (iframe do Navegador ou nova aba)
 4. Cookie `ciem_sso` é definido e usuário é redirecionado à conexão
-5. Proxy valida cookie via `/sso/validate` e passa `X-CIEM-User` ao Guacamole
+5. Proxy valida cookie via `/sso/validate` — que confere se o usuário ainda está **ativo** no `config/auth.yaml` — e passa `X-CIEM-User` ao Guacamole
 6. Guacamole autentica via **auth-header** e carrega conexões do `user-mapping.xml`
 
 O **Navegador HTML5** do portal é o caminho preferido para manter o contexto NOC; use nova aba quando o destino bloquear iframe.
@@ -25,15 +25,21 @@ O **Navegador HTML5** do portal é o caminho preferido para manter o contexto NO
 ### API SSO
 
 ```bash
+# 1. Login → token assinado (HMAC-SHA256); o core não inicia sem CIEM_SECRET_KEY
+TOKEN=$(curl -sk -X POST https://ciem.local/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "sua_senha"}' \
+  | python -c "import sys,json; print(json.load(sys.stdin)['token'])")
+
 # Gerar sessão SSO para alvo específico
 curl -X POST https://ciem.local/api/sso/guacamole \
-  -H "Authorization: Bearer ciem-admin" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"target_id": "rtr-core-01"}'
 
 # Abrir Guacamole com todos os alvos
 curl -X POST https://ciem.local/api/sso/guacamole \
-  -H "Authorization: Bearer ciem-admin" \
+  -H "Authorization: Bearer $TOKEN" \
   -d '{}'
 ```
 
@@ -41,7 +47,7 @@ curl -X POST https://ciem.local/api/sso/guacamole \
 
 | Variável | Padrão | Função |
 |----------|--------|--------|
-| `CIEM_SECRET_KEY` | change-me | Assina tokens SSO |
+| `CIEM_SECRET_KEY` | **(obrigatória, sem padrão)** | Assina tokens SSO e de sessão (HMAC-SHA256). O core não inicia se ausente ou no valor padrão (fail-fast) — gere com `openssl rand -hex 32` |
 | `CIEM_SSO_TTL` | 300 | Validade do token (segundos) |
 
 ### Extensões Guacamole

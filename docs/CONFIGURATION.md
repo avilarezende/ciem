@@ -18,6 +18,28 @@ O CIEM é configurado via arquivos YAML comentados em português, localizados em
 
 Documentação de IA: [AI.md](AI.md).
 
+## Variáveis de ambiente obrigatórias
+
+O `ciem-core` **não inicia** (fail-fast) se `CIEM_SECRET_KEY` não estiver definida ou estiver no valor padrão (`change-me...`). Em Docker/Kubernetes, `CIEM_SECRET_KEY` e `CIEM_GRAFANA_TOKEN` são **obrigatórias** no ambiente.
+
+Gere chaves fortes:
+
+```bash
+openssl rand -hex 32   # CIEM_SECRET_KEY
+openssl rand -hex 32   # CIEM_GRAFANA_TOKEN
+```
+
+| Variável | Obrigatória | Função |
+|----------|-------------|--------|
+| `CIEM_SECRET_KEY` | Sim (core) | Assina tokens de sessão (login) e SSO via HMAC-SHA256 |
+| `CIEM_GRAFANA_TOKEN` | Sim (Docker/K8s) | Senha interna de integração core ↔ Grafana |
+| `CIEM_SESSION_TTL` | Não | Validade do token de sessão em segundos (padrão `28800` = **8 h**) |
+| `CIEM_SSO_TTL` | Não | Validade do token SSO do Guacamole (padrão `300` s) |
+| `CIEM_RATE_LIMIT_ENABLED` | Não | `0` desativa o rate limiting (útil em testes); ativo por padrão |
+| `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD` | Não | Credenciais de login do painel Grafana |
+
+> No `deploy/docker/docker-compose.yml` as duas primeiras usam `${CIEM_SECRET_KEY:?...}` — sem elas, `docker compose up` **falha na hora**. Autenticação e limites por endpoint: [AUTH.md](AUTH.md).
+
 ## config/main.yaml
 
 ```yaml
@@ -72,6 +94,46 @@ ZABBIX_USERNAME=ciem-collector
 ZABBIX_PASSWORD=senha-segura
 NAGIOS_API_KEY=chave-api
 ```
+
+### `use_mock_on_failure` (padrão: `false`)
+
+Os módulos **não** usam mais dados simulados como fallback silencioso: com o padrão, uma falha de coleta vira erro/status **OFFLINE** no painel. Para desenvolvimento, habilite explicitamente por módulo:
+
+```yaml
+modules:
+  zabbix:
+    enabled: true
+    options:
+      url: "https://zabbix.sua-rede.local"
+      use_mock_on_failure: true     # ← só para desenvolvimento
+```
+
+### `CONFIG_PATH` nos coletores (arquivo ou diretório)
+
+Cada módulo lê a própria configuração via `CONFIG_PATH`, em dois layouts:
+
+- **Arquivo** — `CONFIG_PATH=/app/config.yaml`: o YAML é carregado diretamente, com as opções no topo (formato antigo, "achatado"):
+
+  ```yaml
+  # config.yaml (layout arquivo)
+  url: "https://zabbix.sua-rede.local"
+  username: "ciem-collector"
+  verify_ssl: true
+  ```
+
+- **Diretório** — `CONFIG_PATH=/app/config`: procura `modules.yaml` (fallback: `config.yaml`, `config.yml` ou o primeiro `*.yaml`/`*.yml`) e extrai a seção `modules.<nome>.options`:
+
+  ```yaml
+  # config/modules.yaml (layout diretório)
+  modules:
+    zabbix:
+      enabled: true
+      options:
+        url: "https://zabbix.sua-rede.local"
+        username: "ciem-collector"
+  ```
+
+O mesmo `config/modules.yaml` da plataforma atende todos os coletores — cada container enxerga apenas a própria seção `modules.<nome>.options`. Detalhes por módulo: [MODULES.md](MODULES.md).
 
 ## config/auth.yaml
 
@@ -168,9 +230,15 @@ O portal CIEM (`https://seu-dominio/`) usa **sidebar + workspace**:
 | Sessões | Admin | SSO Guacamole + auditoria |
 | Configuração | Admin | Seções: Usuários · LDAP · IA · Módulos |
 
-**Credenciais padrão de desenvolvimento:**
-- Admin: `admin` / `admin123` — altere em **Configuração → Usuários**
-- Observador: `observador` / `observer123`
+**Credenciais de desenvolvimento:** as senhas padrão foram **rotacionadas** — `config/auth.yaml` guarda apenas hashes PBKDF2 de senhas definidas na primeira configuração. Defina a senha de cada usuário:
+
+```bash
+PYTHONPATH=shared python -c "from ciem_common.auth import hash_password; print(hash_password('minha_senha'))"
+```
+
+Cole o hash gerado em `config/auth.yaml` ou troque pelo portal (**Configuração → Usuários → Alterar senha**).
+
+O login devolve um **token assinado (HMAC-SHA256)** com validade de 8 h. Mais em [AUTH.md](AUTH.md).
 
 Manuais: [MANUAL_USER.md](MANUAL_USER.md) · [MANUAL_ADMIN.md](MANUAL_ADMIN.md)  
 Ver também: [AUTH.md](AUTH.md), [AI.md](AI.md), [PORTAL.md](PORTAL.md), [CHANGELOG_FEATURES.md](CHANGELOG_FEATURES.md).
@@ -178,8 +246,9 @@ Ver também: [AUTH.md](AUTH.md), [AI.md](AI.md), [PORTAL.md](PORTAL.md), [CHANGE
 ## Checklist de implantação
 
 - [ ] Copiar `.env.example` → `.env`
+- [ ] Gerar e configurar `CIEM_SECRET_KEY` e `CIEM_GRAFANA_TOKEN` (obrigatórias) — `openssl rand -hex 32`
 - [ ] Configurar `config/modules.yaml` **ou** ativar módulos pelo portal
-- [ ] Alterar senha do `admin` (portal ou `config/auth.yaml`)
+- [ ] Definir a senha do `admin` (portal ou `config/auth.yaml`) — não há mais senha padrão
 - [ ] (Opcional) LDAP em Configuração ou `auth.yaml`
 - [ ] (Opcional) Provedor de IA em Configuração ou `ai.yaml`
 - [ ] Colocar certificado wildcard em `certs/`

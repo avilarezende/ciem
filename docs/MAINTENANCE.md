@@ -77,8 +77,14 @@ Cada sessão gera um registro em `data/audit/sessions.jsonl`:
 ### Consultar auditoria via API
 
 ```bash
+# 1. Login → token assinado (HMAC-SHA256, válido por 8 h)
+TOKEN=$(curl -sk -X POST https://ciem.exemplo.local/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "sua_senha"}' \
+  | python -c "import sys,json; print(json.load(sys.stdin)['token'])")
+
 curl https://ciem.exemplo.local/api/sessions/audit \
-  -H "Authorization: Bearer ciem-admin"
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 ### Configuração de gravação
@@ -110,11 +116,13 @@ management_network:
 
 ## API de sessões
 
+> `$TOKEN` vem do login (veja acima). `/sessions/start` é limitado a **30 inícios/minuto** por IP (rate limiting); testes podem definir `CIEM_RATE_LIMIT_ENABLED=0`.
+
 ### Iniciar sessão
 
 ```bash
 curl -X POST https://ciem.exemplo.local/api/sessions/start \
-  -H "Authorization: Bearer ciem-admin" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"target_id": "rtr-core-01", "protocol": "ssh"}'
 ```
@@ -132,7 +140,7 @@ Resposta:
 
 ```bash
 curl -X POST https://ciem.exemplo.local/api/sessions/end \
-  -H "Authorization: Bearer ciem-admin" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"session_id": "sess-...", "commands": ["show ip route"]}'
 ```

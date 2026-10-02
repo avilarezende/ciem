@@ -51,6 +51,28 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -subj "/CN=ciem.local"
 ```
 
+## Chaves obrigatórias (CIEM_SECRET_KEY e CIEM_GRAFANA_TOKEN)
+
+O `ciem-core` **não inicia** (fail-fast) sem `CIEM_SECRET_KEY` forte — o valor padrão (`change-me...`) é recusado. Em Docker/Kubernetes, `CIEM_GRAFANA_TOKEN` (senha interna de integração com o Grafana) também é **obrigatória**.
+
+Gere ambas:
+
+```bash
+openssl rand -hex 32   # CIEM_SECRET_KEY
+openssl rand -hex 32   # CIEM_GRAFANA_TOKEN
+```
+
+No Compose, as variáveis usam `${CIEM_SECRET_KEY:?...}` e `${CIEM_GRAFANA_TOKEN:?...}`: sem elas no ambiente, **`docker compose up` falha na hora** com mensagem clara, em vez de subir com configuração quebrada.
+
+### `.env` mínimo
+
+```dotenv
+CIEM_SECRET_KEY=<chave gerada com openssl rand -hex 32>
+CIEM_GRAFANA_TOKEN=<chave gerada com openssl rand -hex 32>
+GRAFANA_ADMIN_USER=admin
+GRAFANA_ADMIN_PASSWORD=<senha do painel Grafana>
+```
+
 ## Kubernetes
 
 Manifests numerados em [`deploy/kubernetes/`](../deploy/kubernetes/README.md). **Guia completo:** [KUBERNETES.md](KUBERNETES.md).
@@ -60,6 +82,7 @@ Manifests numerados em [`deploy/kubernetes/`](../deploy/kubernetes/README.md). *
 - Cluster Kubernetes 1.25+
 - Ingress controller (nginx recomendado)
 - Certificado wildcard como Secret TLS
+- Secrets com `CIEM_SECRET_KEY` e `CIEM_GRAFANA_TOKEN` (`02-secrets.yaml`)
 
 ### Instalação
 
@@ -73,7 +96,9 @@ kubectl create configmap ciem-config -n ciem \
   --from-file=config/targets.yaml
 
 cp deploy/kubernetes/02-secrets.example.yaml deploy/kubernetes/02-secrets.yaml
-# Edite secrets e aplique (não commite 02-secrets.yaml)
+# Edite secrets e aplique (não commite 02-secrets.yaml).
+# IMPORTANTE: inclua CIEM_SECRET_KEY e CIEM_GRAFANA_TOKEN nos Secrets — o core
+# não inicia sem CIEM_SECRET_KEY configurada (fail-fast).
 kubectl apply -f deploy/kubernetes/02-secrets.yaml
 
 kubectl apply -f deploy/kubernetes/03-core.yaml \
@@ -113,8 +138,12 @@ Veja `deploy/rancher/catalog.yaml` para metadados do catálogo.
 
 | Variável | Serviço | Descrição |
 |----------|---------|-----------|
-| `CONFIG_PATH` | core, módulos | Caminho dos YAMLs |
-| `CIEM_SECRET_KEY` | core | Chave secreta da API |
+| `CONFIG_PATH` | core, módulos | Caminho dos YAMLs — **arquivo** (`config.yaml`) ou **diretório** (procura `modules.yaml` e extrai `modules.<nome>.options`) |
+| `CIEM_SECRET_KEY` | core | Chave de assinatura HMAC (sessão + SSO). **Obrigatória**, sem valor padrão (fail-fast) |
+| `CIEM_GRAFANA_TOKEN` | core, grafana | Senha interna de integração core ↔ Grafana. **Obrigatória** em Docker/K8s |
+| `CIEM_SESSION_TTL` | core | Validade do token de sessão (s; padrão `28800` = 8 h) |
+| `CIEM_SSO_TTL` | core | Validade do token SSO do Guacamole (s; padrão `300`) |
+| `CIEM_RATE_LIMIT_ENABLED` | core | `0` desativa o rate limiting (testes); ativo por padrão |
 | `GRAFANA_ADMIN_USER` | grafana | Usuário admin Grafana |
 | `GRAFANA_ADMIN_PASSWORD` | grafana | Senha admin Grafana |
 | `ZABBIX_URL` | module-zabbix | URL do Zabbix |
@@ -151,6 +180,15 @@ Arquivos importantes para backup:
 ```bash
 # Logs do core
 docker compose -f deploy/docker/docker-compose.yml logs ciem-core
+
+# Core não inicia reclamando de CIEM_SECRET_KEY?
+# → Defina uma chave forte (o valor padrão "change-me..." é recusado / fail-fast):
+export CIEM_SECRET_KEY=$(openssl rand -hex 32)
+export CIEM_GRAFANA_TOKEN=$(openssl rand -hex 32)
+
+# 429 Too Many Requests?
+# → Você excedeu o rate limit (ex.: 5/min no /api/auth/login). Aguarde o Retry-After
+#   ou, só em testes, desative com CIEM_RATE_LIMIT_ENABLED=0.
 
 # Testar módulo isolado (porta interna 8080)
 curl http://module-zabbix:8080/health

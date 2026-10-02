@@ -2,12 +2,15 @@
 
 Resumo das capacidades adicionadas ao CIEM para operação pelo portal (administração) e consumo por toda a equipe NOC.
 
-## 1. Autenticação: usuários locais + LDAP opcional
+## 1. Autenticação: usuários locais + LDAP opcional + token assinado
 
 | Capacidade | Detalhe |
 |------------|---------|
 | Usuários locais | Sempre disponíveis; prioridade no login |
-| Admin padrão | `admin` / `admin123` — independente do LDAP |
+| Senhas padrão | **Rotacionadas** — `config/auth.yaml` guarda só hashes PBKDF2; defina a sua via CLI/portal |
+| Token de sessão | Assinado **HMAC-SHA256**, válido por 8 h (`CIEM_SESSION_TTL`) — não há mais `ciem-{usuário}` |
+| Fail-fast | `CIEM_SECRET_KEY` obrigatória; sem ela (ou no padrão `change-me...`) o core não inicia |
+| Rate limiting | Login 5/min, sessões 30/min, escrita de config 20/min (slowapi); `CIEM_RATE_LIMIT_ENABLED=0` desativa |
 | LDAP / AD | Admin configura servidor, porta, SSL, domínio, UID, filtros, bind e certificados |
 | Gestão no portal | Criar usuário, alterar senha, habilitar/desabilitar, excluir (último admin protegido) |
 

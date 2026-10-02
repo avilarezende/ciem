@@ -22,6 +22,23 @@ cp .env.example .env
 
 Edite os YAML em `config/` — todos comentados em português.
 
+> **Antes de subir:** o `ciem-core` **não inicia** sem `CIEM_SECRET_KEY` forte (fail-fast). Em Docker/Kubernetes, `CIEM_SECRET_KEY` e `CIEM_GRAFANA_TOKEN` são **obrigatórias** no ambiente.
+
+Gere e preencha no `.env`:
+
+```bash
+openssl rand -hex 32   # CIEM_SECRET_KEY
+openssl rand -hex 32   # CIEM_GRAFANA_TOKEN
+```
+
+### `.env`
+
+```dotenv
+CIEM_SECRET_KEY=<chave gerada acima>
+CIEM_GRAFANA_TOKEN=<chave gerada acima>
+CONFIG_PATH=./config
+```
+
 ### `config/main.yaml`
 
 - `platform_name` — nome no portal e Grafana  
@@ -45,15 +62,21 @@ Credenciais sensíveis podem ir no `.env` (veja `.env.example`).
 
 ### `config/auth.yaml`
 
-Usuários locais para o portal (PBKDF2). Padrão de desenvolvimento:
+Usuários locais para o portal (PBKDF2). As senhas padrão foram **rotacionadas** — não há mais senha padrão conhecida. Defina a de cada usuário antes do primeiro login:
 
-| Usuário | Senha | Papel |
-|---------|-------|-------|
-| `admin` | `admin123` | admin |
-| `observador` | `observer123` | observer |
+```bash
+PYTHONPATH=shared python -c "from ciem_common.auth import hash_password; print(hash_password('minha_senha'))"
+# cole o hash gerado (salt$digest) no campo password_hash do usuário em config/auth.yaml
+```
 
-**Altere em produção.** No portal: sidebar **Configuração → Usuários → Alterar senha**.  
-Detalhes (LDAP, exclusão do admin, CLI): [AUTH.md](AUTH.md).
+Ou troque pelo portal: sidebar **Configuração → Usuários → Alterar senha**.
+
+| Usuário | Papel |
+|---------|-------|
+| `admin` | admin |
+| `observador` | observer |
+
+Detalhes (LDAP, exclusão do admin, tokens assinados, rate limiting): [AUTH.md](AUTH.md).
 
 ### `config/ai.yaml`
 
@@ -77,12 +100,15 @@ docker compose -f deploy/docker/docker-compose.yml \
 docker compose -f deploy/docker/docker-compose.yml --profile full up -d --build
 ```
 
+> O Compose exige `CIEM_SECRET_KEY` e `CIEM_GRAFANA_TOKEN` no ambiente (`${CIEM_SECRET_KEY:?...}`) — sem elas o `docker compose up` **falha na hora** com mensagem clara, em vez de subir com configuração quebrada.
+
 Coloque certificados em `deploy/docker/certs/` (ou monte via volume conforme [DEPLOYMENT.md](DEPLOYMENT.md)).
 
 ## 4. Subir com Kubernetes
 
 ```bash
 # Revise Secrets e domínio em deploy/kubernetes/02-secrets.example.yaml
+# Os Secrets DEVEM incluir CIEM_SECRET_KEY e CIEM_GRAFANA_TOKEN
 kubectl apply -f deploy/kubernetes/
 ```
 
@@ -114,6 +140,9 @@ Detalhes: [KUBERNETES.md](KUBERNETES.md) e [deploy/kubernetes/README.md](../depl
 pip install -r requirements-dev.txt
 export PYTHONPATH=shared:services/core
 export CONFIG_PATH=./config
+export CIEM_SECRET_KEY="$(openssl rand -hex 32)"
+export CIEM_GRAFANA_TOKEN="$(openssl rand -hex 32)"
+# Opcional em desenvolvimento: CIEM_RATE_LIMIT_ENABLED=0 desativa o rate limiting
 uvicorn app.main:app --app-dir services/core --reload --port 8000
 ```
 

@@ -161,7 +161,7 @@ services/portal/public/
 1. **Branch** — `cursor/portal-<descricao>` ou fluxo do time  
 2. **Mockup** — se a UI mudar de forma visível, atualize o JPG em `docs/assets/`  
 3. **PR** — inclua screenshot ou diff do mockup  
-4. **Teste manual** — login com `admin` / `admin123`  
+4. **Teste manual** — login com usuário local `admin` (senha definida em `config/auth.yaml`, via CLI ou portal)  
 
 ### Checklist de PR (portal)
 

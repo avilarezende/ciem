@@ -5,9 +5,9 @@ Guia para quem **configura e opera** o CIEM: usuários, LDAP, módulos, IA, sess
 | Credencial de desenvolvimento | Valor |
 |-------------------------------|-------|
 | Usuário | `admin` |
-| Senha | `admin123` |
+| Senha | **Rotacionada** — defina via CLI ou portal (não há mais senha padrão) |
 
-**Altere a senha em produção.** Manual do observer: [MANUAL_USER.md](MANUAL_USER.md).
+Defina a senha com `PYTHONPATH=shared python -c "from ciem_common.auth import hash_password; print(hash_password('sua_senha'))"` ou pelo portal (**Configuração → Usuários**). Manual do observer: [MANUAL_USER.md](MANUAL_USER.md).
 
 ## Papel admin
 
@@ -120,10 +120,10 @@ Também use **Lembretes**, **Calendário** e a **Wiki** de serviços (você pode
 ## APIs úteis
 
 ```bash
-# Login
+# Login → token assinado (HMAC-SHA256, 8 h)
 curl -s -X POST https://ciem.exemplo.local/api/auth/login \
   -H 'Content-Type: application/json' \
-  -d '{"username":"admin","password":"admin123"}'
+  -d '{"username":"admin","password":"sua_senha"}'
 
 # Status dos módulos
 curl -s -H "Authorization: Bearer <token>" \
