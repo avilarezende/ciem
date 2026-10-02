@@ -12,12 +12,14 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
+  # Publica em ghcr.io/avilarezende/ciem-<serviço> (usa o repositório GitHub atual)
   IMAGE_PREFIX: ghcr.io/${{ github.repository }}
 
 jobs:
   publish-images:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         include:
           - name: core

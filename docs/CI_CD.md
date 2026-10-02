@@ -4,9 +4,31 @@
 
 | Workflow | Arquivo | Gatilho | Função |
 |----------|---------|---------|--------|
-| **CI** | `.github/workflows/ci.yml` | push/PR em `main` ou `develop` | Security scan (gitleaks + bandit), lint, testes, build Docker, validação compose |
-| **CD** | `.github/workflows/cd.yml` | push em `main`, tags `v*` | Publica imagens no GHCR |
+| **CI** | `.github/workflows/ci.yml` | push/PR em `main`/`develop`, `workflow_dispatch` | Gitleaks (`.gitleaks.toml`), bandit, pip-audit, lint, testes, build Docker, compose |
+| **CD** | `.github/workflows/cd.yml` | push em `main`, tags `v*`, manual | Publica imagens no GHCR (`ghcr.io/avilarezende/ciem-*`) |
 | **Dependabot** | `.github/dependabot.yml` | semanal | Atualiza GitHub Actions e pip |
+
+## Sincronizar Origin → GitHub
+
+O Cloud Agent trabalha no remote Origin; o **CI/CD (Actions + GHCR)** roda em `github.com/avilarezende/ciem`.
+
+```bash
+# Opção A — token (PAT com scopes: repo, workflow, write:packages)
+export GH_TOKEN=ghp_...
+chmod +x scripts/sync-github.sh
+./scripts/sync-github.sh
+
+# Opção B — gh CLI
+gh auth login
+./scripts/sync-github.sh
+```
+
+Branches publicadas pelo script (quando existirem localmente/`origin`):
+
+- `cursor/fix-gitleaks-tests-a834`
+- `cursor/owasp-hardening-a834`
+
+Depois abra/acompanhe PRs em https://github.com/avilarezende/ciem/pulls e o CI em https://github.com/avilarezende/ciem/actions.
 
 ## Imagens publicadas (GHCR)
 
