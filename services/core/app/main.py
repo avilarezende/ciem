@@ -6,11 +6,12 @@ from datetime import UTC, datetime
 from typing import Any
 
 import httpx
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, generate_latest
 from pydantic import BaseModel, Field
+from slowapi.errors import RateLimitExceeded
 
 from app.aggregators import MODULE_URLS, aggregate_alarms, aggregate_history, aggregate_modules
 from app.ai_insights import clear_insights_cache, get_insights_public
@@ -18,6 +19,7 @@ from app.config import settings
 from app.deps import create_session_token, require_admin, require_user
 from app.grafana_routes import refresh_prometheus_metrics
 from app.grafana_routes import router as grafana_router
+from app.rate_limit import CONFIG_WRITE_LIMIT, LOGIN_LIMIT, SESSION_LIMIT, limiter
 from app.sessions_store import pop_session, start_session_record
 from app.sso_routes import router as sso_router
 from ciem_common.audit import log_session, read_sessions
@@ -80,12 +82,23 @@ async def lifespan(app: FastAPI):
     clear_config_cache()
 
 
+def _rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        content={"detail": "Muitas requisições. Tente novamente mais tarde."},
+        headers={"Retry-After": str(int(exc.retry_after))} if exc.retry_after else None,
+    )
+
+
 app = FastAPI(
     title="CIEM Core",
     description="Centro Integrado de Estatística e Manutenção — API ZTNA",
     version=settings.version,
     lifespan=lifespan,
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_handler)
 
 app.add_middleware(
     CORSMiddleware,
@@ -123,7 +136,8 @@ async def info() -> dict[str, Any]:
 
 
 @app.post("/auth/login", response_model=LoginResponse)
-async def login(body: LoginRequest) -> LoginResponse:
+@limiter.limit(LOGIN_LIMIT)
+async def login(request: Request, body: LoginRequest) -> LoginResponse:
     user = authenticate(body.username, body.password)
     if not user:
         raise HTTPException(
@@ -153,7 +167,9 @@ async def get_modules_config(user: User = Depends(require_user)) -> dict[str, An
 
 
 @app.put("/config/modules/{module_name}")
+@limiter.limit(CONFIG_WRITE_LIMIT)
 async def update_module(
+    request: Request,
     module_name: str,
     body: ModuleUpdateRequest,
     user: User = Depends(require_admin),
@@ -233,7 +249,9 @@ async def get_auth_config(user: User = Depends(require_admin)) -> dict[str, Any]
 
 
 @app.put("/config/auth/ldap")
+@limiter.limit(CONFIG_WRITE_LIMIT)
 async def put_ldap_config(
+    request: Request,
     body: LdapUpdateRequest,
     user: User = Depends(require_admin),
 ) -> dict[str, Any]:
@@ -249,7 +267,9 @@ async def put_ldap_config(
 
 
 @app.post("/config/auth/users")
+@limiter.limit(CONFIG_WRITE_LIMIT)
 async def post_local_user(
+    request: Request,
     body: LocalUserCreateRequest,
     user: User = Depends(require_admin),
 ) -> dict[str, Any]:
@@ -420,7 +440,9 @@ async def history(user: User = Depends(require_user), limit: int = 100) -> list[
 
 
 @app.post("/sessions/start")
+@limiter.limit(SESSION_LIMIT)
 async def start_session(
+    request: Request,
     body: SessionStartRequest,
     user: User = Depends(require_admin),
 ) -> dict[str, Any]:
