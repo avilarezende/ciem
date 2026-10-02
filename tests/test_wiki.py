@@ -14,6 +14,9 @@ PORTAL = ROOT / "services" / "portal" / "public"
 def client(tmp_path, monkeypatch):
     import os
 
+    monkeypatch.setenv("CIEM_SECRET_KEY", "test-secret-key")
+    os.environ["CIEM_SECRET_KEY"] = "test-secret-key"
+
     cfg = tmp_path / "config"
     cfg.mkdir()
     for name in ("main.yaml", "auth.yaml", "modules.yaml", "ai.yaml", "targets.yaml"):
@@ -45,7 +48,7 @@ def client(tmp_path, monkeypatch):
     return TestClient(app)
 
 
-def _login(client: TestClient, username: str = "admin", password: str = "admin123") -> str:
+def _login(client: TestClient, username: str = "admin", password: str = "f5VOt3nlUR7CkEYm") -> str:
     resp = client.post("/auth/login", json={"username": username, "password": password})
     assert resp.status_code == 200, resp.text
     return resp.json()["token"]

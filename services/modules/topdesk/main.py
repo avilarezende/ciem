@@ -139,11 +139,11 @@ class TopdeskCollector(CollectorModule):
         try:
             return await self._collect_live()
         except Exception:
-            if self.config.get("use_mock_on_failure", True):
+            if self.config.get("use_mock_on_failure", False):
                 return self._mock_response()
             return CollectResponse.build(MODULE_NAME, "error")
 
 
-config = load_config()
+config = load_config(module_name=MODULE_NAME)
 collector = TopdeskCollector(config)
 app = create_collector_app(collector)

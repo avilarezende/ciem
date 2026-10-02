@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 from app.aggregators import MODULE_URLS, aggregate_alarms, aggregate_history, aggregate_modules
 from app.ai_insights import clear_insights_cache, get_insights_public
 from app.config import settings
-from app.deps import require_admin, require_user
+from app.deps import create_session_token, require_admin, require_user
 from app.grafana_routes import refresh_prometheus_metrics
 from app.grafana_routes import router as grafana_router
 from app.sessions_store import pop_session, start_session_record
@@ -131,7 +131,7 @@ async def login(body: LoginRequest) -> LoginResponse:
             detail="Credenciais inválidas",
         )
     return LoginResponse(
-        token=f"ciem-{user.username}",
+        token=create_session_token(user),
         username=user.username,
         role=user.role.value,
         display_name=user.display_name,

@@ -8,8 +8,12 @@ from fastapi.testclient import TestClient
 os.environ["CONFIG_PATH"] = str(
     __import__("pathlib").Path(__file__).resolve().parents[1] / "config"
 )
+os.environ["CIEM_SECRET_KEY"] = "test-secret-key"
 
 from app.main import app  # noqa: E402
+
+ADMIN_PASSWORD = "f5VOt3nlUR7CkEYm"
+OBSERVER_PASSWORD = "1XaVVzaKZq2Sa6OR"
 
 
 @pytest.fixture
@@ -32,11 +36,12 @@ def test_info(client: TestClient) -> None:
 
 
 def test_login_admin(client: TestClient) -> None:
-    resp = client.post("/auth/login", json={"username": "admin", "password": "admin123"})
+    resp = client.post("/auth/login", json={"username": "admin", "password": ADMIN_PASSWORD})
     assert resp.status_code == 200
     data = resp.json()
     assert data["role"] == "admin"
-    assert data["token"].startswith("ciem-")
+    # token assinado: duas partes separadas por "."
+    assert "." in data["token"] and not data["token"].startswith("ciem-")
 
 
 def test_login_invalid(client: TestClient) -> None:
@@ -50,7 +55,7 @@ def test_modules_status_requires_auth(client: TestClient) -> None:
 
 
 def test_modules_status_authenticated(client: TestClient) -> None:
-    login = client.post("/auth/login", json={"username": "admin", "password": "admin123"})
+    login = client.post("/auth/login", json={"username": "admin", "password": ADMIN_PASSWORD})
     token = login.json()["token"]
     resp = client.get("/modules/status", headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 200
@@ -60,7 +65,10 @@ def test_modules_status_authenticated(client: TestClient) -> None:
 
 
 def test_config_modules(client: TestClient) -> None:
-    login = client.post("/auth/login", json={"username": "observador", "password": "observer123"})
+    login = client.post(
+        "/auth/login",
+        json={"username": "observador", "password": OBSERVER_PASSWORD},
+    )
     token = login.json()["token"]
     resp = client.get("/config/modules", headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 200
@@ -68,7 +76,7 @@ def test_config_modules(client: TestClient) -> None:
 
 
 def test_session_start_admin(client: TestClient) -> None:
-    login = client.post("/auth/login", json={"username": "admin", "password": "admin123"})
+    login = client.post("/auth/login", json={"username": "admin", "password": ADMIN_PASSWORD})
     token = login.json()["token"]
     resp = client.post(
         "/sessions/start",
@@ -80,7 +88,10 @@ def test_session_start_admin(client: TestClient) -> None:
 
 
 def test_session_start_observer_forbidden(client: TestClient) -> None:
-    login = client.post("/auth/login", json={"username": "observador", "password": "observer123"})
+    login = client.post(
+        "/auth/login",
+        json={"username": "observador", "password": OBSERVER_PASSWORD},
+    )
     token = login.json()["token"]
     resp = client.post(
         "/sessions/start",

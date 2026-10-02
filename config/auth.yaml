@@ -19,14 +19,15 @@
 # ---------------------------------------------------------------------------
 local_users:
   - username: admin
-    # Senha padrão: admin123 — ALTERE IMEDIATAMENTE em produção!
-    password_hash: "3f543d2874b37afc8c9fe320f42d007d$5969a05d3d97bffe372fddcff4858b3d3f1e1df560271698725432cba913abb3"
+    # Senha definida na primeira configuração — gere a sua com:
+    #   PYTHONPATH=shared python -c "from ciem_common.auth import hash_password; print(hash_password('sua_senha'))"
+    password_hash: "a14bf55e6449c8d631c91e581780faa1$2349c7ac44a7312b5a5483fb4f403188a9b069a1915a759fbd67f69531a36df3"
     role: admin
     enabled: true
 
   - username: observador
-    # Senha padrão: observer123 — ALTERE em produção!
-    password_hash: "2edb4297ff3021e8afbdfc777d398d0b$7c94998eaefd5a7018d544d07841eb93413cc731f46820e91ffe50cb012ac276"
+    # Senha aleatória definida na primeira configuração (também trocável via portal).
+    password_hash: "ebd7e968b88b4ee73269eb7897829533$e30bc03df23250096b17c5832a8231e2f85f67363782b543329943ba8aecd573"
     role: observer
     enabled: true
 

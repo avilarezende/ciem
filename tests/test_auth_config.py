@@ -16,13 +16,13 @@ def test_hash_and_verify_password() -> None:
 
 
 def test_authenticate_admin() -> None:
-    user = authenticate("admin", "admin123")
+    user = authenticate("admin", "f5VOt3nlUR7CkEYm")
     assert user is not None
     assert user.role.value == "admin"
 
 
 def test_authenticate_observer() -> None:
-    user = authenticate("observador", "observer123")
+    user = authenticate("observador", "1XaVVzaKZq2Sa6OR")
     assert user is not None
     assert user.role.value == "observer"
 

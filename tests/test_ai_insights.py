@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 REPO = Path(__file__).resolve().parents[1]
 os.environ["CONFIG_PATH"] = str(REPO / "config")
 os.environ["CIEM_GRAFANA_TOKEN"] = "test-grafana-token"
+os.environ["CIEM_SECRET_KEY"] = "test-secret-key"
 
 from app.ai_insights import clear_insights_cache  # noqa: E402
 from app.main import app  # noqa: E402
@@ -27,13 +28,16 @@ def client() -> TestClient:
 
 @pytest.fixture
 def admin_headers(client: TestClient) -> dict[str, str]:
-    login = client.post("/auth/login", json={"username": "admin", "password": "admin123"})
+    login = client.post("/auth/login", json={"username": "admin", "password": "f5VOt3nlUR7CkEYm"})
     return {"Authorization": f"Bearer {login.json()['token']}"}
 
 
 @pytest.fixture
 def observer_headers(client: TestClient) -> dict[str, str]:
-    login = client.post("/auth/login", json={"username": "observador", "password": "observer123"})
+    login = client.post(
+        "/auth/login",
+        json={"username": "observador", "password": "1XaVVzaKZq2Sa6OR"},
+    )
     return {"Authorization": f"Bearer {login.json()['token']}"}
 
 

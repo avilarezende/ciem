@@ -11,10 +11,13 @@ from fastapi.testclient import TestClient
 
 REPO = Path(__file__).resolve().parents[1]
 os.environ["CONFIG_PATH"] = str(REPO / "config")
+os.environ["CIEM_SECRET_KEY"] = "test-secret-key"
 
 from app.main import app  # noqa: E402
 from ciem_common.auth import authenticate  # noqa: E402
 from ciem_common.config_loader import clear_config_cache  # noqa: E402
+
+ADMIN_PASSWORD = "f5VOt3nlUR7CkEYm"
 
 
 @pytest.fixture
@@ -24,7 +27,7 @@ def client() -> TestClient:
 
 @pytest.fixture
 def admin_headers(client: TestClient) -> dict[str, str]:
-    login = client.post("/auth/login", json={"username": "admin", "password": "admin123"})
+    login = client.post("/auth/login", json={"username": "admin", "password": ADMIN_PASSWORD})
     return {"Authorization": f"Bearer {login.json()['token']}"}
 
 
@@ -42,7 +45,7 @@ def auth_yaml_backup(tmp_path: Path):
 def test_default_admin_independent_of_ldap(auth_yaml_backup: Path) -> None:
     client_api = TestClient(app)
     # habilita LDAP sem quebrar admin local
-    admin = client_api.post("/auth/login", json={"username": "admin", "password": "admin123"})
+    admin = client_api.post("/auth/login", json={"username": "admin", "password": ADMIN_PASSWORD})
     token = admin.json()["token"]
     headers = {"Authorization": f"Bearer {token}"}
     resp = client_api.put(
@@ -53,7 +56,7 @@ def test_default_admin_independent_of_ldap(auth_yaml_backup: Path) -> None:
     assert resp.status_code == 200
     assert resp.json()["ldap"]["enabled"] is True
     # admin local ainda autentica
-    again = client_api.post("/auth/login", json={"username": "admin", "password": "admin123"})
+    again = client_api.post("/auth/login", json={"username": "admin", "password": ADMIN_PASSWORD})
     assert again.status_code == 200
     assert again.json()["role"] == "admin"
 
@@ -78,13 +81,13 @@ def test_change_admin_password(
         headers=admin_headers,
     )
     assert resp.status_code == 200
-    assert authenticate("admin", "admin123") is None
+    assert authenticate("admin", ADMIN_PASSWORD) is None
     assert authenticate("admin", "novaSenhaAdmin1") is not None
     # restaura para não quebrar outros testes da sessão
     client.put(
         "/config/auth/users/admin",
-        json={"password": "admin123"},
-        headers={"Authorization": "Bearer ciem-admin"},
+        json={"password": ADMIN_PASSWORD},
+        headers=admin_headers,
     )
 
 

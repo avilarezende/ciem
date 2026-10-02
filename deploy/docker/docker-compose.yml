@@ -56,8 +56,8 @@ services:
     profiles: [core, full]
     environment:
       CONFIG_PATH: /app/config
-      CIEM_SECRET_KEY: ${CIEM_SECRET_KEY:-change-me}
-      CIEM_GRAFANA_TOKEN: ${CIEM_GRAFANA_TOKEN:-ciem-grafana-internal}
+      CIEM_SECRET_KEY: ${CIEM_SECRET_KEY:?Defina CIEM_SECRET_KEY (chave forte) no ambiente}
+      CIEM_GRAFANA_TOKEN: ${CIEM_GRAFANA_TOKEN:?Defina CIEM_GRAFANA_TOKEN no ambiente}
     volumes:
       # RW: portal admin persiste modules.yaml, auth.yaml e ai.yaml via API
       - ./config:/app/config

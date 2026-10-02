@@ -11,11 +11,23 @@ import time
 from typing import Any
 
 _DEFAULT_SECRET = "change-me-in-production"
+_LEGACY_WEAK_SECRETS = {"change-me-in-production", "change-me", "change_me", ""}
 _SSO_TTL_SECONDS = int(os.environ.get("CIEM_SSO_TTL", "300"))
 
 
 def _secret() -> bytes:
-    return os.environ.get("CIEM_SECRET_KEY", _DEFAULT_SECRET).encode()
+    """Retorna a chave HMAC de assinatura SSO.
+
+    Falha rápido se não configurada ou se estiver com um valor padrão
+    conhecido, impedindo a forja de tokens SSO com segredo público.
+    """
+    raw = os.environ.get("CIEM_SECRET_KEY", _DEFAULT_SECRET)
+    if raw in _LEGACY_WEAK_SECRETS:
+        raise RuntimeError(
+            "CIEM_SECRET_KEY não configurada (ou com valor padrão). "
+            "Defina uma chave forte via variável de ambiente antes de iniciar o core."
+        )
+    return raw.encode()
 
 
 def _b64encode(data: bytes) -> str:

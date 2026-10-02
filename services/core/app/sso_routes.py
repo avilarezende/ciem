@@ -10,12 +10,23 @@ from pydantic import BaseModel, Field
 
 from app.deps import require_admin, require_user
 from ciem_common.auth import User
+from ciem_common.config_loader import load_auth_config
 from ciem_common.sso import create_sso_token, guacamole_client_id, verify_sso_token
 from ciem_common.targets_loader import load_targets_config
 
 router = APIRouter(prefix="/sso", tags=["sso"])
 
 SSO_COOKIE = "ciem_sso"
+
+
+def _user_is_active(username: str | None) -> bool:
+    """Verifica se o usuário existe e está habilitado em config/auth.yaml."""
+    if not username:
+        return False
+    auth_cfg = load_auth_config()
+    return any(
+        entry.username == username and entry.enabled for entry in auth_cfg.local_users
+    )
 
 
 class GuacamoleSsoRequest(BaseModel):
@@ -72,7 +83,6 @@ async def create_guacamole_sso(
 @router.get("/guacamole/login")
 async def guacamole_sso_login(
     token: str = Query(..., description="Token SSO"),
-    response: Response = None,
 ) -> RedirectResponse:
     """Valida token SSO, define cookie e redireciona ao Guacamole."""
     payload = verify_sso_token(token)
@@ -116,8 +126,13 @@ async def sso_validate(
     if not payload:
         return Response(status_code=status.HTTP_401_UNAUTHORIZED)
 
+    # Garante que o usuário do token ainda existe e está ativo na plataforma.
+    username = payload.get("user")
+    if not _user_is_active(username):
+        return Response(status_code=status.HTTP_401_UNAUTHORIZED)
+
     response = Response(status_code=status.HTTP_200_OK)
-    response.headers["X-CIEM-User"] = payload["user"]
+    response.headers["X-CIEM-User"] = str(username)
     return response
 
 
