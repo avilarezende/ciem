@@ -1,0 +1,18 @@
+# Gitleaks — allowlist de falsos positivos documentados
+title = "ciem"
+
+[allowlist]
+description = """
+- .env local (nunca versionado)
+- Senhas de fixture antigas removidas do HEAD em cursor/fix-gitleaks-tests-a834,
+  mas ainda presentes no histórico do git (introduzidas em aa339c6). Sem esta
+  allowlist o security-scan falha ao varrer fetch-depth: 0.
+"""
+paths = [
+  '''^\.env$''',
+  '''^\.env\..*$''',
+]
+regexes = [
+  '''f5VOt3nlUR7CkEYm''',
+  '''1XaVVzaKZq2Sa6OR''',
+]

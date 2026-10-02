@@ -52,8 +52,11 @@ jobs:
       - name: Pytest
         run: pytest tests -v
         env:
+          # CONFIG_PATH real é sobrescrito pelo conftest (dir temporário com senhas de fixture).
           CONFIG_PATH: ./config
           PYTHONPATH: shared:services/core
+          CIEM_SECRET_KEY: test-secret-key-for-ci-only
+          CIEM_RATE_LIMIT_ENABLED: "0"
 
   docker-build:
     runs-on: ubuntu-latest

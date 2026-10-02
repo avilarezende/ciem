@@ -233,7 +233,7 @@ curl -X POST https://ciem.exemplo.local/api/auth/login \
 
 ```json
 {
-  "token": "eyJ1c2VyIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJleHAiOjE3MzI4... .<assinatura HMAC-SHA256>",
+  "token": "<payload-base64url>.<hmac-sha256-base64url>",
   "username": "admin",
   "role": "admin",
   "display_name": "admin"

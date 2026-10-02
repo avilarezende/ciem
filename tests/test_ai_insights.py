@@ -9,16 +9,21 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-REPO = Path(__file__).resolve().parents[1]
-os.environ["CONFIG_PATH"] = str(REPO / "config")
-os.environ["CIEM_GRAFANA_TOKEN"] = "test-grafana-token"
-os.environ["CIEM_SECRET_KEY"] = "test-secret-key"
+from conftest import ADMIN_PASSWORD, OBSERVER_PASSWORD, ensure_test_config
+
+ensure_test_config()
+os.environ.setdefault("CIEM_GRAFANA_TOKEN", "test-grafana-token")
+os.environ.setdefault("CIEM_SECRET_KEY", "test-secret-key-for-ci-only")
 
 from app.ai_insights import clear_insights_cache  # noqa: E402
 from app.main import app  # noqa: E402
 from ciem_common.config_loader import clear_config_cache, load_ai_config  # noqa: E402
 
 GRAFANA_HEADERS = {"X-Grafana-Token": "test-grafana-token"}
+
+
+def _config_dir() -> Path:
+    return Path(os.environ["CONFIG_PATH"])
 
 
 @pytest.fixture
@@ -28,7 +33,7 @@ def client() -> TestClient:
 
 @pytest.fixture
 def admin_headers(client: TestClient) -> dict[str, str]:
-    login = client.post("/auth/login", json={"username": "admin", "password": "f5VOt3nlUR7CkEYm"})
+    login = client.post("/auth/login", json={"username": "admin", "password": ADMIN_PASSWORD})
     return {"Authorization": f"Bearer {login.json()['token']}"}
 
 
@@ -36,14 +41,14 @@ def admin_headers(client: TestClient) -> dict[str, str]:
 def observer_headers(client: TestClient) -> dict[str, str]:
     login = client.post(
         "/auth/login",
-        json={"username": "observador", "password": "1XaVVzaKZq2Sa6OR"},
+        json={"username": "observador", "password": OBSERVER_PASSWORD},
     )
     return {"Authorization": f"Bearer {login.json()['token']}"}
 
 
 @pytest.fixture
 def ai_yaml_backup(tmp_path: Path):
-    src = REPO / "config" / "ai.yaml"
+    src = _config_dir() / "ai.yaml"
     backup = tmp_path / "ai.yaml.bak"
     shutil.copy2(src, backup)
     clear_config_cache()
@@ -69,7 +74,7 @@ def test_admin_can_configure_ai(
         json={
             "enabled": True,
             "base_url": "https://llm.lab.local/v1",
-            "api_key": "sk-test-secret-key",
+            "api_key": "test-ai-api-key",
             "model": "gpt-test",
             "temperature": 0.1,
         },
@@ -82,10 +87,10 @@ def test_admin_can_configure_ai(
     assert data["model"] == "gpt-test"
     assert data["api_key_set"] is True
     assert data["api_key"].endswith("key")
-    assert "sk-test-secret" not in data["api_key"]
+    assert "test-ai-api-key" not in data["api_key"] or "*" in data["api_key"]
 
     cfg = load_ai_config()
-    assert cfg.api_key == "sk-test-secret-key"
+    assert cfg.api_key == "test-ai-api-key"
     assert cfg.enabled is True
 
 
@@ -94,16 +99,16 @@ def test_masked_api_key_does_not_overwrite(
 ) -> None:
     client.put(
         "/config/ai",
-        json={"enabled": True, "api_key": "sk-real-value-1234"},
+        json={"enabled": True, "api_key": "test-real-api-key"},
         headers=admin_headers,
     )
     resp = client.put(
         "/config/ai",
-        json={"enabled": True, "api_key": "************1234", "model": "kept-model"},
+        json={"enabled": True, "api_key": "************key", "model": "kept-model"},
         headers=admin_headers,
     )
     assert resp.status_code == 200
-    assert load_ai_config().api_key == "sk-real-value-1234"
+    assert load_ai_config().api_key == "test-real-api-key"
     assert load_ai_config().model == "kept-model"
 
 

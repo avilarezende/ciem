@@ -5,15 +5,13 @@ import os
 import pytest
 from fastapi.testclient import TestClient
 
-os.environ["CONFIG_PATH"] = str(
-    __import__("pathlib").Path(__file__).resolve().parents[1] / "config"
-)
-os.environ["CIEM_SECRET_KEY"] = "test-secret-key"
+# Garante bootstrap do conftest (CONFIG_PATH temporário + senhas de fixture).
+from conftest import ADMIN_PASSWORD, OBSERVER_PASSWORD, ensure_test_config  # noqa: E402
+
+ensure_test_config()
+os.environ.setdefault("CIEM_SECRET_KEY", "test-secret-key-for-ci-only")
 
 from app.main import app  # noqa: E402
-
-ADMIN_PASSWORD = "f5VOt3nlUR7CkEYm"
-OBSERVER_PASSWORD = "1XaVVzaKZq2Sa6OR"
 
 
 @pytest.fixture

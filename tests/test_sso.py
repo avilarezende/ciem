@@ -1,20 +1,17 @@
 """Testes SSO CIEM → Guacamole."""
 
 import os
-from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
-os.environ["CONFIG_PATH"] = str(Path(__file__).resolve().parents[1] / "config")
-os.environ["CIEM_SECRET_KEY"] = "test-secret-key"
-os.environ["PYTHONPATH"] = "shared:services/core"
+from conftest import ADMIN_PASSWORD, OBSERVER_PASSWORD, ensure_test_config
+
+ensure_test_config()
+os.environ.setdefault("CIEM_SECRET_KEY", "test-secret-key-for-ci-only")
 
 from app.main import app  # noqa: E402
 from ciem_common.sso import create_sso_token, guacamole_client_id, verify_sso_token  # noqa: E402
-
-ADMIN_PASSWORD = "f5VOt3nlUR7CkEYm"
-OBSERVER_PASSWORD = "1XaVVzaKZq2Sa6OR"
 
 
 def _auth_headers(client: TestClient, username: str, password: str) -> dict[str, str]:

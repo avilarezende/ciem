@@ -9,15 +9,18 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-REPO = Path(__file__).resolve().parents[1]
-os.environ["CONFIG_PATH"] = str(REPO / "config")
-os.environ["CIEM_SECRET_KEY"] = "test-secret-key"
+from conftest import ADMIN_PASSWORD, ensure_test_config
+
+ensure_test_config()
+os.environ.setdefault("CIEM_SECRET_KEY", "test-secret-key-for-ci-only")
 
 from app.main import app  # noqa: E402
 from ciem_common.auth import authenticate  # noqa: E402
 from ciem_common.config_loader import clear_config_cache  # noqa: E402
 
-ADMIN_PASSWORD = "f5VOt3nlUR7CkEYm"
+
+def _config_dir() -> Path:
+    return Path(os.environ["CONFIG_PATH"])
 
 
 @pytest.fixture
@@ -33,7 +36,7 @@ def admin_headers(client: TestClient) -> dict[str, str]:
 
 @pytest.fixture
 def auth_yaml_backup(tmp_path: Path):
-    src = REPO / "config" / "auth.yaml"
+    src = _config_dir() / "auth.yaml"
     backup = tmp_path / "auth.yaml.bak"
     shutil.copy2(src, backup)
     clear_config_cache()
