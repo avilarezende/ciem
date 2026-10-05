@@ -56,6 +56,11 @@ services:
     profiles: [core, full]
     environment:
       CONFIG_PATH: /app/config
+      CIEM_ENV: ${CIEM_ENV:-production}
+      CIEM_TRUSTED_HOSTS: ${CIEM_TRUSTED_HOSTS:?Defina hosts explícitos de produção}
+      CIEM_CORS_ORIGINS: ${CIEM_CORS_ORIGINS:?Defina origens HTTPS de produção}
+      CIEM_DOCS_ENABLED: "0"
+      CIEM_RATE_LIMIT_ENABLED: "1"
       CIEM_SECRET_KEY: ${CIEM_SECRET_KEY:?Defina CIEM_SECRET_KEY (chave forte) no ambiente}
       CIEM_GRAFANA_TOKEN: ${CIEM_GRAFANA_TOKEN:?Defina CIEM_GRAFANA_TOKEN no ambiente}
     volumes:
@@ -86,7 +91,7 @@ services:
   # GRAFANA — painel de visualização (instância isolada)
   # ---------------------------------------------------------------------------
   grafana:
-    image: grafana/grafana:11.4.0
+    image: grafana/grafana:11.4.0@sha256:d8ea37798ccc41061a62ab080f2676dda6bf7815558499f901bdb0f533a456fb
     profiles: [grafana, full]
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
@@ -126,7 +131,7 @@ services:
     restart: unless-stopped
 
   guacd:
-    image: guacamole/guacd:1.5.5
+    image: guacamole/guacd:1.5.5@sha256:38232cae271361ef53db46faf5c49fe64049a1320a05b82c597425b69d6ce77e
     profiles: [guacamole, full]
     volumes:
       - guacamole-recordings:/recordings

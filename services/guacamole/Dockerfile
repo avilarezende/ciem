@@ -1,4 +1,4 @@
-FROM guacamole/guacamole:1.5.5
+FROM guacamole/guacamole:1.5.5@sha256:0f62f6d17ab379e46aa66874b2ff564dab856a6ef5e754a69cbb34c32d3e588a
 
 USER root
 

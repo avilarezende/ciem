@@ -1,0 +1,18 @@
+{
+  "actions": {
+    "actions/checkout@v4": "11d5960a326750d5838078e36cf38b85af677262",
+    "docker/login-action@v3": "c94ce9fb468520275223c153574b00df6fe4bcc9",
+    "docker/metadata-action@v5": "c299e40c65443455700f0fdfc63efafe5b349051",
+    "docker/build-push-action@v6": "10e90e3645eae34f1e60eeb005ba3a3d33f178e8",
+    "gitleaks/gitleaks-action@v2": "ff98106e4c7b2bc287b24eaf42907196329070c7",
+    "actions/setup-python@v5": "a26af69be951a213d495a4c3e4e4022e16d87065"
+  },
+  "images": {
+    "nginx:1.27-alpine": "sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10",
+    "python:3.12-slim": "sha256:02108f5d322dd89f1c9e552442c25acb0543dfdbc455693a5599624f20d9155d",
+    "guacamole/guacamole:1.5.5": "sha256:0f62f6d17ab379e46aa66874b2ff564dab856a6ef5e754a69cbb34c32d3e588a",
+    "httpd:2.4-alpine": "sha256:3440c39d8d6f54fa9ad2549e5a60c19ddd435faadc29c1ad28aa795f71888889",
+    "grafana/grafana:11.4.0": "sha256:d8ea37798ccc41061a62ab080f2676dda6bf7815558499f901bdb0f533a456fb",
+    "guacamole/guacd:1.5.5": "sha256:38232cae271361ef53db46faf5c49fe64049a1320a05b82c597425b69d6ce77e"
+  }
+}
